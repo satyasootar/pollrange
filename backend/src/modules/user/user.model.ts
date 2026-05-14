@@ -58,11 +58,12 @@ userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ passwordResetToken: 1 });
 
 
-userSchema.set('toJSON', {
-  transform: (_doc, ret) => {
+userSchema.set("toJSON", {
+  transform: (_doc, ret: Partial<IUser>) => {
     delete ret.passwordHash;
     delete ret.emailVerificationToken;
     delete ret.passwordResetToken;
+
     return ret;
   },
 });
