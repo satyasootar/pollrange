@@ -17,6 +17,8 @@ interface Config {
         sameSite: "strict";
         maxAge: number;
     };
+    RESEND_API_KEY: string;
+    FROM_EMAIL: string;
 }
 
 const config: Config = {
@@ -36,6 +38,8 @@ const config: Config = {
         sameSite: "strict",
         maxAge: 1000 * 60 * 60 * 24 * 7,
     },
+    RESEND_API_KEY: process.env.RESEND_API_KEY || "",
+    FROM_EMAIL: process.env.FROM_EMAIL || "onboarding@resend.dev",
 };
 
 export default config;

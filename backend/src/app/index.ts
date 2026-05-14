@@ -12,7 +12,7 @@ export function createServerApplication():Application {
     app.use(cookieParser())
 
     // Centralized routes
-    app.use("/api/v1", rootRouter)
+    app.use("/api", rootRouter)
 
     // global error handler
     app.use(errorHandler)

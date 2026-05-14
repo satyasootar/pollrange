@@ -1,10 +1,19 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import config from "../../config/config.js";
 import { User } from "../user/user.model.js";
 import { Session } from "../session/session.model.js";
 import { ApiError } from "../../utils/ApiError.js";
-import type { RegisterInput, LoginInput, ChangePasswordInput } from "./auth.validation.js";
+import { sendEmail } from "../../utils/mail.js";
+import type { 
+    RegisterInput, 
+    LoginInput, 
+    ChangePasswordInput, 
+    ForgotPasswordInput, 
+    ResetPasswordInput, 
+    VerifyEmailInput 
+} from "./auth.validation.js";
 
 async function generateAccessAndRefreshTokens(userId: string) {
     try {
@@ -37,6 +46,29 @@ async function generateAccessAndRefreshTokens(userId: string) {
     }
 }
 
+export async function sendVerificationEmail(userId: string) {
+    const user = await User.findById(userId);
+    if (!user) throw new ApiError(404, "User not found");
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    user.emailVerificationToken = token;
+    user.emailVerificationExpiry = expiry;
+    await user.save();
+
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    
+    await sendEmail({
+        to: user.email,
+        subject: "Verify your email - PollCraft",
+        html: `<h1>Welcome to PollCraft</h1>
+               <p>Please click the link below to verify your email address:</p>
+               <a href="${verificationUrl}">${verificationUrl}</a>
+               <p>This link will expire in 24 hours.</p>`,
+    });
+}
+
 export async function register(input: RegisterInput) {
     const existingUser = await User.findOne({ email: input.email });
     if (existingUser) {
@@ -50,6 +82,9 @@ export async function register(input: RegisterInput) {
         email: input.email,
         passwordHash,
     });
+
+    // Send verification email asynchronously
+    sendVerificationEmail(user._id.toString()).catch(console.error);
 
     const createdUser = await User.findById(user._id).select("-passwordHash");
     if (!createdUser) {
@@ -104,6 +139,71 @@ export async function changePassword(userId: string, input: ChangePasswordInput)
     }
 
     user.passwordHash = await bcrypt.hash(input.newPassword, 10);
+    await user.save();
+
+    return { success: true };
+}
+
+export async function verifyEmail(input: VerifyEmailInput) {
+    const user = await User.findOne({
+        emailVerificationToken: input.token,
+        emailVerificationExpiry: { $gt: new Date() },
+    });
+
+    if (!user) {
+        throw new ApiError(400, "Invalid or expired verification token");
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpiry = undefined;
+    await user.save();
+
+    return { success: true };
+}
+
+export async function forgotPassword(input: ForgotPasswordInput) {
+    const user = await User.findOne({ email: input.email });
+    if (!user) {
+        // We don't want to reveal if a user exists or not for security
+        return { success: true };
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiry = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
+
+    user.passwordResetToken = token;
+    user.passwordResetExpiry = expiry;
+    await user.save();
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+
+    await sendEmail({
+        to: user.email,
+        subject: "Reset your password - PollCraft",
+        html: `<h1>Password Reset Request</h1>
+               <p>You requested to reset your password. Click the link below to proceed:</p>
+               <a href="${resetUrl}">${resetUrl}</a>
+               <p>This link will expire in 1 hour.</p>
+               <p>If you didn't request this, please ignore this email.</p>`,
+    });
+
+    return { success: true };
+}
+
+export async function resetPassword(input: ResetPasswordInput) {
+    const user = await User.findOne({
+        passwordResetToken: input.token,
+        passwordResetExpiry: { $gt: new Date() },
+    });
+
+    if (!user) {
+        throw new ApiError(400, "Invalid or expired reset token");
+    }
+
+    user.passwordHash = await bcrypt.hash(input.newPassword, 10);
+    user.passwordResetToken = undefined;
+    user.passwordResetExpiry = undefined;
     await user.save();
 
     return { success: true };
