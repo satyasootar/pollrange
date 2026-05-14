@@ -47,15 +47,16 @@ export async function logout(req: Request, res: Response) {
         .json(new ApiResponse(200, {}, "User logged out successfully"));
 }
 
+export async function getCurrentUser(req: Request, res: Response) {
+    const user = (req as any).user;
+    return res.status(200).json(new ApiResponse(200, user, "Current user fetched successfully"));
+}
+
 export async function changePassword(req: Request, res: Response) {
-    const userId = (req as any).user?._id || req.body.userId; 
-
-    if (!userId) {
-        throw new ApiError(401, "Unauthorized: User ID required");
-    }
-
+    const user = (req as any).user;
     const parsedData = changePasswordSchema.parse(req.body);
-    await AuthService.changePassword(userId, parsedData);
+    
+    await AuthService.changePassword(user._id.toString(), parsedData);
 
     return res.status(200).json(new ApiResponse(200, {}, "Password changed successfully"));
 }
@@ -82,13 +83,8 @@ export async function resetPassword(req: Request, res: Response) {
 }
 
 export async function requestVerificationEmail(req: Request, res: Response) {
-    const userId = (req as any).user?._id || req.body.userId;
-
-    if (!userId) {
-        throw new ApiError(401, "Unauthorized: User ID required");
-    }
-
-    await AuthService.sendVerificationEmail(userId);
+    const user = (req as any).user;
+    await AuthService.sendVerificationEmail(user._id.toString());
 
     return res.status(200).json(new ApiResponse(200, {}, "Verification email sent successfully"));
 }

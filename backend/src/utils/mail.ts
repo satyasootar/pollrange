@@ -12,14 +12,19 @@ interface MailOptions {
 }
 
 export const sendEmail = async ({ to, subject, html, text, idempotencyKey }: MailOptions) => {
-  const { data, error } = await resend.emails.send({
+  const payload: any = {
     from: config.FROM_EMAIL,
     to,
     subject,
     html,
-    text,
-    idempotencyKey,
-  });
+  };
+
+  if (text) payload.text = text;
+
+  const options: any = {};
+  if (idempotencyKey) options.idempotencyKey = idempotencyKey;
+
+  const { data, error } = await resend.emails.send(payload, options);
 
   if (error) {
     console.error("Resend Error:", error);
