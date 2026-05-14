@@ -177,6 +177,22 @@
         background-image: radial-gradient(var(--border) 1px, transparent 1px);
         background-size: 24px 24px;
     }
+    .border-dotted-v {
+        background-image: linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+        background-size: 1px 6px;
+        background-repeat: repeat-y;
+    }
+    .border-dotted-h {
+        background-image: linear-gradient(to right, var(--border) 1px, transparent 1px);
+        background-size: 6px 1px;
+        background-repeat: repeat-x;
+    }
+    .border-dotted-custom {
+        background-image: linear-gradient(to right, var(--border) 1px, transparent 1px),
+                          linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+        background-size: 6px 6px;
+        background-repeat: repeat-x, repeat-y;
+    }
     .box-border {
         @apply border border-border;
     }

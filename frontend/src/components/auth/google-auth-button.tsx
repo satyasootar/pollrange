@@ -10,11 +10,11 @@ export function GoogleAuthButton() {
     <Button
       variant="outline"
       type="button"
-      className="w-full flex items-center justify-center gap-2 h-11"
+      className="w-full flex items-center justify-center gap-3 h-14 rounded-none border-4 border-foreground font-black uppercase tracking-tighter hover:bg-primary hover:text-primary-foreground hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
       onClick={handleGoogleLogin}
     >
-      <FcGoogle className="w-5 h-5" />
-      Continue with Google
+      <FcGoogle className="w-6 h-6" />
+      Google
     </Button>
   );
 }
