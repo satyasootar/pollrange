@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import config from "../../config/config.js";
 import { User } from "../user/user.model.js";
 import { Session } from "../session/session.model.js";
+import { ApiError } from "../../utils/ApiError.js";
 import type { RegisterInput, LoginInput, ChangePasswordInput } from "./auth.validation.js";
 
 async function generateAccessAndRefreshTokens(userId: string) {
@@ -19,12 +20,10 @@ async function generateAccessAndRefreshTokens(userId: string) {
             { expiresIn: config.REFRESH_TOKEN_EXPIRY || "7d" }
         );
 
-        // Calculate expire date for DB session
         const expiresInDays = parseInt((config.REFRESH_TOKEN_EXPIRY as string || "7d").replace(/\D/g, "")) || 7;
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
-        // Store session in database
         await Session.create({
             userId,
             refreshToken,
@@ -34,14 +33,14 @@ async function generateAccessAndRefreshTokens(userId: string) {
 
         return { accessToken, refreshToken };
     } catch (error) {
-        throw new Error("Something went wrong while generating refresh and access tokens");
+        throw new ApiError(500, "Something went wrong while generating refresh and access tokens");
     }
 }
 
 export async function register(input: RegisterInput) {
     const existingUser = await User.findOne({ email: input.email });
     if (existingUser) {
-        throw new Error("User with this email already exists");
+        throw new ApiError(409, "User with this email already exists");
     }
 
     const passwordHash = await bcrypt.hash(input.password, 10);
@@ -54,7 +53,7 @@ export async function register(input: RegisterInput) {
 
     const createdUser = await User.findById(user._id).select("-passwordHash");
     if (!createdUser) {
-        throw new Error("Failed to register user");
+        throw new ApiError(500, "Failed to register user");
     }
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id.toString());
@@ -63,17 +62,16 @@ export async function register(input: RegisterInput) {
 }
 
 export async function login(input: LoginInput) {
-    // Need to explicitly select passwordHash as it is select: false in schema
     const user = await User.findOne({ email: input.email }).select("+passwordHash");
     
     if (!user) {
-        throw new Error("Invalid email or password");
+        throw new ApiError(401, "Invalid email or password");
     }
 
     const isPasswordValid = await bcrypt.compare(input.password, user.passwordHash);
     
     if (!isPasswordValid) {
-        throw new Error("Invalid email or password");
+        throw new ApiError(401, "Invalid email or password");
     }
 
     const loggedInUser = await User.findById(user._id).select("-passwordHash");
@@ -85,7 +83,7 @@ export async function login(input: LoginInput) {
 
 export async function logout(refreshToken: string) {
     if (!refreshToken) {
-        throw new Error("Refresh token is required");
+        throw new ApiError(400, "Refresh token is required");
     }
 
     await Session.findOneAndDelete({ refreshToken });
@@ -96,13 +94,13 @@ export async function changePassword(userId: string, input: ChangePasswordInput)
     const user = await User.findById(userId).select("+passwordHash");
     
     if (!user) {
-        throw new Error("User not found");
+        throw new ApiError(404, "User not found");
     }
 
     const isPasswordValid = await bcrypt.compare(input.oldPassword, user.passwordHash);
     
     if (!isPasswordValid) {
-        throw new Error("Invalid old password");
+        throw new ApiError(400, "Invalid old password");
     }
 
     user.passwordHash = await bcrypt.hash(input.newPassword, 10);
