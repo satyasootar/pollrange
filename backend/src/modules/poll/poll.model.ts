@@ -12,6 +12,11 @@ const optionSchema = new Schema(
       type: Number,
       required: true,
     },
+
+    voteCount: {
+      type: Number,
+      default: 0,
+    },
   }
 );
 
