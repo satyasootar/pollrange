@@ -13,6 +13,11 @@ const answerItemSchema = new Schema(
       default: null,
     },
 
+    textResponse: {
+      type: String,
+      default: null,
+    },
+
     skipped: {
       type: Boolean,
       required: true,

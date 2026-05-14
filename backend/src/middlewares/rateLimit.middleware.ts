@@ -1,10 +1,8 @@
 import { rateLimit } from "express-rate-limit";
 
 /**
- * Standard rate limiter for API endpoints.
- * @param windowMs Time window in milliseconds.
- * @param max Max number of requests per window.
- * @param message Custom error message.
+ * Standard rate limiter factory.
+ * Disabled in test mode (NODE_ENV=test) to allow rapid test execution.
  */
 export const createRateLimiter = (
     windowMs: number = 15 * 60 * 1000, 
@@ -20,9 +18,9 @@ export const createRateLimiter = (
         },
         standardHeaders: true,
         legacyHeaders: false,
+        skip: () => process.env.ENVIRONMENT === "test",
     });
 };
 
-// Specialized limiters
 export const authRateLimiter = createRateLimiter(15 * 60 * 1000, 10, "Too many login attempts. Please try again in 15 minutes.");
 export const responseRateLimiter = createRateLimiter(1 * 60 * 1000, 5, "You are voting too fast. Please slow down.");
