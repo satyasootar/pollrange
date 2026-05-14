@@ -29,7 +29,7 @@ const questionSchema = new Schema(
 
     type: {
       type: String,
-      enum: ["single_choice"],
+      enum: ["single_choice", "open_ended"],
       default: "single_choice",
     },
 

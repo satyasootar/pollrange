@@ -3,10 +3,12 @@ import passport from "passport";
 import * as AuthController from "./auth.controller.js";
 import { verifyJWT } from "../../middlewares/auth.middleware.js";
 
+import { authRateLimiter } from "../../middlewares/rateLimit.middleware.js";
+
 const authRouter = Router();
 
-authRouter.post("/register", AuthController.register);
-authRouter.post("/login", AuthController.login);
+authRouter.post("/register", authRateLimiter, AuthController.register);
+authRouter.post("/login", authRateLimiter, AuthController.login);
 authRouter.post("/logout", AuthController.logout);
 authRouter.post("/refresh-token", AuthController.refreshAccessToken);
 

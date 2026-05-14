@@ -9,8 +9,8 @@ const optionZodSchema = z.object({
 
 const questionZodSchema = z.object({
   text: z.string(),
-  type: z.enum(["single_choice"]).default("single_choice"),
-  options: z.array(optionZodSchema),
+  type: z.enum(["single_choice", "open_ended"]).default("single_choice"),
+  options: z.array(optionZodSchema).optional(),
   isMandatory: z.boolean().default(true),
   order: z.number(),
 });
