@@ -15,6 +15,9 @@ import type {
     VerifyEmailInput 
 } from "./auth.validation.js";
 
+/**
+ * Generates Access and Refresh tokens for a user and creates a new session in the database.
+ */
 export async function generateAccessAndRefreshTokens(userId: string) {
     try {
         const accessToken = jwt.sign(
@@ -42,16 +45,19 @@ export async function generateAccessAndRefreshTokens(userId: string) {
 
         return { accessToken, refreshToken };
     } catch (error) {
-        throw new ApiError(500, "Something went wrong while generating refresh and access tokens");
+        throw new ApiError(500, "Something went wrong while generating tokens");
     }
 }
 
+/**
+ * Generates a verification token and sends an email to the user.
+ */
 export async function sendVerificationEmail(userId: string) {
     const user = await User.findById(userId);
     if (!user) throw new ApiError(404, "User not found");
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     user.emailVerificationToken = token;
     user.emailVerificationExpiry = expiry;
@@ -64,11 +70,13 @@ export async function sendVerificationEmail(userId: string) {
         subject: "Verify your email - PollCraft",
         html: `<h1>Welcome to PollCraft</h1>
                <p>Please click the link below to verify your email address:</p>
-               <a href="${verificationUrl}">${verificationUrl}</a>
-               <p>This link will expire in 24 hours.</p>`,
+               <a href="${verificationUrl}">${verificationUrl}</a>`,
     });
 }
 
+/**
+ * Registers a new user and triggers the verification email flow.
+ */
 export async function register(input: RegisterInput) {
     const existingUser = await User.findOne({ email: input.email });
     if (existingUser) {
@@ -76,110 +84,87 @@ export async function register(input: RegisterInput) {
     }
 
     const passwordHash = await bcrypt.hash(input.password, 10);
-
     const user = await User.create({
         name: input.name,
         email: input.email,
         passwordHash,
     });
 
-    // Send verification email asynchronously
     sendVerificationEmail(user._id.toString()).catch(console.error);
 
     const createdUser = await User.findById(user._id).select("-passwordHash");
-    if (!createdUser) {
-        throw new ApiError(500, "Failed to register user");
-    }
+    if (!createdUser) throw new ApiError(500, "Failed to register user");
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id.toString());
-
-    return { user: createdUser, accessToken, refreshToken };
+    const tokens = await generateAccessAndRefreshTokens(user._id.toString());
+    return { user: createdUser, ...tokens };
 }
 
+/**
+ * Authenticates a user with email and password.
+ */
 export async function login(input: LoginInput) {
     const user = await User.findOne({ email: input.email }).select("+passwordHash");
     
-    if (!user) {
+    if (!user || !user.passwordHash) {
         throw new ApiError(401, "Invalid email or password");
-    }
-
-    if (!user.passwordHash) {
-        throw new ApiError(401, "This account was created with Google. Please use Google Login.");
     }
 
     const isPasswordValid = await bcrypt.compare(input.password, user.passwordHash);
-    
-    if (!isPasswordValid) {
-        throw new ApiError(401, "Invalid email or password");
-    }
+    if (!isPasswordValid) throw new ApiError(401, "Invalid email or password");
 
     const loggedInUser = await User.findById(user._id).select("-passwordHash");
-    
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id.toString());
+    const tokens = await generateAccessAndRefreshTokens(user._id.toString());
 
-    return { user: loggedInUser, accessToken, refreshToken };
+    return { user: loggedInUser, ...tokens };
 }
 
+/**
+ * Logs out a user by deleting their session from the database.
+ */
 export async function logout(refreshToken: string) {
-    if (!refreshToken) {
-        throw new ApiError(400, "Refresh token is required");
-    }
-
+    if (!refreshToken) throw new ApiError(400, "Refresh token is required");
     await Session.findOneAndDelete({ refreshToken });
     return { success: true };
 }
 
+/**
+ * Implements token rotation by verifying the refresh token and generating a new pair.
+ */
 export async function refreshAccessToken(incomingRefreshToken: string) {
-    if (!incomingRefreshToken) {
-        throw new ApiError(401, "Refresh token is required");
-    }
+    if (!incomingRefreshToken) throw new ApiError(401, "Refresh token is required");
 
-    // Find the session and verify it's still active
     const session = await Session.findOne({ 
         refreshToken: incomingRefreshToken,
         isActive: true,
         expiresAt: { $gt: new Date() }
     });
 
-    if (!session) {
-        throw new ApiError(401, "Refresh token is invalid or expired");
-    }
+    if (!session) throw new ApiError(401, "Refresh token is invalid or expired");
 
-    // Verify the JWT itself
     try {
         jwt.verify(incomingRefreshToken, config.JWT_SECRET as string);
     } catch (error) {
         throw new ApiError(401, "Invalid refresh token");
     }
 
-    // Delete the old session (token rotation for security)
     await Session.findByIdAndDelete(session._id);
 
-    // Generate new tokens
     const tokens = await generateAccessAndRefreshTokens(session.userId.toString());
-    
     const user = await User.findById(session.userId).select("-passwordHash");
+    
     if (!user) throw new ApiError(404, "User not found");
-
     return { user, ...tokens };
 }
 
+/**
+ * Changes the password for an authenticated user.
+ */
 export async function changePassword(userId: string, input: ChangePasswordInput) {
     const user = await User.findById(userId).select("+passwordHash");
-    
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }
-
-    if (!user.passwordHash) {
-        throw new ApiError(400, "Please set a password using Forgot Password before trying to change it.");
-    }
+    if (!user || !user.passwordHash) throw new ApiError(404, "User not found");
 
     const isPasswordValid = await bcrypt.compare(input.oldPassword, user.passwordHash);
-    
-    if (!isPasswordValid) {
-        throw new ApiError(400, "Invalid old password");
-    }
+    if (!isPasswordValid) throw new ApiError(400, "Invalid old password");
 
     user.passwordHash = await bcrypt.hash(input.newPassword, 10);
     await user.save();
@@ -187,15 +172,16 @@ export async function changePassword(userId: string, input: ChangePasswordInput)
     return { success: true };
 }
 
+/**
+ * Verifies a user's email address using a verification token.
+ */
 export async function verifyEmail(input: VerifyEmailInput) {
     const user = await User.findOne({
         emailVerificationToken: input.token,
         emailVerificationExpiry: { $gt: new Date() },
     });
 
-    if (!user) {
-        throw new ApiError(400, "Invalid or expired verification token");
-    }
+    if (!user) throw new ApiError(400, "Invalid or expired verification token");
 
     user.isEmailVerified = true;
     user.emailVerificationToken = undefined;
@@ -205,15 +191,15 @@ export async function verifyEmail(input: VerifyEmailInput) {
     return { success: true };
 }
 
+/**
+ * Initiates the password reset flow by sending a reset link via email.
+ */
 export async function forgotPassword(input: ForgotPasswordInput) {
     const user = await User.findOne({ email: input.email });
-    if (!user) {
-        // We don't want to reveal if a user exists or not for security
-        return { success: true };
-    }
+    if (!user) return { success: true };
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expiry = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
+    const expiry = new Date(Date.now() + 1 * 60 * 60 * 1000);
 
     user.passwordResetToken = token;
     user.passwordResetExpiry = expiry;
@@ -224,25 +210,23 @@ export async function forgotPassword(input: ForgotPasswordInput) {
     await sendEmail({
         to: user.email,
         subject: "Reset your password - PollCraft",
-        html: `<h1>Password Reset Request</h1>
-               <p>You requested to reset your password. Click the link below to proceed:</p>
-               <a href="${resetUrl}">${resetUrl}</a>
-               <p>This link will expire in 1 hour.</p>
-               <p>If you didn't request this, please ignore this email.</p>`,
+        html: `<p>Click the link below to reset your password:</p>
+               <a href="${resetUrl}">${resetUrl}</a>`,
     });
 
     return { success: true };
 }
 
+/**
+ * Resets a user's password using a valid reset token.
+ */
 export async function resetPassword(input: ResetPasswordInput) {
     const user = await User.findOne({
         passwordResetToken: input.token,
         passwordResetExpiry: { $gt: new Date() },
     });
 
-    if (!user) {
-        throw new ApiError(400, "Invalid or expired reset token");
-    }
+    if (!user) throw new ApiError(400, "Invalid or expired reset token");
 
     user.passwordHash = await bcrypt.hash(input.newPassword, 10);
     user.passwordResetToken = undefined;

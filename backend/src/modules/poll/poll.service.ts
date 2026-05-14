@@ -3,19 +3,23 @@ import { ApiError } from "../../utils/ApiError.js";
 import crypto from "crypto";
 import type { IPoll } from "./poll.validation.js";
 
+/**
+ * Creates a new poll for a user and assigns a unique share token.
+ */
 export async function createPoll(userId: string, pollData: Partial<IPoll>) {
     const shareToken = crypto.randomUUID();
     
-    const poll = await Poll.create({
+    return await Poll.create({
         ...pollData,
         creatorId: userId,
         shareToken,
-        status: "active", // Defaulting to active for now as per simple flow
+        status: "active",
     });
-
-    return poll;
 }
 
+/**
+ * Fetches a specific poll by ID, ensuring it belongs to the requesting user.
+ */
 export async function getPollByCreator(userId: string, pollId: string) {
     const poll = await Poll.findOne({ _id: pollId, creatorId: userId, isDeleted: false });
     if (!poll) {
@@ -24,6 +28,9 @@ export async function getPollByCreator(userId: string, pollId: string) {
     return poll;
 }
 
+/**
+ * Lists all non-deleted polls created by a specific user with pagination.
+ */
 export async function listPollsByCreator(userId: string, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
     const polls = await Poll.find({ creatorId: userId, isDeleted: false })
@@ -44,9 +51,12 @@ export async function listPollsByCreator(userId: string, page = 1, limit = 10) {
     };
 }
 
+/**
+ * Updates a poll's details if it has no responses yet.
+ */
 export async function updatePoll(userId: string, pollId: string, updateData: Partial<IPoll>) {
     const poll = await Poll.findOneAndUpdate(
-        { _id: pollId, creatorId: userId, totalResponses: 0 }, // Only allow update if no responses yet
+        { _id: pollId, creatorId: userId, totalResponses: 0 },
         { $set: updateData },
         { new: true }
     );
@@ -58,6 +68,9 @@ export async function updatePoll(userId: string, pollId: string, updateData: Par
     return poll;
 }
 
+/**
+ * Marks a poll as deleted (soft delete).
+ */
 export async function deletePoll(userId: string, pollId: string) {
     const poll = await Poll.findOneAndUpdate(
         { _id: pollId, creatorId: userId },
@@ -72,6 +85,10 @@ export async function deletePoll(userId: string, pollId: string) {
     return { success: true };
 }
 
+/**
+ * Retrieves a poll for public voting using its unique share token.
+ * Also handles automatic expiry status updates.
+ */
 export async function getPublicPoll(shareToken: string) {
     const poll = await Poll.findOne({ 
         shareToken, 
@@ -92,6 +109,9 @@ export async function getPublicPoll(shareToken: string) {
     return poll;
 }
 
+/**
+ * Changes a poll's status to published, making results visible to the public.
+ */
 export async function publishPollResults(userId: string, pollId: string) {
     const poll = await Poll.findOneAndUpdate(
         { _id: pollId, creatorId: userId },

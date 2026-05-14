@@ -13,10 +13,8 @@ export function createServerApplication():Application {
     app.use(cookieParser())
     app.use(passport.initialize())
 
-    // Centralized routes
     app.use("/api", rootRouter)
 
-    // global error handler
     app.use(errorHandler)
 
     return app
