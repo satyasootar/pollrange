@@ -1,7 +1,7 @@
 import express from "express"
 import type { Application } from "express"
 import cookieParser from "cookie-parser"
-import authRouter from "../modules/auth/auth.route.js"
+import rootRouter from "../routes/index.js"
 import { errorHandler } from "../middlewares/error.middleware.js"
 
 export function createServerApplication():Application {
@@ -11,7 +11,8 @@ export function createServerApplication():Application {
     app.use(express.urlencoded({ extended: true }))
     app.use(cookieParser())
 
-    app.use("/api/v1/auth", authRouter)
+    // Centralized routes
+    app.use("/api/v1", rootRouter)
 
     // global error handler
     app.use(errorHandler)
