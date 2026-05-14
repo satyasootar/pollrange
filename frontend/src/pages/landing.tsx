@@ -13,6 +13,7 @@ import {
   User as UserIcon
 } from "lucide-react";
 import { motion } from "framer-motion";
+import ColorBends from "@/components/ui/ColorBends";
 
 export function LandingPage() {
   const { user, clearAuth } = useAuthStore();
@@ -40,9 +41,9 @@ export function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen font-sans relative overflow-x-hidden">
+    <div className="min-h-screen font-sans relative">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 w-full border-b border-border backdrop-blur-md">
         <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <motion.div 
@@ -91,28 +92,28 @@ export function LandingPage() {
 
       <main className="max-w-[1400px] mx-auto px-6">
         {/* Hero Section */}
-        <section 
-          className="py-10 md:py-32 flex flex-col items-center text-center relative group overflow-hidden z-0"
-          onMouseMove={(e) => {
-            const { left, top } = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - left;
-            const y = e.clientY - top;
-            e.currentTarget.style.setProperty("--mouse-x", `${x}px`);
-            e.currentTarget.style.setProperty("--mouse-y", `${y}px`);
-          }}
-        >
-          {/* Static Dotted Background */}
-          <div className="absolute inset-0 border-1 border-dotted"></div>
-          
-          {/* Animated Spotlight Dotted Background */}
-          <div 
-            className="absolute inset-0 -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-            style={{
-              background: "radial-gradient(600px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(99, 102, 241, 0.5), transparent 80%)",
-            }}
-          >
-            <div className="absolute inset-0 bg-grid-dots opacity-100"></div>
+        <section className="py-10 md:py-32 flex flex-col items-center text-center relative group overflow-hidden z-0">
+          {/* ColorBends Background */}
+          <div className="absolute inset-0 -z-20 opacity-40">
+            <ColorBends
+              colors={["#6366f1", "#a855f7", "#ec4899"]}
+              rotation={90}
+              speed={0.15}
+              scale={1.2}
+              frequency={1}
+              warpStrength={1.2}
+              mouseInfluence={0.5}
+              noise={0.1}
+              parallax={0.2}
+              iterations={2}
+              intensity={1.2}
+              bandWidth={4}
+              transparent
+            />
           </div>
+
+          {/* Static Dotted Background */}
+          <div className="absolute inset-0 bg-grid-dots -z-10 [mask-image:radial-gradient(ellipse_at_center,black,transparent)] opacity-20"></div>
 
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
@@ -228,24 +229,9 @@ export function LandingPage() {
           viewport={{ once: true }}
           id="analytics" 
           className="mt-24 mb-24 border-4 border-foreground bg-foreground text-background p-12 md:p-20 relative overflow-hidden group z-0"
-          onMouseMove={(e) => {
-            const { left, top } = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - left;
-            const y = e.clientY - top;
-            e.currentTarget.style.setProperty("--mouse-x", `${x}px`);
-            e.currentTarget.style.setProperty("--mouse-y", `${y}px`);
-          }}
         >
           {/* Animated Background Dotted Pattern */}
           <div className="absolute inset-0 opacity-10 bg-grid-dots"></div>
-          
-          {/* Spotlight Effect */}
-          <div 
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-            style={{
-              background: "radial-gradient(800px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(99, 102, 241, 0.5), transparent 80%)",
-            }}
-          ></div>
           
           {/* Dotted Border Accent */}
           <div className="absolute inset-0 border-[16px] border-dotted-custom opacity-10 pointer-events-none"></div>
