@@ -19,8 +19,14 @@ const userSchema = new Schema<IUser>(
 
     passwordHash: {
       type: String,
-      required: true,
+      required: false,
       select: false,
+    },
+    
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
 
     avatarUrl: String,

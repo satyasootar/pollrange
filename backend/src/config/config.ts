@@ -14,15 +14,21 @@ interface Config {
     COOKIE_OPTIONS: {
         httpOnly: boolean;
         secure: boolean;
-        sameSite: "strict";
+        sameSite: "strict" | "lax" | "none";
         maxAge: number;
     };
     RESEND_API_KEY: string;
     FROM_EMAIL: string;
+    GOOGLE_CLIENT_ID: string;
+    GOOGLE_CLIENT_SECRET: string;
+    GOOGLE_CALLBACK_URL: string;
 }
 
+const PORT = process.env.PORT || 8080;
+const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+
 const config: Config = {
-    PORT: process.env.PORT || 8080,
+    PORT: PORT,
     ENVIRONMENT: process.env.ENVIRONMENT || "development",
     MONGODB_URI: process.env.MONGODB_URI || "",
     JWT_SECRET: process.env.JWT_SECRET || "",
@@ -35,11 +41,14 @@ const config: Config = {
     COOKIE_OPTIONS: {
         httpOnly: true,
         secure: process.env.ENVIRONMENT === "production",
-        sameSite: "strict",
+        sameSite: process.env.ENVIRONMENT === "production" ? "none" : "lax",
         maxAge: 1000 * 60 * 60 * 24 * 7,
     },
     RESEND_API_KEY: process.env.RESEND_API_KEY || "",
     FROM_EMAIL: process.env.FROM_EMAIL || "onboarding@resend.dev",
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
+    GOOGLE_CALLBACK_URL: `${BACKEND_URL}/api/auth/google/callback`,
 };
 
 export default config;

@@ -47,6 +47,17 @@ export async function logout(req: Request, res: Response) {
         .json(new ApiResponse(200, {}, "User logged out successfully"));
 }
 
+export async function refreshAccessToken(req: Request, res: Response) {
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    const { user, accessToken, refreshToken } = await AuthService.refreshAccessToken(incomingRefreshToken);
+
+    return res.status(200)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .json(new ApiResponse(200, { user, accessToken, refreshToken }, "Access token refreshed successfully"));
+}
+
 export async function getCurrentUser(req: Request, res: Response) {
     const user = (req as any).user;
     return res.status(200).json(new ApiResponse(200, user, "Current user fetched successfully"));
@@ -87,4 +98,23 @@ export async function requestVerificationEmail(req: Request, res: Response) {
     await AuthService.sendVerificationEmail(user._id.toString());
 
     return res.status(200).json(new ApiResponse(200, {}, "Verification email sent successfully"));
+}
+
+export async function googleAuthCallback(req: Request, res: Response) {
+    const user = (req as any).user;
+    
+    if (!user) {
+        throw new ApiError(500, "Google authentication failed");
+    }
+
+    const { accessToken, refreshToken } = await AuthService.generateAccessAndRefreshTokens(user._id.toString());
+
+    // Redirect to frontend with tokens in cookies
+    // In production, we usually redirect back to a frontend success page
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+    return res
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .redirect(`${frontendUrl}/auth-success?accessToken=${accessToken}&refreshToken=${refreshToken}`);
 }

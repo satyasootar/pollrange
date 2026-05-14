@@ -15,7 +15,7 @@ import type {
     VerifyEmailInput 
 } from "./auth.validation.js";
 
-async function generateAccessAndRefreshTokens(userId: string) {
+export async function generateAccessAndRefreshTokens(userId: string) {
     try {
         const accessToken = jwt.sign(
             { _id: userId },
@@ -103,6 +103,10 @@ export async function login(input: LoginInput) {
         throw new ApiError(401, "Invalid email or password");
     }
 
+    if (!user.passwordHash) {
+        throw new ApiError(401, "This account was created with Google. Please use Google Login.");
+    }
+
     const isPasswordValid = await bcrypt.compare(input.password, user.passwordHash);
     
     if (!isPasswordValid) {
@@ -125,11 +129,50 @@ export async function logout(refreshToken: string) {
     return { success: true };
 }
 
+export async function refreshAccessToken(incomingRefreshToken: string) {
+    if (!incomingRefreshToken) {
+        throw new ApiError(401, "Refresh token is required");
+    }
+
+    // Find the session and verify it's still active
+    const session = await Session.findOne({ 
+        refreshToken: incomingRefreshToken,
+        isActive: true,
+        expiresAt: { $gt: new Date() }
+    });
+
+    if (!session) {
+        throw new ApiError(401, "Refresh token is invalid or expired");
+    }
+
+    // Verify the JWT itself
+    try {
+        jwt.verify(incomingRefreshToken, config.JWT_SECRET as string);
+    } catch (error) {
+        throw new ApiError(401, "Invalid refresh token");
+    }
+
+    // Delete the old session (token rotation for security)
+    await Session.findByIdAndDelete(session._id);
+
+    // Generate new tokens
+    const tokens = await generateAccessAndRefreshTokens(session.userId.toString());
+    
+    const user = await User.findById(session.userId).select("-passwordHash");
+    if (!user) throw new ApiError(404, "User not found");
+
+    return { user, ...tokens };
+}
+
 export async function changePassword(userId: string, input: ChangePasswordInput) {
     const user = await User.findById(userId).select("+passwordHash");
     
     if (!user) {
         throw new ApiError(404, "User not found");
+    }
+
+    if (!user.passwordHash) {
+        throw new ApiError(400, "Please set a password using Forgot Password before trying to change it.");
     }
 
     const isPasswordValid = await bcrypt.compare(input.oldPassword, user.passwordHash);

@@ -8,7 +8,9 @@ export const userZodSchema = z.object({
     .email()
     .toLowerCase(),
 
-  passwordHash: z.string(),
+  passwordHash: z.string().optional(),
+
+  googleId: z.string().optional(),
 
   avatarUrl: z.string().optional(),
 
