@@ -9,17 +9,34 @@ import {
   User,
   ChevronRight,
   Menu,
-  X
+  X,
+  MoreVertical,
+  Sun,
+  Moon,
+  Monitor,
+  Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useLogout } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/theme-provider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/polls/create", icon: Plus, label: "Create Poll" },
-  { to: "/dashboard/profile", icon: User, label: "My Profile" },
 ];
 
 function NavItem({
@@ -69,6 +86,7 @@ export function AppShell() {
   const { user } = useAuthStore();
   const logout = useLogout();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const SidebarContent = () => (
@@ -99,26 +117,72 @@ export function AppShell() {
       {/* User footer */}
       <div className="border-t border-border p-3">
         <div className="flex items-center gap-3 px-2 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-border bg-muted text-xs font-semibold text-foreground">
-            {user?.name?.charAt(0).toUpperCase()}
+          <div 
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-xl p-1 transition-colors hover:bg-muted"
+            onClick={() => {
+              navigate("/dashboard/profile");
+              setIsSidebarOpen(false);
+            }}
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-border bg-muted text-xs font-semibold text-foreground">
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{user?.name}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {user?.email}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{user?.name}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {user?.email}
-            </p>
-          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Settings</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+              
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Sun className="mr-2 h-4 w-4" />
+                  Theme
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setTheme("light")}>
+                      <Sun className="mr-2 h-4 w-4" />
+                      Light
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("dark")}>
+                      <Moon className="mr-2 h-4 w-4" />
+                      Dark
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("system")}>
+                      <Monitor className="mr-2 h-4 w-4" />
+                      System
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                onClick={() => logout.mutate()}
+                disabled={logout.isPending}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-1 w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
-          onClick={() => logout.mutate()}
-          disabled={logout.isPending}
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </Button>
       </div>
     </>
   );
