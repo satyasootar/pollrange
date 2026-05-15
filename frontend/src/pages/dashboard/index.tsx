@@ -9,10 +9,13 @@ import {
   TrendingUp,
   Search,
   Filter,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { usePolls } from "@/hooks/use-polls";
+import { useRequestVerification } from "@/hooks/use-auth-actions";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useDashboardStore } from "@/store/use-dashboard-store";
 import { PollCard } from "@/components/poll-card/poll-card";
@@ -34,6 +37,7 @@ export function DashboardPage() {
   const [status, setStatus] = useState<PollFilters["status"]>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const { mutate: requestVerification, isPending: isVerifying } = useRequestVerification();
 
   const { data, isLoading } = usePolls({ status, search: search || undefined, page, limit: 12 });
   const polls = data?.polls || [];
@@ -88,6 +92,32 @@ export function DashboardPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
+        {/* Verification Alert */}
+        {user && !user.isEmailVerified && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <Alert variant="warning">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Email not verified</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span>Please verify your email to ensure full account security and access all features.</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 border-amber-500/50 bg-transparent text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
+                  onClick={() => requestVerification()}
+                  disabled={isVerifying}
+                >
+                  {isVerifying ? "Sending..." : "Resend Link"}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+
         {/* Stats row */}
         <motion.div
           className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"

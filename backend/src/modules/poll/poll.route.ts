@@ -12,6 +12,9 @@ router.get("/", PollController.getMyPolls);
 router.get("/:pollId", PollController.getPollDetail);
 router.patch("/:pollId", PollController.updatePoll);
 router.delete("/:pollId", PollController.deletePoll);
+router.patch("/:pollId/close", PollController.closePoll);
+router.patch("/:pollId/reopen", PollController.reopenPoll);
 router.post("/:pollId/publish", PollController.publishPoll);
+router.post("/:pollId/regenerate-token", PollController.regenerateToken);
 
 export default router;

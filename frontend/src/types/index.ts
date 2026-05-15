@@ -141,6 +141,7 @@ export interface QuestionStat {
   skippedCount: number;
   options: OptionStat[];
   topOption: { optionId: string; optionText: string; count: number };
+  wordCloudData?: WordCloudItem[];
 }
 
 export interface TimelinePoint {
@@ -164,7 +165,6 @@ export interface FullAnalytics {
   authenticatedCount: number;
   questions: QuestionStat[];
   timeline: TimelinePoint[];
-  wordCloudData: WordCloudItem[];
 }
 
 // ─── Socket event payloads ────────────────────────────────────────────────────

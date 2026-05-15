@@ -9,11 +9,13 @@ import { RegisterPage } from "@/pages/auth/register";
 import { ForgotPasswordPage } from "@/pages/auth/forgot-password";
 import { ResetPasswordPage } from "@/pages/auth/reset-password";
 import { AuthSuccessPage } from "@/pages/auth/auth-success";
+import { VerifyEmailPage } from "@/pages/auth/verify-email";
 
 import { ProtectedRoute, GuestRoute } from "@/components/layout/protected-route";
 import { AppShell } from "@/components/layout/app-shell";
 
 import { DashboardPage } from "@/pages/dashboard";
+import { ProfilePage } from "@/pages/dashboard/profile";
 import { CreatePollPage } from "@/pages/polls/create";
 import { EditPollPage } from "@/pages/polls/edit";
 import { AnalyticsPage } from "@/pages/polls/analytics";
@@ -49,6 +51,7 @@ export function App() {
           />
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
           <Route path="/auth-success" element={<AuthSuccessPage />} />
 
           {/* Public poll routes */}
@@ -59,6 +62,7 @@ export function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/dashboard/profile" element={<ProfilePage />} />
               <Route path="/polls/create" element={<CreatePollPage />} />
               <Route path="/polls/:pollId/edit" element={<EditPollPage />} />
               <Route path="/polls/:pollId/analytics" element={<AnalyticsPage />} />

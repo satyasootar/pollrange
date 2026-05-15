@@ -95,7 +95,34 @@ export function useClosePoll(pollId: string) {
     mutationFn: () => pollsApi.close(pollId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: pollKeys.detail(pollId) });
+      qc.invalidateQueries({ queryKey: pollKeys.all });
       toast.success("Poll closed.");
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+}
+
+export function useReopenPoll(pollId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => pollsApi.reopen(pollId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: pollKeys.detail(pollId) });
+      qc.invalidateQueries({ queryKey: pollKeys.all });
+      toast.success("Poll reopened!");
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+}
+
+export function useRegenerateToken(pollId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => pollsApi.regenerateToken(pollId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: pollKeys.detail(pollId) });
+      qc.invalidateQueries({ queryKey: pollKeys.all });
+      toast.success("New share link generated.");
     },
     onError: (err) => toast.error(getApiErrorMessage(err)),
   });

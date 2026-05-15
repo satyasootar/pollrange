@@ -1,4 +1,5 @@
 import { Poll } from "./poll.model.js";
+import { ResponseModel } from "../response/response.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import crypto from "crypto";
 import type { IPoll } from "./poll.validation.js";
@@ -112,7 +113,7 @@ export async function deletePoll(userId: string, pollId: string) {
  *   - "closed": Returns 410 (poll completed but results not yet published).
  *   - "draft": Returns 404 (not publicly visible).
  */
-export async function getPublicPoll(shareToken: string) {
+export async function getPublicPoll(shareToken: string, context: { sessionToken?: string, userId?: string } = {}) {
     const poll = await Poll.findOne({ 
         shareToken, 
         isDeleted: false,
@@ -129,6 +130,19 @@ export async function getPublicPoll(shareToken: string) {
         await poll.save();
     }
 
+    // Check if user already responded
+    let alreadyResponded = false;
+    if (context.sessionToken || context.userId) {
+        const query: any = { pollId: poll._id };
+        if (context.userId) {
+            query.$or = [{ respondentId: context.userId }];
+            if (context.sessionToken) query.$or.push({ sessionToken: context.sessionToken });
+        } else {
+            query.sessionToken = context.sessionToken;
+        }
+        alreadyResponded = await ResponseModel.exists(query) !== null;
+    }
+
     // Draft polls are not publicly accessible
     if (poll.status === "draft") {
         throw new ApiError(404, "Poll not found");
@@ -137,6 +151,8 @@ export async function getPublicPoll(shareToken: string) {
     // Convert to plain object and remove sensitive fields
     const sanitized = poll.toObject() as any;
     delete sanitized.creatorId;
+    sanitized.alreadyResponded = alreadyResponded;
+    sanitized.pollId = sanitized._id;
 
     // Active or Closed polls: return the poll structure for voting (hide vote counts)
     if (sanitized.status === "active" || sanitized.status === "closed") {
@@ -206,4 +222,100 @@ export async function getPublicResults(shareToken: string) {
     }
 
     return await AnalyticsService.getPollAnalyticsSnapshot(poll._id.toString());
+}
+/**
+ * Closes a poll manually before its expiration.
+ */
+export async function closePoll(userId: string, pollId: string) {
+    const poll = await Poll.findOne({ _id: pollId, creatorId: userId, isDeleted: false });
+    
+    if (!poll) {
+        throw new ApiError(404, "Poll not found or unauthorized");
+    }
+
+    if (poll.status === "closed") {
+        throw new ApiError(400, "Poll is already closed");
+    }
+
+    poll.status = "closed";
+    poll.closedAt = new Date();
+    await poll.save();
+
+    return poll;
+}
+
+/**
+ * Reopens a closed poll and optionally sets a new expiration date.
+ */
+export async function reopenPoll(userId: string, pollId: string) {
+    const poll = await Poll.findOne({ _id: pollId, creatorId: userId, isDeleted: false });
+    
+    if (!poll) {
+        throw new ApiError(404, "Poll not found or unauthorized");
+    }
+
+    if (poll.status !== "closed") {
+        throw new ApiError(400, "Only closed polls can be reopened");
+    }
+
+    poll.status = "active";
+    poll.closedAt = undefined;
+    // Default to 7 days from now if it was already expired
+    if (poll.expiresAt < new Date()) {
+        poll.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    }
+    
+    await poll.save();
+
+    return poll;
+}
+
+/**
+ * Regenerates the share token for a poll, effectively changing its public URL.
+ */
+export async function regenerateShareToken(userId: string, pollId: string) {
+    const poll = await Poll.findOne({ _id: pollId, creatorId: userId, isDeleted: false });
+    
+    if (!poll) {
+        throw new ApiError(404, "Poll not found or unauthorized");
+    }
+
+    const newShareToken = crypto.randomUUID();
+    poll.shareToken = newShareToken;
+    await poll.save();
+
+    return { shareToken: newShareToken };
+}
+
+/**
+ * Checks the status of a poll for public access.
+ */
+export async function checkPollStatus(shareToken: string, context: { sessionToken?: string, userId?: string } = {}) {
+    const poll = await Poll.findOne({ shareToken, isDeleted: false });
+    
+    if (!poll) {
+        throw new ApiError(404, "Poll not found");
+    }
+
+    let alreadyResponded = false;
+    if (context.sessionToken || context.userId) {
+        const query: any = { pollId: poll._id };
+        if (context.userId) {
+            query.$or = [{ respondentId: context.userId }];
+            if (context.sessionToken) query.$or.push({ sessionToken: context.sessionToken });
+        } else {
+            query.sessionToken = context.sessionToken;
+        }
+        alreadyResponded = await ResponseModel.exists(query) !== null;
+    }
+
+    return {
+        pollId: poll._id,
+        status: poll.status,
+        expiresAt: poll.expiresAt,
+        isExpired: poll.expiresAt < new Date(),
+        alreadyResponded,
+        totalResponses: poll.totalResponses,
+        settings: poll.settings
+    };
 }

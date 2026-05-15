@@ -32,29 +32,24 @@ export function WordCloudWidget({ words }: { words: WordCloudItem[] }) {
   if (sanitizedWords.length === 0) return null;
 
   return (
-    <div className="border border-border bg-card p-6">
-      <h3 className="mb-6 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-        Response Trends
-      </h3>
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 min-h-[160px] p-4">
-        {sanitizedWords.map((word, i) => (
-          <motion.span
-            key={word.text}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: word.opacity, scale: 1 }}
-            transition={{ delay: i * 0.02 }}
-            className="inline-block cursor-default transition-colors hover:text-primary"
-            style={{
-              fontSize: `${word.fontSize}rem`,
-              fontWeight: word.fontSize > 1.5 ? "700" : "500",
-              color: word.fontSize > 1.8 ? "var(--primary)" : "inherit",
-            }}
-            title={`${word.value} responses`}
-          >
-            {word.text}
-          </motion.span>
-        ))}
-      </div>
+    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 min-h-[140px] p-2">
+      {sanitizedWords.map((word, i) => (
+        <motion.span
+          key={word.text}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: word.opacity, scale: 1 }}
+          transition={{ delay: i * 0.01 }}
+          className="inline-block cursor-default transition-colors hover:text-primary"
+          style={{
+            fontSize: `${word.fontSize}rem`,
+            fontWeight: word.fontSize > 1.5 ? "700" : "500",
+            color: word.fontSize > 1.8 ? "var(--primary)" : "inherit",
+          }}
+          title={`${word.value} occurrences`}
+        >
+          {word.text}
+        </motion.span>
+      ))}
     </div>
   );
 }

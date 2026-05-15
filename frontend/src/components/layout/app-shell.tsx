@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/polls/create", icon: Plus, label: "Create Poll" },
+  { to: "/dashboard/profile", icon: User, label: "My Profile" },
 ];
 
 function NavItem({

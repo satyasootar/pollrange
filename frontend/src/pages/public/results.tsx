@@ -2,11 +2,10 @@ import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { usePublishedResults } from "@/hooks/use-public-poll";
 import { QuestionChart } from "@/components/analytics/question-chart";
-import { WordCloudWidget } from "@/components/analytics/word-cloud-widget";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { fadeUp, stagger } from "@/lib/animations";
-import { Users, CheckSquare } from "lucide-react";
-import type { QuestionStat } from "@/types";
+import { Users } from "lucide-react";
+import type { FullAnalytics } from "@/types";
 
 export function PublishedResultsPage() {
   const { shareToken } = useParams<{ shareToken: string }>();
@@ -57,15 +56,6 @@ export function PublishedResultsPage() {
               </div>
             )}
           </motion.div>
-
-          {/* Word Cloud if available */}
-          {analytics.wordCloudData && analytics.wordCloudData.length > 0 && (
-            <motion.div variants={fadeUp}>
-              <ErrorBoundary>
-                <WordCloudWidget words={analytics.wordCloudData} />
-              </ErrorBoundary>
-            </motion.div>
-          )}
 
           {/* Charts */}
           {questions.map((q) => (

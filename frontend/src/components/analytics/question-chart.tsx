@@ -7,8 +7,10 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, MessageSquare } from "lucide-react";
 import type { QuestionStat } from "@/types";
+import { WordCloudWidget } from "./word-cloud-widget";
+import { ErrorBoundary } from "../error-boundary";
 
 interface QuestionChartProps {
   question: QuestionStat;
@@ -48,14 +50,24 @@ export function QuestionChart({ question }: QuestionChartProps) {
       </div>
 
       {question.type === "open_ended" ? (
-        <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-border">
-          <TrendingUp className="h-8 w-8 text-muted-foreground/30 mb-2" />
-          <p className="text-sm text-muted-foreground">
-            This is an open-ended question.
-          </p>
-          <p className="text-xs text-muted-foreground/60">
-            Check the Word Cloud below for sentiment and keyword trends.
-          </p>
+        <div className="py-2">
+          {question.wordCloudData && question.wordCloudData.length > 0 ? (
+            <div className="rounded-none border border-border/50 bg-muted/5 p-2">
+               <ErrorBoundary>
+                <WordCloudWidget words={question.wordCloudData} />
+              </ErrorBoundary>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-border">
+              <MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">
+                No open-ended responses yet.
+              </p>
+              <p className="text-xs text-muted-foreground/60">
+                Word cloud will appear once users submit text responses.
+              </p>
+            </div>
+          )}
         </div>
       ) : data.length > 0 ? (
         <ResponsiveContainer width="100%" height={180}>

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import * as PollService from "./poll.service.js";
 import * as AnalyticsService from "../analytics/analytics.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
+import { Poll } from "./poll.model.js";
 
 /**
  * Handles creation of a new poll for the authenticated user.
@@ -75,41 +76,36 @@ export async function publishPoll(req: Request, res: Response) {
  */
 export async function getPublicPoll(req: Request, res: Response) {
     const { shareToken } = req.params;
-    const poll = await PollService.getPublicPoll(shareToken as string);
+    const { sessionToken } = req.query;
+    const user = (req as any).user;
+    const poll = await PollService.getPublicPoll(shareToken as string, { 
+        sessionToken: sessionToken as string,
+        userId: user?._id?.toString()
+    });
     return res.status(200).json(new ApiResponse(200, poll, "Public poll fetched successfully"));
 }
 
 export async function getPublicResults(req: Request, res: Response) {
     const { shareToken } = req.params;
     const snapshot = await PollService.getPublicResults(shareToken as string);
-    
-    // We also need the poll for status and expiresAt, but it's already fetched by getPublicResults inside the service.
-    // However, to keep it simple, we can fetch it again or just map it.
-    const poll = await PollService.getPublicPoll(shareToken as string);
+    const poll = await Poll.findOne({ shareToken: shareToken as string, isDeleted: false }) as any;
 
-    // Find first open-ended question for global word cloud
-    const openEndedQuestion = poll?.questions.find((q: any) => q.type === "open_ended") as any;
-    let wordCloudData: any[] = [];
-    if (openEndedQuestion) {
-        wordCloudData = await AnalyticsService.getWordCloudData(poll._id.toString(), openEndedQuestion._id.toString());
-    }
-    
-    const mappedData = {
-        pollId: snapshot.pollId,
-        pollTitle: snapshot.title,
-        status: poll?.status || "published",
-        expiresAt: poll?.expiresAt || new Date().toISOString(),
-        totalResponses: snapshot.totalResponses,
-        completionRate: snapshot.completionRate,
-        anonymousCount: 0, 
-        authenticatedCount: snapshot.totalResponses,
-        questions: snapshot.questionSummaries.map((q: any) => ({
+    const questions = await Promise.all(snapshot.questionSummaries.map(async (q: any) => {
+        const pollQ = poll?.questions.find((pq: any) => pq._id.toString() === q.questionId.toString()) as any;
+        
+        let wordCloudData = undefined;
+        if (q.type === "open_ended") {
+            wordCloudData = await AnalyticsService.getWordCloudData(poll?._id?.toString() || "", q.questionId.toString());
+        }
+
+        return {
             questionId: q.questionId,
             questionText: q.text,
             type: q.type,
-            isMandatory: true,
+            isMandatory: pollQ?.isMandatory ?? true,
             responseCount: snapshot.totalResponses,
             skippedCount: 0,
+            wordCloudData,
             options: q.options ? q.options.map((opt: any) => ({
                 optionId: opt.text,
                 optionText: opt.text,
@@ -117,19 +113,71 @@ export async function getPublicResults(req: Request, res: Response) {
                 percentage: opt.percentage
             })) : [],
             topOption: q.options && q.options.length > 0 
-                ? [...q.options].sort((a, b) => b.voteCount - a.voteCount).map((opt: any) => ({
+                ? [...q.options].sort((a: any, b: any) => b.voteCount - a.voteCount).map((opt: any) => ({
                     optionId: opt.text,
                     optionText: opt.text,
-                    count: opt.voteCount
+                    count: opt.voteCount,
+                    percentage: opt.percentage
                 }))[0]
                 : null
-        })),
-        timeline: snapshot.timeline.map((t: any) => ({
-            date: t._id,
-            count: t.count
-        })),
-        wordCloudData
+        };
+    }));
+
+    const mappedData = {
+        pollId: snapshot.pollId,
+        pollTitle: snapshot.title,
+        status: poll?.status || "active",
+        expiresAt: poll?.expiresAt || new Date().toISOString(),
+        totalResponses: snapshot.totalResponses,
+        questions
     };
 
-    return res.status(200).json(new ApiResponse(200, mappedData, "Public results fetched successfully"));
+    return res.status(200).json(
+        new ApiResponse(200, mappedData, "Public results fetched successfully")
+    );
+}
+
+/**
+ * Closes an active poll.
+ */
+export async function closePoll(req: Request, res: Response) {
+    const user = (req as any).user;
+    const { pollId } = req.params;
+    const poll = await PollService.closePoll(user._id.toString(), pollId as string);
+    return res.status(200).json(new ApiResponse(200, poll, "Poll closed successfully"));
+}
+
+/**
+ * Reopens a closed poll.
+ */
+export async function reopenPoll(req: Request, res: Response) {
+    const user = (req as any).user;
+    const { pollId } = req.params;
+    const poll = await PollService.reopenPoll(user._id.toString(), pollId as string);
+    return res.status(200).json(new ApiResponse(200, poll, "Poll reopened successfully"));
+}
+
+/**
+ * Regenerates the public share token for a poll.
+ */
+export async function regenerateToken(req: Request, res: Response) {
+    const user = (req as any).user;
+    const { pollId } = req.params;
+    const result = await PollService.regenerateShareToken(user._id.toString(), pollId as string);
+    return res.status(200).json(new ApiResponse(200, result, "Share token regenerated successfully"));
+}
+
+/**
+ * Checks public poll status.
+ */
+export async function getPollStatus(req: Request, res: Response) {
+    const { shareToken } = req.params;
+    const { sessionToken } = req.query;
+    const user = (req as any).user;
+    
+    const status = await PollService.checkPollStatus(shareToken as string, {
+        sessionToken: sessionToken as string,
+        userId: user?._id?.toString()
+    });
+    return res.status(200).json(new ApiResponse(200, status, "Poll status fetched successfully"));
 }

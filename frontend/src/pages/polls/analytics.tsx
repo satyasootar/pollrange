@@ -12,9 +12,11 @@ import {
   Lock,
   Unlock,
   Download,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { analyticsApi } from "@/api/analytics.api";
+import { config } from "@/config/config";
 import { useFullAnalytics } from "@/hooks/use-analytics";
 import { usePoll, usePublishPoll, useClosePoll } from "@/hooks/use-polls";
 import { usePollSocket } from "@/hooks/use-poll-socket";
@@ -23,7 +25,6 @@ import { analyticsKeys } from "@/hooks/use-analytics";
 import { pollKeys } from "@/hooks/use-polls";
 import { QuestionChart } from "@/components/analytics/question-chart";
 import { TimelineChart } from "@/components/analytics/timeline-chart";
-import { WordCloudWidget } from "@/components/analytics/word-cloud-widget";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { OverviewCards } from "@/components/analytics/overview-cards";
 import { AnalyticsSkeleton } from "@/components/analytics/analytics-skeleton";
@@ -86,6 +87,11 @@ export function AnalyticsPage() {
       toast.error("Failed to export data");
     }
   };
+  
+  const handleSnapshot = () => {
+    // This endpoint returns a PNG image generated from the current results
+    window.open(`${config.apiUrl}/analytics/${pollId}/snapshot`, "_blank");
+  };
 
   if (isLoading) return <AnalyticsSkeleton />;
   if (!analytics || !poll) return null;
@@ -119,6 +125,9 @@ export function AnalyticsPage() {
         <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
           <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 gap-1.5 sm:flex-none">
             <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleSnapshot} className="flex-1 gap-1.5 sm:flex-none">
+            <Camera className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Snapshot</span>
           </Button>
           <Button variant="outline" size="sm" onClick={handleCopy} className="flex-1 gap-1.5 sm:flex-none">
             <Copy className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Copy Link</span><span className="sm:hidden">Copy</span>
@@ -179,15 +188,6 @@ export function AnalyticsPage() {
           {analytics.timeline.length > 0 && (
             <motion.div variants={fadeUp}>
               <TimelineChart data={analytics.timeline} />
-            </motion.div>
-          )}
-
-          {/* Word cloud */}
-          {analytics.wordCloudData && analytics.wordCloudData.length > 0 && (
-            <motion.div variants={fadeUp}>
-              <ErrorBoundary>
-                <WordCloudWidget words={analytics.wordCloudData} />
-              </ErrorBoundary>
             </motion.div>
           )}
         </motion.div>

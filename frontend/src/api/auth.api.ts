@@ -35,6 +35,12 @@ export const authApi = {
   resetPassword: (token: string, newPassword: string) =>
     api.post("/auth/reset-password", { token, newPassword }),
 
+  requestVerification: () =>
+    api.post("/auth/request-verification"),
+
+  verifyEmail: (data: { token: string }) =>
+    api.post("/auth/verify-email", data),
+
   updateProfile: (data: { name?: string; avatarUrl?: string }) =>
     api.patch<{ data: User }>("/auth/me", data),
 };

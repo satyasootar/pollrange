@@ -8,6 +8,9 @@ import {
   Pencil,
   Trash2,
   Radio,
+  RotateCcw,
+  RefreshCw,
+  Lock,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -20,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Poll, PollStatus } from "@/types";
 import { timeUntilExpiry, buildShareUrl, copyToClipboard, formatDate } from "@/lib/utils";
-import { useDeletePoll } from "@/hooks/use-polls";
+import { useDeletePoll, useClosePoll, useReopenPoll, useRegenerateToken } from "@/hooks/use-polls";
 import { useDashboardStore } from "@/store/use-dashboard-store";
 import { toast } from "sonner";
 import { cardHover } from "@/lib/animations";
@@ -54,6 +57,9 @@ interface PollCardProps {
 export function PollCard({ poll }: PollCardProps) {
   const navigate = useNavigate();
   const deletePoll = useDeletePoll();
+  const closePoll = useClosePoll(poll._id);
+  const reopenPoll = useReopenPoll(poll._id);
+  const regenerateToken = useRegenerateToken(poll._id);
   const removePoll = useDashboardStore((s) => s.removePoll);
   const statusCfg = STATUS_CONFIG[poll.status];
   const shareUrl = buildShareUrl(poll.shareToken);
@@ -139,6 +145,27 @@ export function PollCard({ poll }: PollCardProps) {
                   <Pencil className="mr-2 h-4 w-4" /> Edit
                 </DropdownMenuItem>
               )}
+
+              {poll.status === "active" && (
+                <DropdownMenuItem onClick={() => {
+                  if (confirm("Are you sure you want to close this poll?")) closePoll.mutate();
+                }}>
+                  <Lock className="mr-2 h-4 w-4" /> Close Poll
+                </DropdownMenuItem>
+              )}
+
+              {poll.status === "closed" && (
+                <DropdownMenuItem onClick={() => reopenPoll.mutate()}>
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reopen Poll
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuItem onClick={() => {
+                if (confirm("Regenerate share link? The old link will stop working.")) regenerateToken.mutate();
+              }}>
+                <RefreshCw className="mr-2 h-4 w-4" /> Regenerate Link
+              </DropdownMenuItem>
+
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleDelete}
