@@ -15,5 +15,6 @@ const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
 };
 
 router.post("/:pollId", responseRateLimiter, optionalAuth, ResponseController.submitResponse);
+router.get("/history", verifyJWT, ResponseController.getUserHistory);
 
 export default router;

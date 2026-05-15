@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
-import { BarChart3, LogOut } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 
 export function Navbar() {
-  const { user, clearAuth } = useAuthStore();
+  const { user } = useAuthStore();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-sm">
@@ -22,10 +22,12 @@ export function Navbar() {
           <a href="#stats" className="text-muted-foreground hover:text-foreground transition-colors">Stats</a>
           {user ? (
             <div className="flex items-center gap-4">
-              <span className="text-muted-foreground">{user.name.split(" ")[0]}</span>
-              <Button variant="outline" size="sm" onClick={clearAuth} className="rounded-none border-border font-mono text-xs uppercase">
-                <LogOut className="w-3 h-3 mr-2" /> Exit
-              </Button>
+              <span className="text-muted-foreground lowercase">{user.name.split(" ")[0]}</span>
+              <Link to="/dashboard">
+                <Button variant="outline" size="sm" className="rounded-none border-border font-mono text-xs uppercase tracking-widest px-4 h-auto py-2 transition-all hover:bg-foreground hover:text-background">
+                  Dashboard
+                </Button>
+              </Link>
             </div>
           ) : (
             <div className="flex items-center gap-4">

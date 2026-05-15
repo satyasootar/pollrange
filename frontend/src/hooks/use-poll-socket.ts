@@ -6,6 +6,8 @@ import type {
   PollStatusChangePayload,
 } from "@/types";
 
+import { useAuthStore } from "@/store/use-auth-store";
+
 interface UsePollSocketOptions {
   pollId: string;
   onAnalyticsUpdate?: (data: AnalyticsUpdatePayload) => void;
@@ -19,6 +21,7 @@ export function usePollSocket({
   onNewResponse,
   onStatusChange,
 }: UsePollSocketOptions) {
+  const { accessToken } = useAuthStore();
   const handlersRef = useRef({ onAnalyticsUpdate, onNewResponse, onStatusChange });
   handlersRef.current = { onAnalyticsUpdate, onNewResponse, onStatusChange };
 
@@ -28,7 +31,7 @@ export function usePollSocket({
   useEffect(() => {
     if (!pollId) return;
 
-    const socket = getSocket();
+    const socket = getSocket(accessToken ?? undefined);
 
     const handleConnect = () => {
       setIsConnected(true);
@@ -72,7 +75,7 @@ export function usePollSocket({
       socket.off(SOCKET_EVENTS.POLL_STATUS_CHANGE, handleStatusChange);
       joinedRef.current = false;
     };
-  }, [pollId]);
+  }, [pollId, accessToken]);
 
   return { isConnected };
 }

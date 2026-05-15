@@ -29,7 +29,7 @@ export const pollsApi = {
     api.get<{ data: Poll }>(`/polls/${pollId}`),
 
   create: (form: PollBuilderForm) =>
-    api.post<{ data: { poll: Poll; shareLink: string } }>("/polls", toCreatePayload(form)),
+    api.post<{ data: Poll }>("/polls", toCreatePayload(form)),
 
   update: (pollId: string, form: Partial<PollBuilderForm>) =>
     api.patch<{ data: Poll }>(`/polls/${pollId}`, toCreatePayload(form as PollBuilderForm)),

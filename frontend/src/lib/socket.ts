@@ -6,7 +6,16 @@ const SOCKET_URL = config.socketUrl;
 let socket: Socket | null = null;
 
 export function getSocket(accessToken?: string): Socket {
-  if (socket?.connected) return socket;
+  if (socket) {
+    const currentToken = (socket.auth as any)?.token;
+    if (currentToken !== accessToken) {
+      socket.auth = accessToken ? { token: accessToken } : {};
+      if (socket.connected) {
+        socket.disconnect().connect();
+      }
+    }
+    return socket;
+  }
 
   socket = io(SOCKET_URL, {
     withCredentials: true,

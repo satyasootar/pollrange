@@ -27,8 +27,11 @@ export function formatDate(date: string | Date): string {
   return format(new Date(date), "MMM d, yyyy");
 }
 
-export function formatDatetime(date: string | Date): string {
-  return format(new Date(date), "MMM d, yyyy 'at' h:mm a");
+export function formatDatetime(date: string | Date | undefined | null): string {
+  if (!date) return "Not set";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "Not set";
+  return format(d, "MMM d, yyyy 'at' h:mm a");
 }
 
 export function timeAgo(date: string | Date): string {

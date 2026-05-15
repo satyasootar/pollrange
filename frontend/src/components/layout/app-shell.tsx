@@ -14,11 +14,14 @@ import {
   Sun,
   Moon,
   Monitor,
+  History,
+  ShieldAlert,
   Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useLogout } from "@/hooks/use-auth";
+import { useResponseHistory } from "@/hooks/use-responses";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import {
@@ -37,7 +40,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/polls/create", icon: Plus, label: "Create Poll" },
+  { to: "/dashboard/history", icon: History, label: "History" },
 ];
 
 function NavItem({
@@ -54,7 +57,7 @@ function NavItem({
   return (
     <NavLink
       to={to}
-      end={to === "/dashboard"}
+      end={to === "/dashboard" || to === "/dashboard/history"}
       onClick={onClick}
       className={({ isActive }) =>
         cn(
@@ -89,6 +92,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { data: history, isLoading: historyLoading } = useResponseHistory();
 
   const SidebarContent = () => (
     <>

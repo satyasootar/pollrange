@@ -146,14 +146,14 @@ export function AnalyticsPage() {
           >
             <RefreshCcw className={`h-3.5 w-3.5 ${regenerateToken.isPending ? "animate-spin" : ""}`} />
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             size="sm"
             className="flex-none"
             onClick={() => window.open(`/p/${poll.shareToken}`, "_blank")}
           >
             <ExternalLink className="h-3.5 w-3.5" />
-          </Button>
+          </Button> */}
           {poll.status === "active" && (
             <Button
               variant="outline"

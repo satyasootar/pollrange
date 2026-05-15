@@ -120,18 +120,29 @@ export async function exportData(req: Request, res: Response) {
     const snapshot = await AnalyticsService.getPollAnalyticsSnapshot(pollId as string);
     
     if (format === "csv") {
-        // Simple CSV generation
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="poll-${pollId}-export.csv"`);
-        const csvRows = ['Question,Responses'];
+        
+        const csvRows = ['Question/Option,Votes,Percentage'];
+        
         snapshot.questionSummaries.forEach((q: any) => {
-            csvRows.push(`"${q.text}",${q.totalVotes || 0}`);
-            if (q.options) {
+            // Question row
+            csvRows.push(`"${q.text.replace(/"/g, '""')}",${q.totalVotes || 0},100%`);
+            
+            // Option rows (if applicable)
+            if (q.options && q.options.length > 0) {
                 q.options.forEach((opt: any) => {
-                    csvRows.push(`"- ${opt.text}",${opt.voteCount}`);
+                    const percentage = opt.percentage ? `${opt.percentage.toFixed(1)}%` : '0%';
+                    csvRows.push(`"  - ${opt.text.replace(/"/g, '""')}",${opt.voteCount || 0},${percentage}`);
                 });
+            } else if (q.type === "open_ended") {
+                csvRows.push(`"  - [Open Ended Responses]",${q.totalVotes || 0},N/A`);
             }
+            
+            // Empty row for spacing between questions
+            csvRows.push('');
         });
+        
         return res.status(200).send(csvRows.join('\n'));
     }
 

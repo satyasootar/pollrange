@@ -16,6 +16,7 @@ import { AppShell } from "@/components/layout/app-shell";
 
 import { DashboardPage } from "@/pages/dashboard";
 import { ProfilePage } from "@/pages/dashboard/profile";
+import { HistoryPage } from "@/pages/dashboard/history";
 import { CreatePollPage } from "@/pages/polls/create";
 import { EditPollPage } from "@/pages/polls/edit";
 import { AnalyticsPage } from "@/pages/polls/analytics";
@@ -60,9 +61,12 @@ export function App() {
 
           {/* Protected creator routes */}
           <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<AppShell />}>
+              <Route index element={<DashboardPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="history" element={<HistoryPage />} />
+            </Route>
             <Route element={<AppShell />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/dashboard/profile" element={<ProfilePage />} />
               <Route path="/polls/create" element={<CreatePollPage />} />
               <Route path="/polls/:pollId/edit" element={<EditPollPage />} />
               <Route path="/polls/:pollId/analytics" element={<AnalyticsPage />} />

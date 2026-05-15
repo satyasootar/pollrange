@@ -7,9 +7,12 @@ import { fadeUp, stagger } from "@/lib/animations";
 import { formatDatetime } from "@/lib/utils";
 import { toast } from "sonner";
 
+import { useNavigate } from "react-router-dom";
+
 export function StepReview() {
-  const { form, prevStep, nextStep, setSuccessData } = usePollBuilderStore();
+  const { form, prevStep, reset } = usePollBuilderStore();
   const createPoll = useCreatePoll();
+  const navigate = useNavigate();
 
   const handlePublish = () => {
     const sanitizedForm = {
@@ -22,9 +25,11 @@ export function StepReview() {
 
     createPoll.mutate(sanitizedForm, {
       onSuccess: (res) => {
-        const { poll } = res.data.data;
-        setSuccessData({ pollId: poll._id, shareToken: poll.shareToken });
-        nextStep();
+        const poll = res.data.data;
+        // Reset the store BEFORE navigating so the form is clean for the next use
+        reset();
+        toast.success("Poll published successfully!");
+        navigate(`/polls/${poll._id}/analytics`);
       },
     });
   };

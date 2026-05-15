@@ -99,3 +99,17 @@ export async function submitResponse(
 
     return response;
 }
+
+/**
+ * Fetches the polls answered by a specific user.
+ * Populates poll details needed for the history section.
+ */
+export async function getUserResponseHistory(userId: string) {
+    return await ResponseModel.find({ respondentId: userId })
+        .populate({
+            path: "pollId",
+            select: "title status shareToken",
+            match: { isDeleted: false }
+        })
+        .sort({ submittedAt: -1 });
+}
