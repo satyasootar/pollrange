@@ -125,8 +125,14 @@ export function AppShell() {
               setIsSidebarOpen(false);
             }}
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-border bg-muted text-xs font-semibold text-foreground">
+            <div className="relative flex h-8 w-8 shrink-0 items-center justify-center border border-border bg-muted text-xs font-semibold text-foreground">
               {user?.name?.charAt(0).toUpperCase()}
+              {!user?.isEmailVerified && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
+                </span>
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{user?.name}</p>
@@ -144,6 +150,15 @@ export function AppShell() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Settings</DropdownMenuLabel>
+              {!user?.isEmailVerified && (
+                <DropdownMenuItem 
+                  onClick={() => navigate("/dashboard/profile")}
+                  className="text-amber-600 focus:bg-amber-500/10 focus:text-amber-700 font-semibold"
+                >
+                  <ShieldAlert className="mr-2 h-4 w-4" />
+                  Verify Email
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
                 <User className="mr-2 h-4 w-4" />
                 Profile

@@ -30,6 +30,7 @@ export function useRegister() {
     mutationFn: authApi.register,
     onSuccess: (res) => {
       setUser(res.data.data.user);
+      toast.success("Account created! A verification email has been sent to your inbox.");
       const params = new URLSearchParams(window.location.search);
       navigate(params.get("redirect") || "/dashboard", { replace: true });
     },
