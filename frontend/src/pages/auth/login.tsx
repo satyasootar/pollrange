@@ -31,7 +31,7 @@ export function LoginPage() {
         </Link>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-24 relative z-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-12 pb-24 relative z-10">
         <div className="w-full max-w-[420px] space-y-10">
           <div className="space-y-2 text-center">
             <h1 className="text-4xl font-black tracking-tighter uppercase font-heading italic">

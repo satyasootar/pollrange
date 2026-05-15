@@ -160,46 +160,123 @@
     --shadow-2xl: 2px 2px 10px 4px hsl(0 0% 0% / 0.45);
 }
 
+@utility bg-grid-dots {
+    background-image: radial-gradient(var(--border) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+@utility border-dotted-v {
+    background-image: repeating-linear-gradient(
+        to bottom,
+        currentColor 0px,
+        currentColor 3px,
+        transparent 3px,
+        transparent 10px
+    );
+    background-size: 1px 100%;
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+
+@utility border-dotted-h {
+    background-image: repeating-linear-gradient(
+        to right,
+        currentColor 0px,
+        currentColor 3px,
+        transparent 3px,
+        transparent 10px
+    );
+    background-size: 100% 1px;
+    background-repeat: no-repeat;
+    background-position: center top;
+}
+
+@utility border-dotted-custom {
+    background-image: 
+        repeating-linear-gradient(to right, currentColor 0px, currentColor 3px, transparent 3px, transparent 10px),
+        repeating-linear-gradient(to bottom, currentColor 0px, currentColor 3px, transparent 3px, transparent 10px),
+        repeating-linear-gradient(to right, currentColor 0px, currentColor 3px, transparent 3px, transparent 10px),
+        repeating-linear-gradient(to bottom, currentColor 0px, currentColor 3px, transparent 3px, transparent 10px);
+    background-size: 100% 1px, 1px 100%, 100% 1px, 1px 100%;
+    background-position: 0 0, 0 0, 0 100%, 100% 0;
+    background-repeat: no-repeat;
+}
+
+@utility box-border-style {
+    @apply border border-border;
+}
+
+@utility box-shadow-industrial {
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.15);
+    @variant dark {
+        box-shadow: 4px 4px 0px 0px rgba(255,255,255,0.06);
+    }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground bg-grid-dots font-sans selection:bg-primary/20;
+    @apply bg-background text-foreground font-sans selection:bg-primary/20;
+    background-image: radial-gradient(var(--border) 1px, transparent 1px);
+    background-size: 24px 24px;
+    position: relative;
+    overflow-x: hidden;
     }
   html {
     @apply font-sans;
     }
 }
 
-@layer utilities {
-    .bg-grid-dots {
-        background-image: radial-gradient(var(--border) 1px, transparent 1px);
-        background-size: 24px 24px;
-    }
-    .border-dotted-v {
-        background-image: linear-gradient(to bottom, var(--border) 1px, transparent 1px);
-        background-size: 1px 6px;
-        background-repeat: repeat-y;
-    }
-    .border-dotted-h {
-        background-image: linear-gradient(to right, var(--border) 1px, transparent 1px);
-        background-size: 6px 1px;
-        background-repeat: repeat-x;
-    }
-    .border-dotted-custom {
-        background-image: linear-gradient(to right, var(--border) 1px, transparent 1px),
-                          linear-gradient(to bottom, var(--border) 1px, transparent 1px);
-        background-size: 6px 6px;
-        background-repeat: repeat-x, repeat-y;
-    }
-    .box-border {
-        @apply border border-border;
-    }
-    .box-shadow {
-        @apply shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)];
-    }
-    .dark .box-shadow {
-        @apply shadow-[4px_4px_0px_0px_rgba(255,255,255,0.05)];
-    }
+/* ==========================================================================
+   GLOBAL BLUEPRINT MARGIN LINES
+   Two vertical dashed lines run the full height of every page,
+   aligned to the edges of the 1400px content container (px-6 padding).
+   Uses position:absolute so they move with the content.
+   Uses repeating-linear-gradient — no CSS variable dependency.
+   ========================================================================== */
+
+body::before,
+body::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    pointer-events: none;
+    z-index: 99999;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(30, 41, 59, 0.2) 0px,
+        rgba(30, 41, 59, 0.2) 4px,
+        transparent 4px,
+        transparent 12px
+    );
+}
+
+body::before {
+    /* 
+       Margin lines are positioned at the 24px (px-6) mark.
+       Main content containers use px-12 (48px) to provide 24px of breathing 
+       room between the content and these blueprint lines.
+    */
+    left: max(24px, calc(50% - 700px + 24px));
+}
+
+body::after {
+    /* Right edge of content: center + 700px - 24px */
+    left: min(calc(100% - 24px), calc(50% + 700px - 24px));
+}
+
+/* Dark mode overrides using attribute selector for reliability */
+html.dark body::before,
+html.dark body::after {
+    background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(226, 232, 240, 0.18) 0px,
+        rgba(226, 232, 240, 0.18) 4px,
+        transparent 4px,
+        transparent 12px
+    );
 }

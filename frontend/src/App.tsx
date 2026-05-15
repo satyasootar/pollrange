@@ -4,7 +4,6 @@ import { LoginPage } from "@/pages/auth/login";
 import { RegisterPage } from "@/pages/auth/register";
 import { ForgotPasswordPage } from "@/pages/auth/forgot-password";
 import { Toaster } from "@/components/ui/sonner";
-
 export function App() {
   return (
     <Router>

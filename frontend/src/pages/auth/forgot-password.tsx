@@ -24,7 +24,7 @@ export function ForgotPasswordPage() {
         </Link>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-24 relative z-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-12 pb-24 relative z-10">
         <div className="w-full max-w-[420px] bg-card border-2 border-border p-8 shadow-sm dark">
           <ForgotPasswordForm onBack={handleBack} />
         </div>

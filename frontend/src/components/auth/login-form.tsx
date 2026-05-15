@@ -113,10 +113,7 @@ export function LoginForm({ onSuccess, onForgotPassword }: LoginFormProps) {
               Signing in...
             </>
           ) : (
-            <>
-              Sign In
-              <Loader2 className="h-5 w-5 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-            </>
+            "Sign In"
           )}
         </span>
         <div className="absolute inset-0 bg-primary-foreground/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
