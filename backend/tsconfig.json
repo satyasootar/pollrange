@@ -6,12 +6,12 @@
     "outDir": "./dist",
 
     // Environment Settings
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "target": "esnext",
-    "lib": ["esnext"],
-    "typeRoots": ["./node_modules/@types"],
-    // and npm install -D @types/node
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
 
     // Other Outputs
     "sourceMap": true,
