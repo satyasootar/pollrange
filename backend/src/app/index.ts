@@ -9,7 +9,7 @@ import config from "../config/config.js"
 
 export function createServerApplication(): Application {
     const app = express()
-
+    app.set('trust proxy', 1); 
     app.use(cors({
         origin: config.ENVIRONMENT === "production" 
             ? config.CLIENT_URL 
