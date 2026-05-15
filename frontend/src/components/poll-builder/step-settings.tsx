@@ -143,7 +143,7 @@ export function StepSettings() {
         <p className="text-sm font-medium">Display Settings</p>
         {(
           [
-            ["showProgressBar", "Show Progress Bar"],
+            // ["showProgressBar", "Show Progress Bar"],
             ["randomizeQuestions", "Randomize Question Order"],
             ["randomizeOptions", "Randomize Option Order"],
           ] as const
