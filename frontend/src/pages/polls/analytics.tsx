@@ -11,8 +11,10 @@ import {
   CheckSquare,
   Lock,
   Unlock,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { analyticsApi } from "@/api/analytics.api";
 import { useFullAnalytics } from "@/hooks/use-analytics";
 import { usePoll, usePublishPoll, useClosePoll } from "@/hooks/use-polls";
 import { usePollSocket } from "@/hooks/use-poll-socket";
@@ -22,6 +24,7 @@ import { pollKeys } from "@/hooks/use-polls";
 import { QuestionChart } from "@/components/analytics/question-chart";
 import { TimelineChart } from "@/components/analytics/timeline-chart";
 import { WordCloudWidget } from "@/components/analytics/word-cloud-widget";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { OverviewCards } from "@/components/analytics/overview-cards";
 import { AnalyticsSkeleton } from "@/components/analytics/analytics-skeleton";
 import { buildShareUrl, copyToClipboard, formatDatetime } from "@/lib/utils";
@@ -68,6 +71,22 @@ export function AnalyticsPage() {
     toast.success("Share link copied!");
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await analyticsApi.exportData(pollId!, "csv");
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `poll-${pollId}-results.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Data exported successfully!");
+    } catch (error) {
+      toast.error("Failed to export data");
+    }
+  };
+
   if (isLoading) return <AnalyticsSkeleton />;
   if (!analytics || !poll) return null;
 
@@ -76,32 +95,38 @@ export function AnalyticsPage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center gap-4 border-b border-border px-8 py-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="truncate text-lg font-semibold">{analytics.pollTitle}</h1>
-            {isConnected && poll.status === "active" && (
-              <span className="flex items-center gap-1 rounded-none border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
-                <Radio className="h-2.5 w-2.5 animate-pulse" /> Live
-              </span>
-            )}
+      <div className="flex flex-col gap-4 border-b border-border px-4 py-4 md:px-8 lg:flex-row lg:items-center">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="shrink-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-lg font-semibold">{analytics.pollTitle}</h1>
+              {isConnected && poll.status === "active" && (
+                <span className="flex items-center gap-1 rounded-none border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
+                  <Radio className="h-2.5 w-2.5 animate-pulse" /> Live
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Expires {formatDatetime(analytics.expiresAt)}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Expires {formatDatetime(analytics.expiresAt)}
-          </p>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
-            <Copy className="h-3.5 w-3.5" /> Copy Link
+        <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+          <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 gap-1.5 sm:flex-none">
+            <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleCopy} className="flex-1 gap-1.5 sm:flex-none">
+            <Copy className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Copy Link</span><span className="sm:hidden">Copy</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
+            className="flex-none"
             onClick={() => window.open(`/p/${poll.shareToken}`, "_blank")}
           >
             <ExternalLink className="h-3.5 w-3.5" />
@@ -112,9 +137,9 @@ export function AnalyticsPage() {
               size="sm"
               onClick={() => close.mutate()}
               disabled={close.isPending}
-              className="gap-1.5"
+              className="flex-1 gap-1.5 sm:flex-none"
             >
-              <Lock className="h-3.5 w-3.5" /> Close Poll
+              <Lock className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Close Poll</span><span className="sm:hidden">Close</span>
             </Button>
           )}
           {(poll.status === "closed" || poll.status === "active") && (
@@ -122,16 +147,16 @@ export function AnalyticsPage() {
               size="sm"
               onClick={() => publish.mutate()}
               disabled={publish.isPending}
-              className="gap-1.5"
+              className="flex-1 gap-1.5 sm:flex-none"
             >
-              <Unlock className="h-3.5 w-3.5" /> Publish Results
+              <Unlock className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Publish Results</span><span className="sm:hidden">Publish</span>
             </Button>
           )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
         <motion.div
           variants={stagger}
           initial="hidden"
@@ -158,9 +183,11 @@ export function AnalyticsPage() {
           )}
 
           {/* Word cloud */}
-          {analytics.wordCloudData.length > 0 && (
+          {analytics.wordCloudData && analytics.wordCloudData.length > 0 && (
             <motion.div variants={fadeUp}>
-              <WordCloudWidget words={analytics.wordCloudData} />
+              <ErrorBoundary>
+                <WordCloudWidget words={analytics.wordCloudData} />
+              </ErrorBoundary>
             </motion.div>
           )}
         </motion.div>

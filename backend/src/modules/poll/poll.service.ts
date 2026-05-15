@@ -116,7 +116,7 @@ export async function getPublicPoll(shareToken: string) {
     const poll = await Poll.findOne({ 
         shareToken, 
         isDeleted: false,
-    }).select("-creatorId");
+    });
 
     if (!poll) {
         throw new ApiError(404, "Poll not found");
@@ -134,9 +134,12 @@ export async function getPublicPoll(shareToken: string) {
         throw new ApiError(404, "Poll not found");
     }
 
-    // Active polls: return the poll structure for voting (hide vote counts)
-    if (poll.status === "active") {
-        const sanitized = poll.toObject();
+    // Convert to plain object and remove sensitive fields
+    const sanitized = poll.toObject() as any;
+    delete sanitized.creatorId;
+
+    // Active or Closed polls: return the poll structure for voting (hide vote counts)
+    if (sanitized.status === "active" || sanitized.status === "closed") {
         for (const question of sanitized.questions) {
             if (question.options) {
                 for (const option of question.options) {
@@ -149,22 +152,11 @@ export async function getPublicPoll(shareToken: string) {
     }
 
     // Published polls: return full results with vote counts
-    if (poll.status === "published") {
-        return poll;
+    if (sanitized.status === "published") {
+        return sanitized;
     }
 
-    // Closed polls: poll is done but results not yet published
-    // We return it sanitized so the frontend can display the 'Closed' UI state
-    const sanitizedClosed = poll.toObject();
-    for (const question of sanitizedClosed.questions) {
-        if (question.options) {
-            for (const option of question.options) {
-                delete (option as any).voteCount;
-            }
-        }
-    }
-    delete (sanitizedClosed as any).totalResponses;
-    return sanitizedClosed;
+    return sanitized;
 }
 
 /**

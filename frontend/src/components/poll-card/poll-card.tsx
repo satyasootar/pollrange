@@ -71,10 +71,11 @@ export function PollCard({ poll }: PollCardProps) {
 
   return (
     <motion.div
-      className="group flex flex-col border border-border bg-card"
+      className="group flex flex-col border border-border bg-card cursor-pointer shadow-none hover:border-primary/50"
       initial="rest"
       whileHover="hover"
       variants={cardHover}
+      onClick={() => navigate(`/polls/${poll._id}/analytics`)}
     >
       {/* Header */}
       <div className="flex items-start justify-between p-5 pb-3">
@@ -88,65 +89,66 @@ export function PollCard({ poll }: PollCardProps) {
             {statusCfg.label}
           </span>
           <h3
-            className="mt-2 line-clamp-2 cursor-pointer text-base font-semibold leading-snug transition-colors hover:text-primary"
-            onClick={() => navigate(`/polls/${poll._id}/analytics`)}
+            className="mt-2 line-clamp-2 text-base font-semibold leading-snug transition-colors group-hover:text-primary"
           >
             {poll.title}
           </h3>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate(`/polls/${poll._id}/analytics`)}>
-              <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleCopyLink}>
-              <Copy className="mr-2 h-4 w-4" /> Copy Share Link
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => window.open(`/p/${poll.shareToken}`, "_blank")}
-            >
-              <ExternalLink className="mr-2 h-4 w-4" /> Open Poll
-            </DropdownMenuItem>
-            
-            {poll.status === "published" && (
-              <>
-                <DropdownMenuItem onClick={async () => {
-                  await copyToClipboard(`${shareUrl}/results`);
-                  toast.success("Results link copied!");
-                }}>
-                  <Copy className="mr-2 h-4 w-4" /> Copy Results Link
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => window.open(`/p/${poll.shareToken}/results`, "_blank")}
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" /> Open Results
-                </DropdownMenuItem>
-              </>
-            )}
-            {poll.status === "draft" && (
-              <DropdownMenuItem onClick={() => navigate(`/polls/${poll._id}/edit`)}>
-                <Pencil className="mr-2 h-4 w-4" /> Edit
+        <div onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate(`/polls/${poll._id}/analytics`)}>
+                <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
               </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleDelete}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem onClick={handleCopyLink}>
+                <Copy className="mr-2 h-4 w-4" /> Copy Share Link
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => window.open(`/p/${poll.shareToken}`, "_blank")}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" /> Open Poll
+              </DropdownMenuItem>
+              
+              {poll.status === "published" && (
+                <>
+                  <DropdownMenuItem onClick={async () => {
+                    await copyToClipboard(`${shareUrl}/results`);
+                    toast.success("Results link copied!");
+                  }}>
+                    <Copy className="mr-2 h-4 w-4" /> Copy Results Link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => window.open(`/p/${poll.shareToken}/results`, "_blank")}
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" /> Open Results
+                  </DropdownMenuItem>
+                </>
+              )}
+              {poll.status === "draft" && (
+                <DropdownMenuItem onClick={() => navigate(`/polls/${poll._id}/edit`)}>
+                  <Pencil className="mr-2 h-4 w-4" /> Edit
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleDelete}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Stats */}
@@ -166,7 +168,7 @@ export function PollCard({ poll }: PollCardProps) {
             ? `Expires ${timeUntilExpiry(poll.expiresAt)}`
             : `Created ${formatDate(poll.createdAt)}`}
         </span>
-        <div className="flex gap-1">
+        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
           <Button
             size="sm"
             variant="ghost"

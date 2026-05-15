@@ -36,15 +36,8 @@ export function DashboardPage() {
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = usePolls({ status, search: search || undefined, page, limit: 12 });
-  const { polls, setPolls } = useDashboardStore();
-  
+  const polls = data?.polls || [];
   const pagination = data?.pagination;
-
-  useEffect(() => {
-    if (data?.polls) {
-      setPolls(data.polls);
-    }
-  }, [data?.polls, setPolls]);
 
   const stats = [
     {
@@ -76,7 +69,7 @@ export function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center justify-between border-b border-border px-8 py-4">
+      <div className="flex flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-8">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
             Welcome back, {user?.name?.split(" ")[0]}
@@ -87,17 +80,17 @@ export function DashboardPage() {
         </div>
         <Button
           onClick={() => navigate("/polls/create")}
-          className="gap-2"
+          className="w-full gap-2 sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Create Poll
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
         {/* Stats row */}
         <motion.div
-          className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4"
+          className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
           variants={stagger}
           initial="hidden"
           animate="visible"
@@ -106,15 +99,15 @@ export function DashboardPage() {
             <motion.div
               key={stat.label}
               variants={fadeUp}
-              className="border border-border bg-card p-5"
+              className="border border-border bg-card p-4 shadow-none sm:p-5"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:text-xs">
                   {stat.label}
                 </span>
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </div>
-              <p className="mt-2 text-3xl font-bold tabular-nums">
+              <p className="mt-1 text-2xl font-bold tabular-nums sm:mt-2 sm:text-3xl">
                 {stat.value}
               </p>
             </motion.div>
@@ -122,8 +115,8 @@ export function DashboardPage() {
         </motion.div>
 
         {/* Filters */}
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search polls…"
@@ -135,7 +128,7 @@ export function DashboardPage() {
               }}
             />
           </div>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1 pb-1 scrollbar-none sm:pb-0">
             {STATUS_TABS.map((tab) => (
               <button
                 key={tab.value}
@@ -143,7 +136,7 @@ export function DashboardPage() {
                   setStatus(tab.value);
                   setPage(1);
                 }}
-                className={`rounded-none border px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`whitespace-nowrap rounded-none border px-3 py-1.5 text-[10px] font-medium transition-colors sm:text-xs ${
                   status === tab.value
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground"
@@ -163,7 +156,10 @@ export function DashboardPage() {
             ))}
           </div>
         ) : polls.length === 0 ? (
-          <EmptyState onCreate={() => navigate("/polls/create")} />
+          <EmptyState 
+            isFiltered={status !== "all" || search !== ""} 
+            onCreate={() => navigate("/polls/create")} 
+          />
         ) : (
           <motion.div
             className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
@@ -208,7 +204,13 @@ export function DashboardPage() {
   );
 }
 
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+function EmptyState({ 
+  isFiltered, 
+  onCreate 
+}: { 
+  isFiltered: boolean; 
+  onCreate: () => void; 
+}) {
   return (
     <motion.div
       className="flex flex-col items-center justify-center py-24 text-center"
@@ -217,15 +219,23 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       animate="visible"
     >
       <div className="mb-4 flex h-16 w-16 items-center justify-center border border-dashed border-border">
-        <BarChart3 className="h-7 w-7 text-muted-foreground" />
+        {isFiltered ? (
+          <Filter className="h-7 w-7 text-muted-foreground" />
+        ) : (
+          <BarChart3 className="h-7 w-7 text-muted-foreground" />
+        )}
       </div>
-      <h3 className="mb-2 text-lg font-semibold">No polls yet</h3>
+      <h3 className="mb-2 text-lg font-semibold">
+        {isFiltered ? "No matches found" : "No polls yet"}
+      </h3>
       <p className="mb-6 max-w-sm text-sm text-muted-foreground">
-        Create your first poll to start collecting responses and insights.
+        {isFiltered 
+          ? "Try adjusting your search or filters to find what you're looking for." 
+          : "Create your first poll to start collecting responses and insights."}
       </p>
       <Button onClick={onCreate} className="gap-2">
         <Plus className="h-4 w-4" />
-        Create your first poll
+        {isFiltered ? "Create New Poll" : "Create your first poll"}
       </Button>
     </motion.div>
   );

@@ -87,6 +87,7 @@ export interface Poll {
 export interface PublicPollQuestion {
   questionId: string;
   text: string;
+  type: "single_choice" | "open_ended";
   isMandatory: boolean;
   order: number;
   options: { optionId: string; text: string; order: number }[];
@@ -113,11 +114,14 @@ export interface PublicPoll {
 export interface AnswerPayload {
   questionId: string;
   selectedOptionId: string | null;
+  textResponse?: string | null;
+  skipped: boolean;
 }
 
 export interface SubmitResponsePayload {
   sessionToken: string;
   answers: AnswerPayload[];
+  isComplete: boolean;
 }
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
@@ -131,6 +135,7 @@ export interface OptionStat {
 export interface QuestionStat {
   questionId: string;
   questionText: string;
+  type: "single_choice" | "open_ended";
   isMandatory: boolean;
   responseCount: number;
   skippedCount: number;

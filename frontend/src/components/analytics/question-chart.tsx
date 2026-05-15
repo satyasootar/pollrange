@@ -7,6 +7,7 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
+import { TrendingUp } from "lucide-react";
 import type { QuestionStat } from "@/types";
 
 interface QuestionChartProps {
@@ -46,7 +47,17 @@ export function QuestionChart({ question }: QuestionChartProps) {
         )}
       </div>
 
-      {data.length > 0 ? (
+      {question.type === "open_ended" ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-border">
+          <TrendingUp className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">
+            This is an open-ended question.
+          </p>
+          <p className="text-xs text-muted-foreground/60">
+            Check the Word Cloud below for sentiment and keyword trends.
+          </p>
+        </div>
+      ) : data.length > 0 ? (
         <ResponsiveContainer width="100%" height={180}>
           <BarChart
             data={data}
@@ -57,8 +68,8 @@ export function QuestionChart({ question }: QuestionChartProps) {
             <YAxis
               type="category"
               dataKey="name"
-              width={150}
-              tick={{ fontSize: 12 }}
+              width={100}
+              tick={{ fontSize: 10 }}
               tickLine={false}
               axisLine={false}
             />

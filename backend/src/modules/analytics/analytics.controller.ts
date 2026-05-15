@@ -30,6 +30,13 @@ export async function getFullAnalytics(req: Request, res: Response) {
     const snapshot = await AnalyticsService.getPollAnalyticsSnapshot(pollId as string);
     const poll = await Poll.findById(pollId);
 
+    // Find first open-ended question for global word cloud
+    const openEndedQuestion = poll?.questions.find(q => q.type === "open_ended") as any;
+    let wordCloudData: any[] = [];
+    if (openEndedQuestion) {
+        wordCloudData = await AnalyticsService.getWordCloudData(pollId as string, openEndedQuestion._id.toString());
+    }
+
     const mappedData = {
         pollId: snapshot.pollId,
         pollTitle: snapshot.title,
@@ -39,31 +46,35 @@ export async function getFullAnalytics(req: Request, res: Response) {
         completionRate: snapshot.completionRate,
         anonymousCount: 0, 
         authenticatedCount: snapshot.totalResponses,
-        questions: snapshot.questionSummaries.map((q: any) => ({
-            questionId: q.questionId,
-            questionText: q.text,
-            isMandatory: true,
-            responseCount: snapshot.totalResponses,
-            skippedCount: 0,
-            options: q.options ? q.options.map((opt: any) => ({
-                optionId: opt.text,
-                optionText: opt.text,
-                count: opt.voteCount,
-                percentage: opt.percentage
-            })) : [],
-            topOption: q.options && q.options.length > 0 
-                ? [...q.options].sort((a, b) => b.voteCount - a.voteCount).map((opt: any) => ({
+        questions: snapshot.questionSummaries.map((q: any) => {
+            const pollQ = poll?.questions.find((pq: any) => pq._id.toString() === q.questionId.toString()) as any;
+            return {
+                questionId: q.questionId,
+                questionText: q.text,
+                type: q.type,
+                isMandatory: pollQ?.isMandatory ?? true,
+                responseCount: snapshot.totalResponses,
+                skippedCount: 0,
+                options: q.options ? q.options.map((opt: any) => ({
                     optionId: opt.text,
                     optionText: opt.text,
-                    count: opt.voteCount
-                }))[0]
-                : null
-        })),
+                    count: opt.voteCount,
+                    percentage: opt.percentage
+                })) : [],
+                topOption: q.options && q.options.length > 0 
+                    ? [...q.options].sort((a: any, b: any) => b.voteCount - a.voteCount).map((opt: any) => ({
+                        optionId: opt.text,
+                        optionText: opt.text,
+                        count: opt.count
+                    }))[0]
+                    : null
+            };
+        }),
         timeline: snapshot.timeline.map((t: any) => ({
             date: t._id,
             count: t.count
         })),
-        wordCloudData: []
+        wordCloudData
     };
 
     return res.status(200).json(

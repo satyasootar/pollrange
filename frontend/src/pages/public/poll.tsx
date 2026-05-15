@@ -17,6 +17,32 @@ export function PublicPollPage() {
   const [answers, setAnswers] = useState<Record<string, string | null>>({});
   const [submitted, setSubmitted] = useState(false);
 
+  const questions = useMemo(() => {
+    if (!poll?.questions) return [];
+    
+    // First, map the questions to ensure we have consistent IDs and randomized options if needed
+    let processedQuestions = poll.questions.map(q => {
+      const qId = q.questionId || (q as any)._id;
+      let opts = q.options.map(opt => ({
+        ...opt,
+        optionId: opt.optionId || (opt as any)._id
+      }));
+
+      if (poll.settings.randomizeOptions) {
+        opts = [...opts].sort(() => Math.random() - 0.5);
+      }
+
+      return { ...q, questionId: qId, options: opts };
+    });
+
+    // Then, randomize the questions themselves if needed
+    if (poll.settings.randomizeQuestions) {
+      processedQuestions = [...processedQuestions].sort(() => Math.random() - 0.5);
+    }
+
+    return processedQuestions;
+  }, [poll]);
+
   // Redirect if published
   useEffect(() => {
     if (poll?.status === "published") {
@@ -54,32 +80,6 @@ export function PublicPollPage() {
     );
   }
 
-  const questions = useMemo(() => {
-    if (!poll?.questions) return [];
-    
-    // First, map the questions to ensure we have consistent IDs and randomized options if needed
-    let processedQuestions = poll.questions.map(q => {
-      const qId = q.questionId || (q as any)._id;
-      let opts = q.options.map(opt => ({
-        ...opt,
-        optionId: opt.optionId || (opt as any)._id
-      }));
-
-      if (poll.settings.randomizeOptions) {
-        opts = [...opts].sort(() => Math.random() - 0.5);
-      }
-
-      return { ...q, questionId: qId, options: opts };
-    });
-
-    // Then, randomize the questions themselves if needed
-    if (poll.settings.randomizeQuestions) {
-      processedQuestions = [...processedQuestions].sort(() => Math.random() - 0.5);
-    }
-
-    return processedQuestions;
-  }, [poll]);
-
   const answeredMandatory = questions
     .filter((q) => q.isMandatory)
     .every((q) => answers[q.questionId] !== undefined);
@@ -89,11 +89,17 @@ export function PublicPollPage() {
   };
 
   const handleSubmit = () => {
-    const pollId = poll?.pollId || (poll as any)?._id;
-    const payload: AnswerPayload[] = questions.map((q) => ({
-      questionId: q.questionId,
-      selectedOptionId: answers[q.questionId] ?? null,
-    }));
+    const payload: AnswerPayload[] = questions.map((q) => {
+      const isChoice = q.type === "single_choice";
+      const answer = answers[q.questionId];
+      
+      return {
+        questionId: q.questionId,
+        selectedOptionId: isChoice ? (answer as string) : null,
+        textResponse: !isChoice ? (answer as string) : null,
+        skipped: !answer,
+      };
+    });
 
     submitResponse.mutate(payload, {
       onSuccess: () => setSubmitted(true),
@@ -256,14 +262,33 @@ function ThankYouState({
 
 function PollClosedState() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="border border-border bg-card p-10 text-center max-w-sm w-full">
-        <Lock className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-        <h2 className="mb-2 text-xl font-bold">Poll Expired</h2>
-        <p className="text-sm text-muted-foreground">
-          This poll is no longer accepting responses. The creator has not yet published the results.
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full border border-border bg-card p-10 text-center shadow-sm"
+      >
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 text-amber-600">
+          <Clock className="h-8 w-8" />
+        </div>
+        <h2 className="mb-3 text-2xl font-bold tracking-tight">This poll has ended</h2>
+        <p className="mb-8 text-muted-foreground leading-relaxed">
+          The creator has closed this poll or the deadline has passed.
+          Results will be available once the creator publishes them.
         </p>
-      </div>
+        <div className="flex flex-col gap-3">
+          <Button
+            variant="outline"
+            className="w-full font-medium"
+            onClick={() => (window.location.href = "/")}
+          >
+            Create Your Own Poll
+          </Button>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+            PollRange Public Gateway
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }

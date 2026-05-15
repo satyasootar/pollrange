@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import * as PollService from "./poll.service.js";
+import * as AnalyticsService from "../analytics/analytics.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 
 /**
@@ -85,6 +86,13 @@ export async function getPublicResults(req: Request, res: Response) {
     // We also need the poll for status and expiresAt, but it's already fetched by getPublicResults inside the service.
     // However, to keep it simple, we can fetch it again or just map it.
     const poll = await PollService.getPublicPoll(shareToken as string);
+
+    // Find first open-ended question for global word cloud
+    const openEndedQuestion = poll?.questions.find((q: any) => q.type === "open_ended") as any;
+    let wordCloudData: any[] = [];
+    if (openEndedQuestion) {
+        wordCloudData = await AnalyticsService.getWordCloudData(poll._id.toString(), openEndedQuestion._id.toString());
+    }
     
     const mappedData = {
         pollId: snapshot.pollId,
@@ -98,6 +106,7 @@ export async function getPublicResults(req: Request, res: Response) {
         questions: snapshot.questionSummaries.map((q: any) => ({
             questionId: q.questionId,
             questionText: q.text,
+            type: q.type,
             isMandatory: true,
             responseCount: snapshot.totalResponses,
             skippedCount: 0,
@@ -119,7 +128,7 @@ export async function getPublicResults(req: Request, res: Response) {
             date: t._id,
             count: t.count
         })),
-        wordCloudData: []
+        wordCloudData
     };
 
     return res.status(200).json(new ApiResponse(200, mappedData, "Public results fetched successfully"));

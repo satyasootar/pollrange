@@ -27,7 +27,11 @@ export function useSubmitResponse(pollId: string) {
   return useMutation({
     mutationFn: (answers: AnswerPayload[]) => {
       const sessionToken = getOrCreateSessionToken(pollId);
-      return publicApi.submitResponse(pollId, { sessionToken, answers });
+      return publicApi.submitResponse(pollId, { 
+        sessionToken, 
+        answers,
+        isComplete: true 
+      });
     },
     onError: (err) => toast.error(getApiErrorMessage(err)),
   });

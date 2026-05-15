@@ -67,10 +67,9 @@ export const pageTransition: Variants = {
 
 // ─── Card / Item Hover ────────────────────────────────────────────────────────
 export const cardHover = {
-  rest: { y: 0, boxShadow: "2px 2px 10px 4px hsl(240 4% 60% / 0.09)" },
+  rest: { y: 0 },
   hover: {
     y: -3,
-    boxShadow: "4px 8px 24px 4px hsl(240 4% 60% / 0.2)",
     transition: { duration: 0.25, ease: "easeOut" },
   },
 };

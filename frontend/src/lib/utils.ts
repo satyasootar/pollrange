@@ -56,17 +56,28 @@ export function copyToClipboard(text: string): Promise<void> {
 /** Normalize API error to a display message */
 export function getApiErrorMessage(error: unknown): string {
   if (!error) return "An unexpected error occurred.";
+  
   const axiosError = error as {
-    response?: { status?: number; data?: { error?: { message?: string; errors?: { message: string }[] } } };
+    response?: { 
+      status?: number; 
+      data?: { 
+        message?: string; 
+        error?: { message?: string };
+        errors?: { message: string }[] 
+      } 
+    };
   };
-  const status = axiosError?.response?.status;
-  const serverMsg = axiosError?.response?.data?.error?.message;
-  const fieldError = axiosError?.response?.data?.error?.errors?.[0]?.message;
 
+  const status = axiosError?.response?.status;
+  const data = axiosError?.response?.data;
+  
+  // Extract server message (check both data.message and data.error.message)
+  const serverMsg = data?.message || data?.error?.message;
+  
+  if (status === 401) return "Please log in to continue.";
+  if (status === 403) return serverMsg || "You don't have permission to do that.";
   if (status === 404) return "Resource not found.";
-  if (status === 403) return "You don't have permission to do that.";
-  if (status === 409) return serverMsg || "This action conflicts with existing data.";
   if (status === 410) return "This poll has expired.";
-  if (status === 422) return fieldError || serverMsg || "Validation failed.";
+  
   return serverMsg || "Something went wrong. Please try again.";
 }

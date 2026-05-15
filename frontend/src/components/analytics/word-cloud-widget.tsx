@@ -1,45 +1,59 @@
-import ReactWordcloud from "react-wordcloud";
+import { useMemo } from "react";
+import { motion } from "framer-motion";
 import type { WordCloudItem } from "@/types";
 
-const options = {
-  rotations: 2,
-  rotationAngles: [-90, 0] as [number, number],
-  fontSizes: [14, 56] as [number, number],
-  fontFamily: "Plus Jakarta Sans, sans-serif",
-  padding: 3,
-  spiral: "archimedean" as const,
-  scale: "sqrt" as const,
-  transitionDuration: 500,
-  enableOptimizations: true,
-};
+export function WordCloudWidget({ words }: { words: WordCloudItem[] }) {
+  const sanitizedWords = useMemo(() => {
+    const validWords = (words || [])
+      .filter((w) => w && typeof w.text === "string" && w.text.trim().length > 0)
+      .map((w) => ({
+        text: w.text,
+        value: Number(w.value) || 0,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 40); // Keep top 40 words for performance and layout
 
-const callbacks = {
-  getWordColor: (word: { value: number }) => {
-    if (word.value > 20) return "#6366f1";
-    if (word.value > 10) return "#818cf8";
-    if (word.value > 5) return "#a5b4fc";
-    return "#c7d2fe";
-  },
-  getWordTooltip: (word: { text: string; value: number }) =>
-    `"${word.text}" — ${word.value} votes`,
-};
+    if (validWords.length === 0) return [];
 
-interface WordCloudWidgetProps {
-  words: WordCloudItem[];
-}
+    const max = validWords[0].value;
+    const min = validWords[validWords.length - 1].value;
 
-export function WordCloudWidget({ words }: WordCloudWidgetProps) {
-  if (!words.length) return null;
+    return validWords.map((w) => {
+      // Calculate relative size (0 to 1)
+      const weight = max === min ? 0.5 : (w.value - min) / (max - min);
+      return {
+        ...w,
+        fontSize: 0.75 + weight * 1.5, // 0.75rem to 2.25rem
+        opacity: 0.4 + weight * 0.6, // 0.4 to 1.0
+      };
+    });
+  }, [words]);
+
+  if (sanitizedWords.length === 0) return null;
 
   return (
     <div className="border border-border bg-card p-6">
-      <h3 className="mb-4 text-sm font-semibold">Word Cloud — Response Trends</h3>
-      <div className="h-64 w-full">
-        <ReactWordcloud
-          words={words}
-          options={options}
-          callbacks={callbacks}
-        />
+      <h3 className="mb-6 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        Response Trends
+      </h3>
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 min-h-[160px] p-4">
+        {sanitizedWords.map((word, i) => (
+          <motion.span
+            key={word.text}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: word.opacity, scale: 1 }}
+            transition={{ delay: i * 0.02 }}
+            className="inline-block cursor-default transition-colors hover:text-primary"
+            style={{
+              fontSize: `${word.fontSize}rem`,
+              fontWeight: word.fontSize > 1.5 ? "700" : "500",
+              color: word.fontSize > 1.8 ? "var(--primary)" : "inherit",
+            }}
+            title={`${word.value} responses`}
+          >
+            {word.text}
+          </motion.span>
+        ))}
       </div>
     </div>
   );
