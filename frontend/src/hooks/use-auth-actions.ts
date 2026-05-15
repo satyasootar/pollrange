@@ -16,7 +16,7 @@ export function useRequestVerification() {
 
 export function useVerifyEmail() {
   return useMutation({
-    mutationFn: (token: string) => authApi.verifyEmail(token),
+    mutationFn: (token: string) => authApi.verifyEmail({ token }),
     onSuccess: () => {
       toast.success("Email verified successfully!");
     },

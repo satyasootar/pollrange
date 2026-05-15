@@ -21,15 +21,7 @@ export function ProtectedRoute() {
     // This is handled via onSuccess in the query below separately
   }, []);
 
-  // Use a second query just to sync user into store
-  useQuery({
-    queryKey: ["me"],
-    queryFn: () => authApi.me(),
-    enabled: !user,
-    select: (res) => res.data.data,
-    retry: false,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any);
+  // Simplified: user is synced via the main query below
 
   // Simpler approach: watch query data
   const meQuery = useQuery({

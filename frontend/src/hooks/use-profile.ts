@@ -6,16 +6,13 @@ import { useAuthStore } from "@/store/use-auth-store";
 
 export function useUpdateProfile() {
   const qc = useQueryClient();
-  const setAuth = useAuthStore((s) => s.setAuth);
-  const { accessToken, refreshToken } = useAuthStore();
+  const { setUser } = useAuthStore();
 
   return useMutation({
     mutationFn: (data: { name?: string; avatarUrl?: string }) => authApi.updateProfile(data),
     onSuccess: (res) => {
       const user = res.data.data;
-      if (accessToken && refreshToken) {
-          setAuth(user, accessToken, refreshToken);
-      }
+      setUser(user);
       qc.invalidateQueries({ queryKey: ["auth", "me"] });
       toast.success("Profile updated successfully!");
     },

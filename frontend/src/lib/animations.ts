@@ -66,11 +66,11 @@ export const pageTransition: Variants = {
 };
 
 // ─── Card / Item Hover ────────────────────────────────────────────────────────
-export const cardHover = {
+export const cardHover: Variants = {
   rest: { y: 0 },
   hover: {
     y: -3,
-    transition: { duration: 0.25, ease: "easeOut" },
+    transition: { duration: 0.25, ease: "easeOut" } as any,
   },
 };
 

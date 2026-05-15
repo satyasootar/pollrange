@@ -22,7 +22,7 @@ export function StepReview() {
 
     createPoll.mutate(sanitizedForm, {
       onSuccess: (res) => {
-        const poll = res.data.data;
+        const { poll } = res.data.data;
         setSuccessData({ pollId: poll._id, shareToken: poll.shareToken });
         nextStep();
       },
