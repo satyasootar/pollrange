@@ -3,6 +3,7 @@ import { Poll } from "../poll/poll.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { emitAnalyticsUpdate } from "../../socket/index.js";
 import mongoose from "mongoose";
+import config from "../../config/config.js";
 
 /**
  * Processes a poll response submission.
@@ -28,19 +29,26 @@ export async function submitResponse(
         throw new ApiError(410, "This poll has expired");
     }
 
-    // Prevent duplicate submissions from the same identity
-    const dupFilters: any[] = [];
-    if (meta.respondentId) {
-        dupFilters.push({ pollId, respondentId: meta.respondentId });
-    }
-    if (meta.ipHash && responseData.sessionToken) {
-        dupFilters.push({ pollId, ipHash: meta.ipHash, sessionToken: responseData.sessionToken });
+    // Enforce authentication if required by poll settings
+    if (poll.responseMode === "authenticated" && !meta.respondentId) {
+        throw new ApiError(401, "Authentication is required to vote on this poll");
     }
 
-    if (dupFilters.length > 0) {
-        const existing = await ResponseModel.findOne({ $or: dupFilters });
-        if (existing) {
-            throw new ApiError(403, "You have already submitted a response to this poll");
+    // Prevent duplicate submissions from the same identity (Enforce only in production)
+    if (config.ENVIRONMENT === "production") {
+        const dupFilters: any[] = [];
+        if (meta.respondentId) {
+            dupFilters.push({ pollId, respondentId: meta.respondentId });
+        }
+        if (meta.ipHash && responseData.sessionToken) {
+            dupFilters.push({ pollId, ipHash: meta.ipHash, sessionToken: responseData.sessionToken });
+        }
+
+        if (dupFilters.length > 0) {
+            const existing = await ResponseModel.findOne({ $or: dupFilters });
+            if (existing) {
+                throw new ApiError(403, "You have already submitted a response to this poll");
+            }
         }
     }
 

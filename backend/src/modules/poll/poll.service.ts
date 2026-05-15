@@ -163,7 +163,6 @@ export async function getPublicPoll(shareToken: string, context: { sessionToken?
                 }
             }
         }
-        delete (sanitized as any).totalResponses;
         return sanitized;
     }
 

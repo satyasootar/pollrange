@@ -23,7 +23,14 @@ authRouter.post("/forgot-password", AuthController.forgotPassword);
 authRouter.post("/reset-password", AuthController.resetPassword);
 
 // Google OAuth Routes
-authRouter.get("/google", passport.authenticate("google", { scope: ["profile", "email"], session: false }));
+authRouter.get("/google", (req, res, next) => {
+    const state = req.query.state as string;
+    passport.authenticate("google", { 
+        scope: ["profile", "email"], 
+        session: false,
+        state: state
+    })(req, res, next);
+});
 
 authRouter.get(
     "/google/callback",

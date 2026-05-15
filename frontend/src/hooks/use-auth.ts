@@ -30,7 +30,8 @@ export function useRegister() {
     mutationFn: authApi.register,
     onSuccess: (res) => {
       setUser(res.data.data.user);
-      navigate("/dashboard", { replace: true });
+      const params = new URLSearchParams(window.location.search);
+      navigate(params.get("redirect") || "/dashboard", { replace: true });
     },
     onError: (err) => toast.error(getApiErrorMessage(err)),
   });

@@ -18,8 +18,12 @@ export function initializeSocket(server: HttpServer) {
   });
 
   io.on("connection", (socket) => {
-    socket.on("join-poll", (pollId: string) => {
+    socket.on("join-poll-room", ({ pollId }: { pollId: string }) => {
       socket.join(`poll_${pollId}`);
+    });
+
+    socket.on("leave-poll-room", ({ pollId }: { pollId: string }) => {
+      socket.leave(`poll_${pollId}`);
     });
   });
 

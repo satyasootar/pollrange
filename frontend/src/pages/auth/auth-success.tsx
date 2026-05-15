@@ -20,7 +20,9 @@ export function AuthSuccessPage() {
           // we just need to fetch the user profile to populate the store.
           const response = await api.get<ApiResponse<User>>("/auth/me");
           setUser(response.data.data);
-          navigate("/dashboard", { replace: true });
+          
+          const redirect = searchParams.get("state");
+          navigate(redirect || "/dashboard", { replace: true });
         } catch (error) {
           console.error("Failed to sync auth state:", error);
           navigate("/auth/login", { replace: true });

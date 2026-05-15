@@ -142,9 +142,15 @@ export async function googleAuthCallback(req: Request, res: Response) {
 
     const { accessToken, refreshToken } = await AuthService.generateAccessAndRefreshTokens(user._id.toString());
     const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const state = req.query.state as string;
+
+    const redirectUrl = new URL(`${frontendUrl}/auth-success`);
+    redirectUrl.searchParams.set("accessToken", accessToken);
+    redirectUrl.searchParams.set("refreshToken", refreshToken);
+    if (state) redirectUrl.searchParams.set("state", state);
 
     return res
         .cookie("accessToken", accessToken, cookieOptions)
         .cookie("refreshToken", refreshToken, cookieOptions)
-        .redirect(`${frontendUrl}/auth-success?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+        .redirect(redirectUrl.toString());
 }

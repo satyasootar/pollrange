@@ -98,7 +98,11 @@ export function LoginPage() {
             variant="outline"
             className="w-full"
             onClick={() => {
-              window.location.href = `${config.apiUrl}/auth/google`;
+              const params = new URLSearchParams(window.location.search);
+              const redirect = params.get("redirect");
+              const googleUrl = new URL(`${config.apiUrl}/auth/google`);
+              if (redirect) googleUrl.searchParams.set("state", redirect);
+              window.location.href = googleUrl.toString();
             }}
           >
             <svg
