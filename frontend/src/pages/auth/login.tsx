@@ -100,7 +100,7 @@ export function LoginPage() {
             onClick={() => {
               const params = new URLSearchParams(window.location.search);
               const redirect = params.get("redirect");
-              const googleUrl = new URL(`${config.apiUrl}/auth/google`);
+              const googleUrl = new URL(`${config.apiUrl}/auth/google`, window.location.origin);
               if (redirect) googleUrl.searchParams.set("state", redirect);
               window.location.href = googleUrl.toString();
             }}
