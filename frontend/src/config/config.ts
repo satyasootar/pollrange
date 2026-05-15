@@ -1,7 +1,7 @@
 const baseUrl = import.meta.env.VITE_ENV === "production"
   ? {
-    apiUrl: "/api",
-    socketUrl: "/",
+    apiUrl: import.meta.env.VITE_API_URL || "/api",
+    socketUrl: import.meta.env.VITE_SOCKET_URL || "/",
     appUrl: window.location.origin,
   }
   : {
