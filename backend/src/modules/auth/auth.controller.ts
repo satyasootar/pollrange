@@ -141,7 +141,7 @@ export async function googleAuthCallback(req: Request, res: Response) {
     }
 
     const { accessToken, refreshToken } = await AuthService.generateAccessAndRefreshTokens(user._id.toString());
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
     return res
         .cookie("accessToken", accessToken, cookieOptions)

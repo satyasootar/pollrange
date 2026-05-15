@@ -8,7 +8,7 @@ import { CTA } from "@/components/landing/cta";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen font-sans bg-background selection:bg-primary/20">
+    <div className="min-h-screen font-sans bg-background selection:bg-primary/20 blueprint-lines">
       <Navbar />
       <main>
         <Hero />

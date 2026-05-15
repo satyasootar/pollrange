@@ -230,15 +230,15 @@
 }
 
 /* ==========================================================================
-   GLOBAL BLUEPRINT MARGIN LINES
-   Two vertical dashed lines run the full height of every page,
+   BLUEPRINT MARGIN LINES
+   Two vertical dashed lines run the full height of the container,
    aligned to the edges of the 1400px content container (px-6 padding).
    Uses position:absolute so they move with the content.
    Uses repeating-linear-gradient — no CSS variable dependency.
    ========================================================================== */
 
-body::before,
-body::after {
+.blueprint-lines::before,
+.blueprint-lines::after {
     content: '';
     position: absolute;
     top: 0;
@@ -255,7 +255,7 @@ body::after {
     );
 }
 
-body::before {
+.blueprint-lines::before {
     /* 
        Margin lines are positioned at the 24px (px-6) mark.
        Main content containers use px-12 (48px) to provide 24px of breathing 
@@ -264,14 +264,14 @@ body::before {
     left: max(24px, calc(50% - 700px + 24px));
 }
 
-body::after {
+.blueprint-lines::after {
     /* Right edge of content: center + 700px - 24px */
     left: min(calc(100% - 24px), calc(50% + 700px - 24px));
 }
 
 /* Dark mode overrides using attribute selector for reliability */
-html.dark body::before,
-html.dark body::after {
+html.dark .blueprint-lines::before,
+html.dark .blueprint-lines::after {
     background-image: repeating-linear-gradient(
         to bottom,
         rgba(226, 232, 240, 0.18) 0px,

@@ -2,6 +2,7 @@ import { Poll } from "./poll.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import crypto from "crypto";
 import type { IPoll } from "./poll.validation.js";
+import * as AnalyticsService from "../analytics/analytics.service.js";
 
 /**
  * Creates a new poll for a user and assigns a unique share token.
@@ -31,14 +32,29 @@ export async function getPollByCreator(userId: string, pollId: string) {
 /**
  * Lists all non-deleted polls created by a specific user with pagination.
  */
-export async function listPollsByCreator(userId: string, page = 1, limit = 10) {
+export async function listPollsByCreator(userId: string, filters: { status?: string, search?: string, page?: number, limit?: number }) {
+    const { status, search, page = 1, limit = 10 } = filters;
     const skip = (page - 1) * limit;
-    const polls = await Poll.find({ creatorId: userId, isDeleted: false })
+    
+    const query: any = { creatorId: userId, isDeleted: false };
+    
+    if (status && status !== "all") {
+        query.status = status;
+    }
+    
+    if (search) {
+        query.$or = [
+            { title: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } }
+        ];
+    }
+
+    const polls = await Poll.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit);
     
-    const total = await Poll.countDocuments({ creatorId: userId, isDeleted: false });
+    const total = await Poll.countDocuments(query);
     
     return {
         polls,
@@ -47,6 +63,8 @@ export async function listPollsByCreator(userId: string, page = 1, limit = 10) {
             limit,
             total,
             totalPages: Math.ceil(total / limit),
+            hasNext: page * limit < total,
+            hasPrev: page > 1
         }
     };
 }
@@ -136,7 +154,17 @@ export async function getPublicPoll(shareToken: string) {
     }
 
     // Closed polls: poll is done but results not yet published
-    throw new ApiError(410, "This poll has expired and results are not yet published");
+    // We return it sanitized so the frontend can display the 'Closed' UI state
+    const sanitizedClosed = poll.toObject();
+    for (const question of sanitizedClosed.questions) {
+        if (question.options) {
+            for (const option of question.options) {
+                delete (option as any).voteCount;
+            }
+        }
+    }
+    delete (sanitizedClosed as any).totalResponses;
+    return sanitizedClosed;
 }
 
 /**
@@ -166,4 +194,24 @@ export async function publishPollResults(userId: string, pollId: string) {
     await poll.save();
 
     return poll;
+}
+
+/**
+ * Retrieves public analytics snapshot for a published poll using its share token.
+ */
+export async function getPublicResults(shareToken: string) {
+    const poll = await Poll.findOne({ 
+        shareToken, 
+        isDeleted: false,
+    });
+
+    if (!poll) {
+        throw new ApiError(404, "Poll not found");
+    }
+
+    if (poll.status !== "published") {
+        throw new ApiError(403, "Poll results are not public");
+    }
+
+    return await AnalyticsService.getPollAnalyticsSnapshot(poll._id.toString());
 }

@@ -10,8 +10,8 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-sm">
       <div className="max-w-[1400px] mx-auto px-12 h-[72px] flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-foreground text-background flex items-center justify-center">
-            <BarChart3 className="w-4 h-4" />
+          <div className="flex items-center justify-center">
+            <img src="/logo/logo1.png" alt="PollRange Logo" className="h-8 w-auto object-contain" />
           </div>
           <span className="text-xl font-black uppercase tracking-tighter">PollRange</span>
         </div>

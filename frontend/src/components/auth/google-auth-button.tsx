@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { FcGoogle } from "react-icons/fc";
+import { config } from "@/config/config";
 
 export function GoogleAuthButton() {
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || "http://localhost:3030/api"}/auth/google`;
+    window.location.href = `${config.apiUrl}/auth/google`;
   };
 
   return (

@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+.env*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -23,3 +25,7 @@ dist-ssr
 *.sln
 *.sw?
 BACKEND_API_GUIDE.md
+frontend_roadmap_part1.md
+frontend_roadmap_part2.md
+frontend_roadmap_part3.md
+frontend_roadmap_part4.md
