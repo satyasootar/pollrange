@@ -14,6 +14,20 @@ interface TimelineChartProps {
   data: TimelinePoint[];
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-none border border-border bg-popover/90 p-2 shadow-xl backdrop-blur-md ring-1 ring-white/10">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+        <p className="text-sm font-semibold text-foreground">
+          {payload[0].value} {payload[0].value === 1 ? 'response' : 'responses'}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export function TimelineChart({ data }: TimelineChartProps) {
   const formatted = data.map((d) => ({
     ...d,
@@ -38,14 +52,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
             axisLine={false}
             allowDecimals={false}
           />
-          <Tooltip
-            contentStyle={{
-              background: "var(--card)",
-              border: "1px solid var(--border)",
-              borderRadius: 0,
-              fontSize: 12,
-            }}
-          />
+          <Tooltip content={<CustomTooltip />} />
           <Line
             type="monotone"
             dataKey="count"

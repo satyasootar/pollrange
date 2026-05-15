@@ -28,6 +28,7 @@ import { TimelineChart } from "@/components/analytics/timeline-chart";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { OverviewCards } from "@/components/analytics/overview-cards";
 import { AnalyticsSkeleton } from "@/components/analytics/analytics-skeleton";
+import { SnapshotDialog } from "@/components/analytics/snapshot-dialog";
 import { buildShareUrl, copyToClipboard, formatDatetime } from "@/lib/utils";
 import { toast } from "sonner";
 import { stagger, fadeUp } from "@/lib/animations";
@@ -39,6 +40,7 @@ export function AnalyticsPage() {
   const qc = useQueryClient();
   const [realtimeCount, setRealtimeCount] = useState<number | null>(null);
   const [isLive, setIsLive] = useState(false);
+  const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
 
   const { data: poll } = usePoll(pollId!);
   const { data: analytics, isLoading } = useFullAnalytics(pollId!);
@@ -89,8 +91,7 @@ export function AnalyticsPage() {
   };
   
   const handleSnapshot = () => {
-    // This endpoint returns a PNG image generated from the current results
-    window.open(`${config.apiUrl}/analytics/${pollId}/snapshot`, "_blank");
+    setIsSnapshotOpen(true);
   };
 
   if (isLoading) return <AnalyticsSkeleton />;
@@ -192,6 +193,13 @@ export function AnalyticsPage() {
           )}
         </motion.div>
       </div>
+
+      <SnapshotDialog 
+        isOpen={isSnapshotOpen}
+        onClose={() => setIsSnapshotOpen(false)}
+        analytics={analytics}
+        shareUrl={shareUrl}
+      />
     </div>
   );
 }

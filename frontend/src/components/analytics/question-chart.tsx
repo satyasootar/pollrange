@@ -18,6 +18,22 @@ interface QuestionChartProps {
 
 const COLORS = ["#6366f1", "#818cf8", "#4f46e5", "#4338ca", "#3730a3"];
 
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="rounded-none border border-border bg-popover/90 p-2 shadow-xl backdrop-blur-md ring-1 ring-white/10">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Result</p>
+        <p className="text-sm font-semibold text-foreground">{data.name}</p>
+        <p className="text-xs text-primary font-medium mt-1">
+          {data.count} {data.count === 1 ? 'vote' : 'votes'} · {data.pct}%
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export function QuestionChart({ question }: QuestionChartProps) {
   const data = question.options.map((o) => ({
     name: o.optionText,
@@ -86,11 +102,8 @@ export function QuestionChart({ question }: QuestionChartProps) {
               axisLine={false}
             />
             <Tooltip
-              formatter={(val: number, _: string, props: { payload?: { pct?: number } }) => [
-                `${val} (${props.payload?.pct ?? 0}%)`,
-                "Votes",
-              ]}
-              cursor={{ fill: "var(--muted)" }}
+              content={<CustomTooltip />}
+              cursor={{ fill: "var(--muted)", opacity: 0.4 }}
             />
             <Bar dataKey="count" radius={0} maxBarSize={28}>
               {data.map((_, i) => (
