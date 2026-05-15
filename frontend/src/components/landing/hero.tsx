@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Zap, ArrowRight } from "lucide-react";
 import { SectionLabel } from "./shared";
 import { fadeUp, stagger } from "@/lib/animations";
+import { config } from "@/config/config";
 
 export function Hero() {
   return (
@@ -65,7 +66,7 @@ export function Hero() {
               <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
               <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
-              <span className="ml-4 font-mono text-[11px] text-muted-foreground">pollrange.app / dashboard</span>
+              <span className="ml-4 font-mono text-[11px] text-muted-foreground">{config.appUrl} / dashboard</span>
               <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] text-green-500">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> LIVE
               </span>
