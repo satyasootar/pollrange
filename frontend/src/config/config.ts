@@ -1,19 +1,9 @@
-const baseUrl = import.meta.env.VITE_ENV === "production"
-  ? {
-    apiUrl: "/api",
-    socketUrl: "/",
-    appUrl: window.location.origin,
-  }
-  : {
-    apiUrl: "http://localhost:3030/api",
-    socketUrl: "http://localhost:3030",
-    appUrl: window.location.origin,
-  };
+const isProd = import.meta.env.VITE_ENV === "production";
 
 export const config = {
-  apiUrl: baseUrl.apiUrl,
-  socketUrl: baseUrl.socketUrl,
-  appUrl: baseUrl.appUrl,
+  apiUrl: import.meta.env.VITE_API_URL || (isProd ? "/api" : "http://localhost:3030/api"),
+  socketUrl: import.meta.env.VITE_SOCKET_URL || (isProd ? "/" : "http://localhost:3030"),
+  appUrl: window.location.origin,
 } as const;
 
 // Optional: Validate required config on startup
