@@ -73,7 +73,7 @@ export function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-8">
+      <div className="flex shrink-0 flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:h-20 md:px-8 md:py-0">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
             Welcome back, {user?.name?.split(" ")[0]}

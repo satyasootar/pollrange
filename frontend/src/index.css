@@ -218,17 +218,30 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    @apply bg-background;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans selection:bg-primary/20;
+    @apply text-foreground font-sans selection:bg-primary/20;
     background-image: radial-gradient(var(--border) 1px, transparent 1px);
     background-size: 24px 24px;
     position: relative;
     overflow-x: hidden;
-    }
+  }
+  
   html {
     @apply font-sans;
-    }
+  }
 }
 
 /* ==========================================================================

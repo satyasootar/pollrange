@@ -51,7 +51,7 @@ export function EditPollPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border px-8 py-4">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-8 md:h-20">
         <h1 className="text-xl font-semibold">Edit Poll</h1>
         <div className="flex items-center gap-0">
           {STEPS.map((s, i) => (

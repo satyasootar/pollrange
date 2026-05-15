@@ -33,6 +33,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -93,7 +94,7 @@ export function AppShell() {
     <>
       {/* Logo */}
       <div
-        className="flex cursor-pointer items-center gap-2 border-b border-border px-5 py-4"
+        className="flex cursor-pointer items-center gap-2 border-b border-border px-5 py-4 h-20"
         onClick={() => {
           navigate("/dashboard");
           setIsSidebarOpen(false);
@@ -147,10 +148,12 @@ export function AppShell() {
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
-              
+
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
-                  <Sun className="mr-2 h-4 w-4" />
+                  {theme === "light" && <Sun className="mr-2 h-4 w-4" />}
+                  {theme === "dark" && <Moon className="mr-2 h-4 w-4" />}
+                  {theme === "system" && <Monitor className="mr-2 h-4 w-4" />}
                   Theme
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
@@ -220,25 +223,30 @@ export function AppShell() {
 
       {/* Main content */}
       <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <header className="flex items-center justify-between border-b border-border px-4 py-3 md:hidden">
-          <div
-            className="flex cursor-pointer items-center gap-2"
-            onClick={() => navigate("/dashboard")}
-          >
-            <img src="/logo/logo1.png" alt="PollRange Logo" className="h-6 w-auto" />
-            <span className="font-semibold tracking-tight text-foreground uppercase text-sm">
-              PollRange
-            </span>
+        {/* Header */}
+        <header className="flex h-16 items-center justify-between border-b border-border bg-background px-4 md:px-8 md:hidden">
+          <div className="flex items-center gap-4">
+            <div
+              className="flex cursor-pointer items-center gap-2 md:hidden "
+              onClick={() => navigate("/dashboard")}
+            >
+              <img src="/logo/logo1.png" alt="PollRange Logo" className="h-6 w-auto" />
+              <span className="font-semibold tracking-tight text-foreground uppercase text-sm">
+                PollRange
+              </span>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSidebarOpen(true)}
-            className="h-9 w-9"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          
+          <div className="flex lg:hidden items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(true)}
+              className="h-9 w-9"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </div>
         </header>
         
         <Outlet />

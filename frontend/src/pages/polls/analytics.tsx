@@ -13,12 +13,13 @@ import {
   Unlock,
   Download,
   Camera,
+  RefreshCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { analyticsApi } from "@/api/analytics.api";
 import { config } from "@/config/config";
 import { useFullAnalytics } from "@/hooks/use-analytics";
-import { usePoll, usePublishPoll, useClosePoll } from "@/hooks/use-polls";
+import { usePoll, usePublishPoll, useClosePoll, useReopenPoll, useRegenerateToken } from "@/hooks/use-polls";
 import { usePollSocket } from "@/hooks/use-poll-socket";
 import { useQueryClient } from "@tanstack/react-query";
 import { analyticsKeys } from "@/hooks/use-analytics";
@@ -46,6 +47,8 @@ export function AnalyticsPage() {
   const { data: analytics, isLoading } = useFullAnalytics(pollId!);
   const publish = usePublishPoll(pollId!);
   const close = useClosePoll(pollId!);
+  const reopen = useReopenPoll(pollId!);
+  const regenerateToken = useRegenerateToken(pollId!);
 
   // Realtime socket integration
   const handleAnalyticsUpdate = useCallback(
@@ -102,7 +105,7 @@ export function AnalyticsPage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex flex-col gap-4 border-b border-border px-4 py-4 md:px-8 lg:flex-row lg:items-center">
+      <div className="flex shrink-0 flex-col gap-4 border-b border-border px-4 py-4 md:px-8 lg:h-20 lg:flex-row lg:items-center lg:py-0">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
@@ -136,6 +139,16 @@ export function AnalyticsPage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => regenerateToken.mutate()}
+            disabled={regenerateToken.isPending}
+            className="flex-none"
+            title="Regenerate Link"
+          >
+            <RefreshCcw className={`h-3.5 w-3.5 ${regenerateToken.isPending ? "animate-spin" : ""}`} />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             className="flex-none"
             onClick={() => window.open(`/p/${poll.shareToken}`, "_blank")}
           >
@@ -150,6 +163,17 @@ export function AnalyticsPage() {
               className="flex-1 gap-1.5 sm:flex-none"
             >
               <Lock className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Close Poll</span><span className="sm:hidden">Close</span>
+            </Button>
+          )}
+          {poll.status === "closed" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => reopen.mutate()}
+              disabled={reopen.isPending}
+              className="flex-1 gap-1.5 sm:flex-none"
+            >
+              <Unlock className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Reopen Poll</span><span className="sm:hidden">Reopen</span>
             </Button>
           )}
           {(poll.status === "closed" || poll.status === "active") && (

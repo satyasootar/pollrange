@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Clock, Lock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePublicPoll, useSubmitResponse } from "@/hooks/use-public-poll";
+import { usePublicPoll, useSubmitResponse, usePollStatus } from "@/hooks/use-public-poll";
 import { fadeUp, stagger, pageTransition } from "@/lib/animations";
 import type { AnswerPayload } from "@/types";
 import { timeUntilExpiry } from "@/lib/utils";
@@ -12,6 +12,7 @@ export function PublicPollPage() {
   const { shareToken } = useParams<{ shareToken: string }>();
   const navigate = useNavigate();
   const { data: poll, isLoading, error } = usePublicPoll(shareToken!);
+  const { data: statusData } = usePollStatus(shareToken!);
   const submitResponse = useSubmitResponse(poll?.pollId || (poll as any)?._id || "");
 
   const [answers, setAnswers] = useState<Record<string, string | null>>({});
@@ -58,15 +59,19 @@ export function PublicPollPage() {
     );
   }
 
+  // Use statusData if it's faster or more up-to-date than the main poll query
+  const currentStatus = statusData?.status || poll?.status;
+  const hasResponded = statusData?.alreadyResponded || poll?.alreadyResponded;
+
   if (error || !poll) {
     return <PollErrorState message="Poll not found." />;
   }
 
-  if (poll.status === "closed" || poll.status === "expired") {
+  if (currentStatus === "closed" || currentStatus === "expired") {
     return <PollClosedState />;
   }
 
-  if (poll.alreadyResponded) {
+  if (hasResponded) {
     return <AlreadyRespondedState />;
   }
 

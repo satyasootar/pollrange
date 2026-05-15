@@ -5,6 +5,7 @@ import { Features } from "@/components/landing/features";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Stats } from "@/components/landing/stats";
 import { CTA } from "@/components/landing/cta";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function LandingPage() {
   return (
@@ -18,6 +19,7 @@ export function LandingPage() {
         <CTA />
       </main>
       <Footer />
+      <ThemeToggle sticky />
     </div>
   );
 }
