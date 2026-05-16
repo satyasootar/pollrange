@@ -63,15 +63,19 @@ export async function sendVerificationEmail(userId: string) {
     user.emailVerificationExpiry = expiry;
     await user.save();
 
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    const verificationUrl = `${config.CLIENT_URL}/auth/verify-email?token=${token}`;
     
-    await sendEmail({
+    const { success, error } = await sendEmail({
         to: user.email,
         subject: "Verify your email - PollCraft",
         html: `<h1>Welcome to PollCraft</h1>
                <p>Please click the link below to verify your email address:</p>
                <a href="${verificationUrl}">${verificationUrl}</a>`,
     });
+
+    if (!success) {
+        throw new ApiError(500, `Failed to send verification email: ${JSON.stringify(error)}`);
+    }
 }
 
 /**
@@ -205,14 +209,18 @@ export async function forgotPassword(input: ForgotPasswordInput) {
     user.passwordResetExpiry = expiry;
     await user.save();
 
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const resetUrl = `${config.CLIENT_URL}/auth/reset-password?token=${token}`;
 
-    await sendEmail({
+    const { success, error } = await sendEmail({
         to: user.email,
         subject: "Reset your password - PollCraft",
         html: `<p>Click the link below to reset your password:</p>
                <a href="${resetUrl}">${resetUrl}</a>`,
     });
+
+    if (!success) {
+        throw new ApiError(500, `Failed to send reset email: ${JSON.stringify(error)}`);
+    }
 
     return { success: true };
 }

@@ -91,7 +91,6 @@ const pollSchema = new Schema<IPoll>(
 
     expiresAt: {
       type: Date,
-      required: true,
       index: true,
     },
 

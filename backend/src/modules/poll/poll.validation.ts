@@ -23,7 +23,7 @@ export const pollZodSchema = z.object({
   questions: z.array(questionZodSchema),
   responseMode: z.enum(["anonymous", "authenticated"]),
   status: z.enum(["draft", "active", "closed", "published"]).default("draft"),
-  expiresAt: z.date(),
+  expiresAt: z.date().optional().nullable(),
   totalResponses: z.number().default(0),
   isDeleted: z.boolean().default(false),
   publishedAt: z.date().optional(),

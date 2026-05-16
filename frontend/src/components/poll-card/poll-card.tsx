@@ -194,7 +194,9 @@ export function PollCard({ poll, isCompact = false, onSelect }: PollCardProps) {
       <div className={cn("mt-auto flex items-center justify-between border-t border-border px-5 py-3", isCompact && "px-3 py-2")}>
         <span className="text-xs text-muted-foreground">
           {poll.status === "active"
-            ? (isCompact ? "Expires soon" : `Expires ${timeUntilExpiry(poll.expiresAt)}`)
+            ? (poll.expiresAt 
+                ? (isCompact ? "Expires soon" : `Expires ${timeUntilExpiry(poll.expiresAt)}`)
+                : "No expiry")
             : (isCompact ? formatDate(poll.createdAt) : `Created ${formatDate(poll.createdAt)}`)}
         </span>
         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>

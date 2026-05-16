@@ -295,7 +295,7 @@ export function LandingDashboard() {
   };
 
   return (
-    <div className="w-full relative aspect-video max-h-[700px] overflow-hidden border border-border bg-background shadow-2xl group/dash flex flex-col">
+    <div className="w-full relative aspect-video max-h-[700px] overflow-hidden border border-border bg-background shadow-none group/dash flex flex-col">
       <div className="flex shrink-0 items-center gap-4 border-b border-border bg-muted/50 px-4 h-12 z-30">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500/20" />
@@ -368,7 +368,7 @@ export function LandingDashboard() {
               </nav>
 
               <div className="border-t border-border p-5">
-                <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted transition-colors">
+                <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted transition-colors cursor-pointer">
                   <div className="h-10 w-10 border border-border bg-muted flex items-center justify-center font-bold text-lg">
                     S
                   </div>
@@ -455,7 +455,7 @@ function AnalyticsView({ poll, onBack, onAction }: { poll: Poll, onBack: () => v
     <div className="flex-1 flex flex-col min-w-0 bg-background h-full overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border h-20 px-8 bg-card">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className="p-2 hover:bg-muted rounded-full transition-colors border border-border">
+          <button onClick={onBack} className="p-2 hover:bg-muted rounded-full transition-colors border border-border cursor-pointer">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
@@ -465,16 +465,16 @@ function AnalyticsView({ poll, onBack, onAction }: { poll: Poll, onBack: () => v
         </div>
         
         <div className="flex items-center gap-2">
-          <button onClick={onAction} className="flex items-center gap-2 px-3 py-2 border border-border bg-card hover:bg-muted transition-colors font-bold text-[10px] uppercase tracking-widest">
+          <button onClick={onAction} className="flex items-center gap-2 px-3 py-2 border border-border bg-card hover:bg-muted transition-colors font-bold text-[10px] uppercase tracking-widest cursor-pointer">
             <Download className="h-4 w-4" /> EXPORT
           </button>
-          <button onClick={onAction} className="flex items-center gap-2 px-3 py-2 border border-border bg-card hover:bg-muted transition-colors font-bold text-[10px] uppercase tracking-widest">
+          <button onClick={onAction} className="flex items-center gap-2 px-3 py-2 border border-border bg-card hover:bg-muted transition-colors font-bold text-[10px] uppercase tracking-widest cursor-pointer">
             <Camera className="h-4 w-4" /> SNAPSHOT
           </button>
-          <button onClick={onAction} className="flex items-center gap-2 px-3 py-2 border border-border bg-card hover:bg-muted transition-colors font-bold text-[10px] uppercase tracking-widest">
+          <button onClick={onAction} className="flex items-center gap-2 px-3 py-2 border border-border bg-card hover:bg-muted transition-colors font-bold text-[10px] uppercase tracking-widest cursor-pointer">
             <Copy className="h-4 w-4" /> COPY LINK
           </button>
-          <button onClick={onAction} className="p-2 border border-border bg-card hover:bg-muted transition-colors">
+          <button onClick={onAction} className="p-2 border border-border bg-card hover:bg-muted transition-colors cursor-pointer">
             <RotateCcw className="h-4 w-4" />
           </button>
         </div>
@@ -547,7 +547,7 @@ function HistoryView({ onAction }: { onAction: () => void }) {
 
       <div className="grid grid-cols-2 gap-6">
         {/* Card 1 */}
-        <div className="bg-card border border-border p-6 flex flex-col">
+        <div className="bg-card border border-border p-6 flex flex-col cursor-pointer hover:border-primary/50 transition-colors" onClick={onAction}>
           <div className="flex items-center justify-between mb-4">
             <span className="px-2 py-0.5 bg-muted border border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Completed
@@ -567,7 +567,7 @@ function HistoryView({ onAction }: { onAction: () => void }) {
         </div>
 
         {/* Card 2 */}
-        <div className="bg-card border border-border p-6 flex flex-col">
+        <div className="bg-card border border-border p-6 flex flex-col cursor-pointer hover:border-primary/50 transition-colors" onClick={onAction}>
           <div className="flex items-center justify-between mb-4">
             <span className="px-2 py-0.5 bg-primary/10 border border-primary/20 text-xs font-bold text-primary uppercase tracking-wider">
               Results Published

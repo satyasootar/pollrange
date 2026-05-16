@@ -38,11 +38,13 @@ export function timeAgo(date: string | Date): string {
   return formatDistanceToNow(new Date(date), { addSuffix: true });
 }
 
-export function isPollActive(expiresAt: string): boolean {
+export function isPollActive(expiresAt: string | null | undefined): boolean {
+  if (!expiresAt) return true; // No expiry means always active
   return isAfter(new Date(expiresAt), new Date());
 }
 
-export function timeUntilExpiry(expiresAt: string): string {
+export function timeUntilExpiry(expiresAt: string | null | undefined): string {
+  if (!expiresAt) return "No expiry";
   if (!isPollActive(expiresAt)) return "Expired";
   return formatDistanceToNow(new Date(expiresAt), { addSuffix: true });
 }

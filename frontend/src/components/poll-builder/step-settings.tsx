@@ -11,8 +11,9 @@ import { Switch } from "@/components/ui/switch";
 const schema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(200),
   description: z.string().max(1000).optional(),
-  expiresAt: z.string().refine(
-    (v) => v && new Date(v) > new Date(),
+  hasExpiry: z.boolean(),
+  expiresAt: z.string().optional().nullable().refine(
+    (v) => !v || new Date(v) > new Date(),
     "Expiry must be in the future"
   ),
   responseMode: z.enum(["anonymous", "authenticated"]),
@@ -39,6 +40,7 @@ export function StepSettings() {
     defaultValues: {
       title: form.title,
       description: form.description,
+      hasExpiry: !!form.expiresAt,
       expiresAt: form.expiresAt,
       responseMode: form.responseMode,
       settings: form.settings,
@@ -47,9 +49,15 @@ export function StepSettings() {
 
   const responseMode = watch("responseMode");
   const settings = watch("settings");
+  const hasExpiry = watch("hasExpiry");
 
   const onSubmit = (data: FormValues) => {
-    updateMeta(data);
+    // If hasExpiry is false, we clear the expiresAt field
+    const submitData = {
+      ...data,
+      expiresAt: data.hasExpiry ? data.expiresAt : null,
+    };
+    updateMeta(submitData);
     nextStep();
   };
 
@@ -97,18 +105,36 @@ export function StepSettings() {
       </div>
 
       {/* Expiry */}
-      <div className="space-y-1.5">
-        <Label htmlFor="expiresAt">
-          Expiry Date & Time <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="expiresAt"
-          type="datetime-local"
-          min={minDatetime}
-          {...register("expiresAt")}
-        />
-        {errors.expiresAt && (
-          <p className="text-xs text-destructive">{errors.expiresAt.message}</p>
+      <div className="space-y-4 border border-border p-4 rounded-lg bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="hasExpiry">Set Expiry Date & Time</Label>
+            <p className="text-xs text-muted-foreground">
+              Automatically close the poll at a specific time.
+            </p>
+          </div>
+          <Switch
+            id="hasExpiry"
+            checked={hasExpiry}
+            onCheckedChange={(checked) => setValue("hasExpiry", checked)}
+          />
+        </div>
+
+        {hasExpiry && (
+          <div className="space-y-1.5 pt-2 border-t border-border animate-in fade-in slide-in-from-top-1">
+            <Label htmlFor="expiresAt">
+              Expiry Date <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="expiresAt"
+              type="datetime-local"
+              min={minDatetime}
+              {...register("expiresAt")}
+            />
+            {errors.expiresAt && (
+              <p className="text-xs text-destructive">{errors.expiresAt.message}</p>
+            )}
+          </div>
         )}
       </div>
 

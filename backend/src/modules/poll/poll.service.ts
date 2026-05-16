@@ -124,7 +124,7 @@ export async function getPublicPoll(shareToken: string, context: { sessionToken?
     }
 
     // Handle expired active polls
-    if (poll.status === "active" && poll.expiresAt < new Date()) {
+    if (poll.status === "active" && poll.expiresAt && poll.expiresAt < new Date()) {
         poll.status = "closed";
         poll.closedAt = new Date();
         await poll.save();
@@ -260,7 +260,7 @@ export async function reopenPoll(userId: string, pollId: string) {
     poll.status = "active";
     poll.closedAt = undefined;
     // Default to 7 days from now if it was already expired
-    if (poll.expiresAt < new Date()) {
+    if (poll.expiresAt && poll.expiresAt < new Date()) {
         poll.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     }
     
@@ -312,7 +312,7 @@ export async function checkPollStatus(shareToken: string, context: { sessionToke
         pollId: poll._id,
         status: poll.status,
         expiresAt: poll.expiresAt,
-        isExpired: poll.expiresAt < new Date(),
+        isExpired: !!poll.expiresAt && poll.expiresAt < new Date(),
         alreadyResponded,
         totalResponses: poll.totalResponses,
         settings: poll.settings

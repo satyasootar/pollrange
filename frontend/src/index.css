@@ -222,6 +222,26 @@
     padding: 0;
     box-sizing: border-box;
   }
+
+  /* Force pointer cursor on all clickable elements */
+  a, 
+  button, 
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="checkbox"],
+  input[type="radio"],
+  label,
+  select,
+  summary {
+    cursor: pointer;
+  }
+
+  /* Specifically for elements with .cursor-pointer or similar */
+  .cursor-pointer {
+    cursor: pointer !important;
+  }
   
   html, body {
     margin: 0;

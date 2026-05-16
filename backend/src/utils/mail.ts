@@ -27,8 +27,8 @@ export const sendEmail = async ({ to, subject, html, text, idempotencyKey }: Mai
   const { data, error } = await resend.emails.send(payload, options);
 
   if (error) {
-    console.error("Resend Error:", error);
-    return { success: false, error };
+    console.error("Resend Error Detail:", JSON.stringify(error, null, 2));
+    return { success: false, error: error.message || error };
   }
 
   return { success: true, data };
