@@ -22,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Poll, PollStatus } from "@/types";
-import { timeUntilExpiry, buildShareUrl, copyToClipboard, formatDate } from "@/lib/utils";
+import { timeUntilExpiry, buildShareUrl, copyToClipboard, formatDate, cn } from "@/lib/utils";
 import { useDeletePoll, useClosePoll, useReopenPoll, useRegenerateToken } from "@/hooks/use-polls";
 import { useDashboardStore } from "@/store/use-dashboard-store";
 import { toast } from "sonner";
@@ -52,9 +52,10 @@ const STATUS_CONFIG: Record<
 
 interface PollCardProps {
   poll: Poll;
+  isCompact?: boolean;
 }
 
-export function PollCard({ poll }: PollCardProps) {
+export function PollCard({ poll, isCompact = false }: PollCardProps) {
   const navigate = useNavigate();
   const deletePoll = useDeletePoll();
   const closePoll = useClosePoll(poll._id);
@@ -84,10 +85,10 @@ export function PollCard({ poll }: PollCardProps) {
       onClick={() => navigate(`/polls/${poll._id}/analytics`)}
     >
       {/* Header */}
-      <div className="flex items-start justify-between p-5 pb-3">
+      <div className={cn("flex items-start justify-between p-5 pb-3", isCompact && "p-3 pb-2")}>
         <div className="flex-1 min-w-0 pr-2">
           <span
-            className={`inline-flex items-center border px-2 py-0.5 text-xs font-medium ${statusCfg.className}`}
+            className={cn(`inline-flex items-center border px-2 py-0.5 text-xs font-medium ${statusCfg.className}`, isCompact && "text-[10px] px-1.5")}
           >
             {poll.status === "active" && (
               <Radio className="mr-1 h-2.5 w-2.5 animate-pulse" />
@@ -95,7 +96,7 @@ export function PollCard({ poll }: PollCardProps) {
             {statusCfg.label}
           </span>
           <h3
-            className="mt-2 line-clamp-2 text-base font-semibold leading-snug transition-colors group-hover:text-primary"
+            className={cn("mt-2 line-clamp-2 text-base font-semibold leading-snug transition-colors group-hover:text-primary", isCompact && "text-sm mt-1")}
           >
             {poll.title}
           </h3>
@@ -179,7 +180,7 @@ export function PollCard({ poll }: PollCardProps) {
       </div>
 
       {/* Stats */}
-      <div className="flex items-center gap-4 px-5 pb-4 text-sm text-muted-foreground">
+      <div className={cn("flex items-center gap-4 px-5 pb-4 text-sm text-muted-foreground", isCompact && "px-3 pb-3 text-xs gap-2")}>
         <span className="flex items-center gap-1">
           <BarChart3 className="h-3.5 w-3.5" />
           {poll.totalResponses} response{poll.totalResponses !== 1 ? "s" : ""}
@@ -189,17 +190,17 @@ export function PollCard({ poll }: PollCardProps) {
       </div>
 
       {/* Footer */}
-      <div className="mt-auto flex items-center justify-between border-t border-border px-5 py-3">
+      <div className={cn("mt-auto flex items-center justify-between border-t border-border px-5 py-3", isCompact && "px-3 py-2")}>
         <span className="text-xs text-muted-foreground">
           {poll.status === "active"
-            ? `Expires ${timeUntilExpiry(poll.expiresAt)}`
-            : `Created ${formatDate(poll.createdAt)}`}
+            ? (isCompact ? "Expires soon" : `Expires ${timeUntilExpiry(poll.expiresAt)}`)
+            : (isCompact ? formatDate(poll.createdAt) : `Created ${formatDate(poll.createdAt)}`)}
         </span>
         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 gap-1.5 px-2 text-xs"
+            className={cn("h-7 gap-1.5 px-2 text-xs", isCompact && "h-6 px-1.5 text-[10px]")}
             onClick={() => navigate(`/polls/${poll._id}/analytics`)}
           >
             <BarChart3 className="h-3.5 w-3.5" />
@@ -210,7 +211,7 @@ export function PollCard({ poll }: PollCardProps) {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 gap-1.5 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
+              className={cn("h-7 gap-1.5 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10", isCompact && "h-6 px-1.5 text-[10px]")}
               onClick={() => window.open(`/p/${poll.shareToken}/results`, "_blank")}
             >
               <ExternalLink className="h-3.5 w-3.5" />
