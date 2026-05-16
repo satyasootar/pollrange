@@ -41,6 +41,10 @@ export const authApi = {
   verifyEmail: (data: { token: string }) =>
     api.post("/auth/verify-email", data),
 
-  updateProfile: (data: { name?: string; avatarUrl?: string }) =>
-    api.patch<{ data: User }>("/auth/me", data),
+  updateProfile: (data: { 
+    name?: string; 
+    avatarUrl?: string; 
+    branding?: Partial<User["branding"]> 
+  }) =>
+    api.patch<{ data: { user: User } }>("/auth/me", data),
 };

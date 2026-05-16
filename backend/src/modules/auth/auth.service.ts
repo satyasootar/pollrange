@@ -6,6 +6,10 @@ import { User } from "../user/user.model.js";
 import { Session } from "../session/session.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { sendEmail } from "../../utils/mail.js";
+import { 
+    userZodSchema, 
+    type UpdateProfileInput 
+} from "../user/user.validation.js";
 import type { 
     RegisterInput, 
     LoginInput, 
@@ -242,4 +246,27 @@ export async function resetPassword(input: ResetPasswordInput) {
     await user.save();
 
     return { success: true };
+}
+
+/**
+ * Updates a user's profile information.
+ */
+export async function updateProfile(userId: string, input: UpdateProfileInput) {
+    const user = await User.findById(userId);
+    if (!user) throw new ApiError(404, "User not found");
+
+    if (input.name) user.name = input.name;
+    if (input.avatarUrl) user.avatarUrl = input.avatarUrl;
+    
+    if (input.branding) {
+        user.branding = {
+            ...user.branding,
+            ...input.branding
+        };
+    }
+
+    await user.save();
+    
+    const updatedUser = await User.findById(userId).select("-passwordHash");
+    return updatedUser;
 }

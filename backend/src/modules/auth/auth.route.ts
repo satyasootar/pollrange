@@ -14,6 +14,7 @@ authRouter.post("/refresh-token", AuthController.refreshAccessToken);
 
 // Protected Routes
 authRouter.get("/me", verifyJWT, AuthController.getCurrentUser);
+authRouter.patch("/me", verifyJWT, AuthController.updateProfile);
 authRouter.post("/change-password", verifyJWT, AuthController.changePassword);
 authRouter.post("/request-verification", verifyJWT, AuthController.requestVerificationEmail);
 

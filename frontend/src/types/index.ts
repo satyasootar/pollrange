@@ -21,6 +21,13 @@ export interface PaginatedData<T> {
 }
 
 // ─── User / Auth ──────────────────────────────────────────────────────────────
+export type UserBranding = {
+  companyName: string;
+  businessDetails: string;
+  logoUrl: string;
+  qrColor: string;
+};
+
 export interface User {
   _id: string;
   name: string;
@@ -29,6 +36,7 @@ export interface User {
   isEmailVerified: boolean;
   role: "user" | "admin";
   isActive: boolean;
+  branding?: UserBranding;
   createdAt: string;
   updatedAt: string;
 }

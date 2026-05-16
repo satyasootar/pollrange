@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, Lock, Save, KeyRound, ShieldCheck, ShieldAlert, Mail } from "lucide-react";
+import { User, Lock, Save, KeyRound, ShieldCheck, ShieldAlert, Mail, Building2 } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useUpdateProfile, useChangePassword } from "@/hooks/use-profile";
 import { useRequestVerification } from "@/hooks/use-auth-actions";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { fadeUp, stagger } from "@/lib/animations";
+import { Textarea } from "@/components/ui/textarea";
 
 export function ProfilePage() {
   const { user } = useAuthStore();
@@ -17,15 +18,25 @@ export function ProfilePage() {
   const requestVerification = useRequestVerification();
 
   const [name, setName] = useState(user?.name || "");
+  const [branding, setBranding] = useState({
+    companyName: user?.branding?.companyName || "",
+    businessDetails: user?.branding?.businessDetails || "",
+    logoUrl: user?.branding?.logoUrl || "",
+    qrColor: user?.branding?.qrColor || "#000000",
+  });
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleUpdateName = (e: React.FormEvent) => {
+  const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    updateProfile.mutate({ name });
+    updateProfile.mutate({ name, branding });
   };
+
+  const isBrandingDirty = 
+    branding.companyName !== (user?.branding?.companyName || "") ||
+    branding.businessDetails !== (user?.branding?.businessDetails || "") ||
+    branding.qrColor !== (user?.branding?.qrColor || "#000000");
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +81,7 @@ export function ProfilePage() {
             </div>
           </div>
 
-          <form onSubmit={handleUpdateName} className="space-y-4">
+          <form onSubmit={handleUpdateProfile} className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="email">Email Address</Label>
@@ -127,7 +138,76 @@ export function ProfilePage() {
 
             <Button
               type="submit"
-              disabled={updateProfile.isPending || name === user?.name}
+              disabled={updateProfile.isPending || (name === user?.name && !isBrandingDirty)}
+              className="gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {updateProfile.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </form>
+        </motion.div>
+
+        {/* Branding Section */}
+        <motion.div
+          variants={fadeUp}
+          className="mb-8 border border-border bg-card p-6 shadow-none"
+        >
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center border border-indigo-500/20 bg-indigo-500/5 text-indigo-500">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Business Branding</h2>
+              <p className="text-xs text-muted-foreground">
+                Set up your default company info for QR marketing materials.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="companyName">Company Name</Label>
+              <Input
+                id="companyName"
+                value={branding.companyName}
+                onChange={(e) => setBranding({ ...branding, companyName: e.target.value })}
+                placeholder="Acme Corp"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="businessDetails">Business Description</Label>
+              <Textarea
+                id="businessDetails"
+                value={branding.businessDetails}
+                onChange={(e) => setBranding({ ...branding, businessDetails: e.target.value })}
+                placeholder="Tell us more about your business..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="qrColor">Default QR Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="qrColor"
+                  type="color"
+                  value={branding.qrColor}
+                  onChange={(e) => setBranding({ ...branding, qrColor: e.target.value })}
+                  className="w-12 p-1 h-10"
+                />
+                <Input
+                  value={branding.qrColor}
+                  onChange={(e) => setBranding({ ...branding, qrColor: e.target.value })}
+                  placeholder="#000000"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={updateProfile.isPending || (name === user?.name && !isBrandingDirty)}
               className="gap-2"
             >
               <Save className="h-4 w-4" />

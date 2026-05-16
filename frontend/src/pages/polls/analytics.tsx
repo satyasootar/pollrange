@@ -30,6 +30,8 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { OverviewCards } from "@/components/analytics/overview-cards";
 import { AnalyticsSkeleton } from "@/components/analytics/analytics-skeleton";
 import { SnapshotDialog } from "@/components/analytics/snapshot-dialog";
+import { QRCardDialog } from "@/components/analytics/qr-card-dialog";
+import { useAuthStore } from "@/store/use-auth-store";
 import { buildShareUrl, copyToClipboard, formatDatetime } from "@/lib/utils";
 import { toast } from "sonner";
 import { stagger, fadeUp } from "@/lib/animations";
@@ -39,6 +41,7 @@ export function AnalyticsPage() {
   const { pollId } = useParams<{ pollId: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuthStore();
   const [realtimeCount, setRealtimeCount] = useState<number | null>(null);
   const [isLive, setIsLive] = useState(false);
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
@@ -127,6 +130,16 @@ export function AnalyticsPage() {
 
         {/* Actions */}
         <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+          <QRCardDialog 
+            pollId={pollId!} 
+            pollTitle={poll.title} 
+            defaultBranding={user?.branding}
+            trigger={
+              <Button variant="outline" size="sm" className="flex-1 gap-1.5 sm:flex-none">
+                <Radio className="h-3.5 w-3.5" /> <span className="hidden sm:inline">QR Code</span>
+              </Button>
+            }
+          />
           <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 gap-1.5 sm:flex-none">
             <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
           </Button>

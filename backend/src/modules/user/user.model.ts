@@ -54,6 +54,13 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: true,
     },
+    
+    branding: {
+      companyName: { type: String, default: "" },
+      businessDetails: { type: String, default: "" },
+      logoUrl: { type: String, default: "" },
+      qrColor: { type: String, default: "#000000" },
+    },
   },
   {
     timestamps: true,

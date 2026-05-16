@@ -8,6 +8,7 @@ import {
     resetPasswordSchema, 
     verifyEmailSchema 
 } from "./auth.validation.js";
+import { updateProfileZodSchema } from "../user/user.validation.js";
 import config from "../../config/config.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
@@ -118,6 +119,16 @@ export async function resetPassword(req: Request, res: Response) {
     await AuthService.resetPassword(parsedData);
 
     return res.status(200).json(new ApiResponse(200, {}, "Password reset successfully"));
+}
+
+/**
+ * Updates the profile of the currently authenticated user.
+ */
+export async function updateProfile(req: Request, res: Response) {
+    const validatedData = updateProfileZodSchema.parse(req.body);
+    const updatedUser = await AuthService.updateProfile((req as any).user!._id.toString(), validatedData);
+    
+    return res.status(200).json(new ApiResponse(200, { user: updatedUser }, "Profile updated successfully"));
 }
 
 /**

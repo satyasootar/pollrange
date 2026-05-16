@@ -22,7 +22,7 @@ export async function submitResponse(
         throw new ApiError(404, "Poll not found or not active");
     }
 
-    if (poll.expiresAt < new Date()) {
+    if (poll.expiresAt && poll.expiresAt < new Date()) {
         poll.status = "closed";
         poll.closedAt = new Date();
         await poll.save();
