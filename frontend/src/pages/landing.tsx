@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen font-sans bg-background selection:bg-primary/20 blueprint-lines">
+    <div className="min-h-screen font-sans bg-background selection:bg-primary/20 blueprint-lines relative">
       <Navbar />
       <main>
         <Hero />
