@@ -48,7 +48,7 @@ export function useLogout() {
     onSettled: () => {
       clearAuth();
       qc.clear();
-      navigate("/auth/login", { replace: true });
+      navigate("/", { replace: true });
     },
   });
 }

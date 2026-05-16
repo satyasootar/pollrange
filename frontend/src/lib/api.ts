@@ -32,7 +32,7 @@ api.interceptors.response.use(
           (m) => m.useAuthStore.getState()
         );
         clearAuth();
-        window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+        window.location.href = "/";
       }
     }
 

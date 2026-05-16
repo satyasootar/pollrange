@@ -53,9 +53,10 @@ const STATUS_CONFIG: Record<
 interface PollCardProps {
   poll: Poll;
   isCompact?: boolean;
+  onSelect?: (pollId: string) => void;
 }
 
-export function PollCard({ poll, isCompact = false }: PollCardProps) {
+export function PollCard({ poll, isCompact = false, onSelect }: PollCardProps) {
   const navigate = useNavigate();
   const deletePoll = useDeletePoll();
   const closePoll = useClosePoll(poll._id);
@@ -82,7 +83,7 @@ export function PollCard({ poll, isCompact = false }: PollCardProps) {
       initial="rest"
       whileHover="hover"
       variants={cardHover}
-      onClick={() => navigate(`/polls/${poll._id}/analytics`)}
+      onClick={() => onSelect ? onSelect(poll._id) : navigate(`/polls/${poll._id}/analytics`)}
     >
       {/* Header */}
       <div className={cn("flex items-start justify-between p-5 pb-3", isCompact && "p-3 pb-2")}>

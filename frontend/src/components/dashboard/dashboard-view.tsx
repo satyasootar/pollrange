@@ -46,6 +46,7 @@ interface DashboardViewProps {
   isVerifying?: boolean;
   hideTopBar?: boolean;
   isCompact?: boolean;
+  onPollClick?: (pollId: string) => void;
   className?: string;
   containerRef?: React.RefObject<HTMLDivElement>;
 }
@@ -66,6 +67,7 @@ export function DashboardView({
   isVerifying,
   hideTopBar = false,
   isCompact = false,
+  onPollClick,
   className = "",
   containerRef,
 }: DashboardViewProps) {
@@ -203,7 +205,12 @@ export function DashboardView({
           >
             {polls.map((poll) => (
               <motion.div key={poll._id} variants={fadeUp}>
-                <PollCard key={poll._id} poll={poll} isCompact={isCompact} />
+                <PollCard 
+                  key={poll._id} 
+                  poll={poll} 
+                  isCompact={isCompact} 
+                  onSelect={onPollClick}
+                />
               </motion.div>
             ))}
           </motion.div>

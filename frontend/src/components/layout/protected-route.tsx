@@ -1,42 +1,30 @@
-import { useEffect } from "react";
-import { Outlet, Navigate, useNavigate } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/api/auth.api";
 import { useAuthStore } from "@/store/use-auth-store";
 
 export function ProtectedRoute() {
-  const { user, setUser, isHydrated } = useAuthStore();
-  const navigate = useNavigate();
+  const { user, setUser, clearAuth, isHydrated } = useAuthStore();
 
-  const { isLoading, isError } = useQuery({
-    queryKey: ["me"],
-    queryFn: () => authApi.me(),
-    enabled: !user, // Only fetch if no cached user
-    select: (res) => res.data.data,
-    retry: false,
-  });
-
-  useEffect(() => {
-    // Sync fetched user into store
-    // This is handled via onSuccess in the query below separately
-  }, []);
-
-  // Simplified: user is synced via the main query below
-
-  // Simpler approach: watch query data
-  const meQuery = useQuery({
+  const { isLoading } = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
-      const res = await authApi.me();
-      setUser(res.data.data);
-      return res.data.data;
+      try {
+        const res = await authApi.me();
+        setUser(res.data.data);
+        return res.data.data;
+      } catch (err) {
+        clearAuth();
+        throw err;
+      }
     },
-    enabled: isHydrated && !user,
+    // We check auth if we have a user (to verify session) or if we don't (to try to login)
+    enabled: isHydrated,
     retry: false,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // Cache for 5 mins
   });
 
-  if (!isHydrated || meQuery.isLoading) {
+  if (!isHydrated || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -44,12 +32,9 @@ export function ProtectedRoute() {
     );
   }
 
-  if (!user && (isError || meQuery.isError)) {
-    const redirect = encodeURIComponent(window.location.pathname);
-    return <Navigate to={`/auth/login?redirect=${redirect}`} replace />;
+  if (!user) {
+    return <Navigate to="/" replace />;
   }
-
-  if (!user) return null;
 
   return <Outlet />;
 }
