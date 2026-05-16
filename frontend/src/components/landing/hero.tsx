@@ -9,7 +9,7 @@ import { config } from "@/config/config";
 export function Hero() {
   return (
     <section className="relative border-b border-border">
-      <div className="max-w-[1400px] mx-auto px-12 pt-24 pb-32">
+      <div className="max-w-[1400px] mx-auto px-12 pt-12 pb-32">
         <motion.div initial="hidden" animate="visible" variants={stagger}>
           <motion.div variants={fadeUp} custom={0}>
             <SectionLabel><Zap className="w-3 h-3" /> Real-time audience polling</SectionLabel>
@@ -17,7 +17,7 @@ export function Hero() {
 
           <motion.h1
             variants={fadeUp} custom={1}
-            className="mt-8 text-[clamp(3rem,9vw,7.5rem)] font-black uppercase tracking-[-0.03em] leading-[0.88] max-w-4xl"
+            className="mt-4 text-[clamp(3rem,9vw,6rem)] font-black uppercase tracking-[-0.03em] leading-[0.88] max-w-4xl"
           >
             Capture the{" "}
             <span className="text-primary italic">Choice</span>{" "}
