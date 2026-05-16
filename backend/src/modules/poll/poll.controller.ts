@@ -3,6 +3,7 @@ import * as PollService from "./poll.service.js";
 import * as AnalyticsService from "../analytics/analytics.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Poll } from "./poll.model.js";
+import { publishPollSchema } from "./poll.validation.js";
 
 /**
  * Handles creation of a new poll for the authenticated user.
@@ -67,7 +68,10 @@ export async function deletePoll(req: Request, res: Response) {
 export async function publishPoll(req: Request, res: Response) {
     const user = (req as any).user;
     const { pollId } = req.params;
-    const poll = await PollService.publishPollResults(user._id.toString(), pollId as string);
+    
+    const validatedData = publishPollSchema.parse(req.body);
+    const poll = await PollService.publishPollResults(user._id.toString(), pollId as string, validatedData.mode);
+    
     return res.status(200).json(new ApiResponse(200, poll, "Poll results published successfully"));
 }
 
@@ -128,6 +132,7 @@ export async function getPublicResults(req: Request, res: Response) {
         pollTitle: snapshot.title,
         status: poll?.status || "active",
         expiresAt: poll?.expiresAt || new Date().toISOString(),
+        resultsPublishedAt: poll?.resultsPublishedAt,
         totalResponses: snapshot.totalResponses,
         questions
     };

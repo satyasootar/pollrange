@@ -175,29 +175,28 @@ export async function getPublicPoll(shareToken: string, context: { sessionToken?
 }
 
 /**
- * Changes a poll's status to published, making results visible to the public.
- * Can only publish polls that are "active" or "closed".
+ * Changes a poll's results visibility.
+ * If mode is 'permanent', the poll is also closed and status set to 'published'.
+ * If mode is 'live', the poll remains active but results become public.
  */
-export async function publishPollResults(userId: string, pollId: string) {
+export async function publishPollResults(userId: string, pollId: string, mode: "live" | "permanent" = "permanent") {
     const poll = await Poll.findOne({ _id: pollId, creatorId: userId, isDeleted: false });
     
     if (!poll) {
         throw new ApiError(404, "Poll not found or unauthorized");
     }
 
-    if (poll.status === "published") {
-        throw new ApiError(400, "Poll results are already published");
+    if (mode === "permanent") {
+        poll.status = "published";
+        poll.publishedAt = new Date();
+        if (!poll.closedAt) {
+            poll.closedAt = new Date();
+        }
     }
 
-    if (poll.status === "draft") {
-        throw new ApiError(400, "Cannot publish a draft poll. Activate it first.");
-    }
-
-    poll.status = "published";
-    poll.publishedAt = new Date();
-    if (!poll.closedAt) {
-        poll.closedAt = new Date();
-    }
+    poll.isResultsPublic = true;
+    poll.resultsPublishedAt = new Date();
+    
     await poll.save();
 
     return poll;
@@ -216,7 +215,8 @@ export async function getPublicResults(shareToken: string) {
         throw new ApiError(404, "Poll not found");
     }
 
-    if (poll.status !== "published") {
+    // Allow access if results are explicitly public OR if the poll is in legacy 'published' status
+    if (!poll.isResultsPublic && poll.status !== "published") {
         throw new ApiError(403, "Poll results are not public");
     }
 

@@ -35,9 +35,11 @@ interface QRCardDialogProps {
   pollTitle: string;
   defaultBranding?: UserBranding;
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function QRCardDialog({ pollId, pollTitle, defaultBranding, trigger }: QRCardDialogProps) {
+export function QRCardDialog({ pollId, pollTitle, defaultBranding, trigger, open, onOpenChange }: QRCardDialogProps) {
   const [branding, setBranding] = useState<UserBranding>({
     companyName: defaultBranding?.companyName || "",
     businessDetails: defaultBranding?.businessDetails || "",
@@ -94,7 +96,7 @@ export function QRCardDialog({ pollId, pollTitle, defaultBranding, trigger }: QR
   }[cardStyles.alignment];
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="gap-2">

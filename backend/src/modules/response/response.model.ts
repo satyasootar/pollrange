@@ -12,6 +12,8 @@ const answerItemSchema = new Schema(
       type: Schema.Types.ObjectId,
       default: null,
     },
+    
+    selectedOptionIds: [Schema.Types.ObjectId],
 
     textResponse: {
       type: String,

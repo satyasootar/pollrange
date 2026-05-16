@@ -29,7 +29,7 @@ const questionSchema = new Schema(
 
     type: {
       type: String,
-      enum: ["single_choice", "open_ended"],
+      enum: ["single_choice", "multiple_choice", "open_ended"],
       default: "single_choice",
     },
 
@@ -104,6 +104,14 @@ const pollSchema = new Schema<IPoll>(
       default: false,
       index: true,
     },
+
+    isResultsPublic: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    resultsPublishedAt: Date,
 
     publishedAt: Date,
 

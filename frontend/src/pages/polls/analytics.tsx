@@ -14,8 +14,22 @@ import {
   Download,
   Camera,
   RefreshCcw,
+  MoreVertical,
+  QrCode,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { 
+  ChevronDown,
+  Globe,
+  Zap
+} from "lucide-react";
 import { analyticsApi } from "@/api/analytics.api";
 import { config } from "@/config/config";
 import { useFullAnalytics } from "@/hooks/use-analytics";
@@ -45,6 +59,7 @@ export function AnalyticsPage() {
   const [realtimeCount, setRealtimeCount] = useState<number | null>(null);
   const [isLive, setIsLive] = useState(false);
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
+  const [isQRCardOpen, setIsQRCardOpen] = useState(false);
 
   const { data: poll } = usePoll(pollId!);
   const { data: analytics, isLoading } = useFullAnalytics(pollId!);
@@ -129,76 +144,101 @@ export function AnalyticsPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-          <QRCardDialog 
-            pollId={pollId!} 
-            pollTitle={poll.title} 
-            defaultBranding={user?.branding}
-            trigger={
-              <Button variant="outline" size="sm" className="flex-1 gap-1.5 sm:flex-none">
-                <Radio className="h-3.5 w-3.5" /> <span className="hidden sm:inline">QR Code</span>
-              </Button>
-            }
-          />
-          <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 gap-1.5 sm:flex-none">
-            <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleSnapshot} className="flex-1 gap-1.5 sm:flex-none">
-            <Camera className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Snapshot</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleCopy} className="flex-1 gap-1.5 sm:flex-none">
-            <Copy className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Copy Link</span><span className="sm:hidden">Copy</span>
-          </Button>
+        <div className="flex items-center gap-2 lg:ml-auto">
+          {/* External Link */}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => regenerateToken.mutate()}
-            disabled={regenerateToken.isPending}
-            className="flex-none"
-            title="Regenerate Link"
-          >
-            <RefreshCcw className={`h-3.5 w-3.5 ${regenerateToken.isPending ? "animate-spin" : ""}`} />
-          </Button>
-          {/* <Button
-            variant="outline"
-            size="sm"
-            className="flex-none"
-            onClick={() => window.open(`/p/${poll.shareToken}`, "_blank")}
+            className="hidden sm:flex"
+            onClick={() => window.open(shareUrl, "_blank")}
           >
             <ExternalLink className="h-3.5 w-3.5" />
-          </Button> */}
-          {poll.status === "active" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => close.mutate()}
-              disabled={close.isPending}
-              className="flex-1 gap-1.5 sm:flex-none"
-            >
-              <Lock className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Close Poll</span><span className="sm:hidden">Close</span>
-            </Button>
-          )}
-          {poll.status === "closed" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => reopen.mutate()}
-              disabled={reopen.isPending}
-              className="flex-1 gap-1.5 sm:flex-none"
-            >
-              <Unlock className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Reopen Poll</span><span className="sm:hidden">Reopen</span>
-            </Button>
-          )}
+          </Button>
+
+          {/* Copy Link - Outside as requested */}
+          <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
+            <Copy className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Copy Link</span><span className="sm:hidden">Copy</span>
+          </Button>
+
+          {/* Publish Results Dropdown */}
           {(poll.status === "closed" || poll.status === "active") && (
-            <Button
-              size="sm"
-              onClick={() => publish.mutate()}
-              disabled={publish.isPending}
-              className="flex-1 gap-1.5 sm:flex-none"
-            >
-              <Unlock className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Publish Results</span><span className="sm:hidden">Publish</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  disabled={publish.isPending}
+                  className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Unlock className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Publish Results</span>
+                  <span className="sm:hidden">Publish</span>
+                  <ChevronDown className="h-3 w-3 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => publish.mutate("permanent")} className="flex flex-col items-start py-2">
+                  <div className="flex items-center gap-2 font-bold">
+                    <Lock className="h-3.5 w-3.5" />
+                    <span>End & Publish</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Closes poll and makes results public permanently.</p>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => publish.mutate("live")} className="flex flex-col items-start py-2">
+                  <div className="flex items-center gap-2 font-bold text-primary">
+                    <Zap className="h-3.5 w-3.5" />
+                    <span>Publish Live</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Share live results while keeping the poll active.</p>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
+
+          {/* More Actions Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setIsQRCardOpen(true)}>
+                <QrCode className="mr-2 h-4 w-4" />
+                <span>QR Code</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSnapshot}>
+                <Camera className="mr-2 h-4 w-4" />
+                <span>Take Snapshot</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExport}>
+                <Download className="mr-2 h-4 w-4" />
+                <span>Export CSV</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => regenerateToken.mutate()}
+                disabled={regenerateToken.isPending}
+              >
+                <RefreshCcw className={`mr-2 h-4 w-4 ${regenerateToken.isPending ? "animate-spin" : ""}`} />
+                <span>Regenerate Link</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {poll.status === "active" ? (
+                <DropdownMenuItem 
+                  onClick={() => close.mutate()}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Lock className="mr-2 h-4 w-4" />
+                  <span>Close Poll</span>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => reopen.mutate()}>
+                  <Unlock className="mr-2 h-4 w-4" />
+                  <span>Reopen Poll</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -237,6 +277,16 @@ export function AnalyticsPage() {
         analytics={analytics}
         shareUrl={shareUrl}
       />
+
+      {isQRCardOpen && (
+        <QRCardDialog 
+          pollId={pollId!} 
+          pollTitle={poll.title} 
+          defaultBranding={user?.branding}
+          open={isQRCardOpen}
+          onOpenChange={setIsQRCardOpen}
+        />
+      )}
     </div>
   );
 }

@@ -125,19 +125,27 @@ export async function getPollAnalyticsSnapshot(pollId: string) {
         browserStats,
         questionSummaries: poll.questions.map((q: any) => {
             const options = q.options || [];
-            const questionTotalVotes = q.type === "single_choice" 
+            const isChoiceType = q.type === "single_choice" || q.type === "multiple_choice";
+            
+            // For single choice, total votes is sum of options. 
+            // For multiple choice, it's more helpful to know total participants, but sum of votes is a fallback.
+            const questionTotalVotes = isChoiceType 
                 ? options.reduce((acc: number, opt: any) => acc + (opt.voteCount || 0), 0) 
                 : 0;
+
+            // Base for percentage calculation
+            // For multi-choice, we use totalResponses as people can pick multiple options
+            const pctBase = q.type === "multiple_choice" ? totalResponses : questionTotalVotes;
 
             return {
                 questionId: q._id,
                 text: q.text,
                 type: q.type,
-                totalVotes: q.type === "single_choice" ? questionTotalVotes : null,
-                options: q.type === "single_choice" ? options.map((opt: any) => ({
+                totalVotes: isChoiceType ? questionTotalVotes : null,
+                options: isChoiceType ? options.map((opt: any) => ({
                     text: opt.text,
                     voteCount: opt.voteCount,
-                    percentage: questionTotalVotes > 0 ? ((opt.voteCount || 0) / questionTotalVotes) * 100 : 0
+                    percentage: pctBase > 0 ? ((opt.voteCount || 0) / pctBase) * 100 : 0
                 })) : null
             };
         })

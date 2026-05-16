@@ -67,12 +67,25 @@ export async function submitResponse(
 
     // Atomic increment of individual option vote counts
     for (const answer of responseData.answers) {
-        if (!answer.skipped && answer.selectedOptionId) {
+        if (answer.skipped) continue;
+
+        const optionsToIncrement = [];
+        if (answer.selectedOptionId) {
+            optionsToIncrement.push(answer.selectedOptionId);
+        }
+        if (answer.selectedOptionIds && Array.isArray(answer.selectedOptionIds)) {
+            optionsToIncrement.push(...answer.selectedOptionIds);
+        }
+
+        // De-duplicate in case both fields are present
+        const uniqueOptions = [...new Set(optionsToIncrement.map(id => id.toString()))];
+
+        for (const optionId of uniqueOptions) {
             await Poll.updateOne(
                 { 
                     _id: pollId,
                     "questions._id": answer.questionId,
-                    "questions.options._id": answer.selectedOptionId 
+                    "questions.options._id": optionId 
                 },
                 { 
                     $inc: { "questions.$[q].options.$[o].voteCount": 1 } 
@@ -80,7 +93,7 @@ export async function submitResponse(
                 {
                     arrayFilters: [
                         { "q._id": new mongoose.Types.ObjectId(answer.questionId) },
-                        { "o._id": new mongoose.Types.ObjectId(answer.selectedOptionId) }
+                        { "o._id": new mongoose.Types.ObjectId(optionId) }
                     ]
                 }
             );

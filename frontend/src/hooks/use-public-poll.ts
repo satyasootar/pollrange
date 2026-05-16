@@ -26,6 +26,10 @@ export function usePublishedResults(shareToken: string) {
     queryFn: () => publicApi.getResults(shareToken),
     select: (res) => res.data.data,
     enabled: !!shareToken,
+    refetchInterval: (query) => {
+      const status = query.state.data?.data?.data?.status;
+      return status === "active" ? 30000 : false;
+    },
   });
 }
 

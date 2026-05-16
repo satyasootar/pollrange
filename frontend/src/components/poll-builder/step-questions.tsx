@@ -51,6 +51,7 @@ function QuestionCard({ q, index }: { q: BuilderQuestion; index: number }) {
               className="border border-border bg-background px-2 py-1 text-xs text-foreground"
             >
               <option value="single_choice">Single Choice</option>
+              <option value="multiple_choice">Multiple Choice</option>
               <option value="open_ended">Open Ended</option>
             </select>
             <div className="flex items-center gap-2">
@@ -78,7 +79,7 @@ function QuestionCard({ q, index }: { q: BuilderQuestion; index: number }) {
       </div>
 
       {/* Options */}
-      {q.type === "single_choice" && (
+      {(q.type === "single_choice" || q.type === "multiple_choice") && (
         <div className="space-y-2 p-4 pl-10">
           <AnimatePresence>
             {q.options.map((opt) => (
@@ -90,7 +91,11 @@ function QuestionCard({ q, index }: { q: BuilderQuestion; index: number }) {
                 exit={{ opacity: 0, y: -6 }}
                 className="flex items-center gap-2"
               >
-                <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/40" />
+                {q.type === "single_choice" ? (
+                  <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/40" />
+                ) : (
+                  <div className="h-4 w-4 shrink-0 rounded border-2 border-muted-foreground/40" />
+                )}
                 <Input
                   value={opt.text}
                   placeholder={`Option ${q.options.indexOf(opt) + 1}`}
@@ -136,7 +141,7 @@ export function StepQuestions() {
     const hasEmpty = form.questions.some(
       (q) =>
         !q.text.trim() ||
-        (q.type === "single_choice" &&
+        ((q.type === "single_choice" || q.type === "multiple_choice") &&
           q.options.some((o) => !o.text.trim()))
     );
     if (hasEmpty) {

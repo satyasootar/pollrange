@@ -9,7 +9,7 @@ const optionZodSchema = z.object({
 
 const questionZodSchema = z.object({
   text: z.string(),
-  type: z.enum(["single_choice", "open_ended"]).default("single_choice"),
+  type: z.enum(["single_choice", "multiple_choice", "open_ended"]).default("single_choice"),
   options: z.array(optionZodSchema).optional(),
   isMandatory: z.boolean().default(true),
   order: z.number(),
@@ -26,6 +26,8 @@ export const pollZodSchema = z.object({
   expiresAt: z.date().optional().nullable(),
   totalResponses: z.number().default(0),
   isDeleted: z.boolean().default(false),
+  isResultsPublic: z.boolean().default(false),
+  resultsPublishedAt: z.date().optional(),
   publishedAt: z.date().optional(),
   closedAt: z.date().optional(),
   settings: z.object({
@@ -39,3 +41,9 @@ export const pollZodSchema = z.object({
 export type IPoll = z.infer<typeof pollZodSchema>;
 export type IQuestion = z.infer<typeof questionZodSchema>;
 export type IOption = z.infer<typeof optionZodSchema>;
+ 
+export const publishPollSchema = z.object({
+  mode: z.enum(["live", "permanent"]).default("permanent"),
+});
+
+export type IPublishPoll = z.infer<typeof publishPollSchema>;

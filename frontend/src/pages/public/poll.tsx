@@ -15,7 +15,7 @@ export function PublicPollPage() {
   const { data: statusData } = usePollStatus(shareToken!);
   const submitResponse = useSubmitResponse(poll?.pollId || (poll as any)?._id || "");
 
-  const [answers, setAnswers] = useState<Record<string, string | null>>({});
+  const [answers, setAnswers] = useState<Record<string, string | string[] | null>>({});
   const [submitted, setSubmitted] = useState(false);
 
   const questions = useMemo(() => {
@@ -68,17 +68,27 @@ export function PublicPollPage() {
   }
 
   if (currentStatus === "closed" || currentStatus === "expired") {
-    return <PollClosedState />;
+    return (
+      <PollClosedState
+        isResultsPublic={poll.isResultsPublic || poll.status === "published"}
+        shareToken={shareToken!}
+      />
+    );
   }
 
   if (hasResponded) {
-    return <AlreadyRespondedState />;
+    return (
+      <AlreadyRespondedState
+        isResultsPublic={poll.isResultsPublic || poll.status === "published"}
+        shareToken={shareToken!}
+      />
+    );
   }
 
   if (submitted) {
     return (
       <ThankYouState
-        isPublished={poll.status === "published"}
+        isResultsPublic={poll.isResultsPublic || poll.status === "published"}
         shareToken={shareToken!}
         totalResponses={poll.totalResponses}
       />
@@ -87,22 +97,39 @@ export function PublicPollPage() {
 
   const answeredMandatory = questions
     .filter((q) => q.isMandatory)
-    .every((q) => answers[q.questionId] !== undefined);
+    .every((q) => {
+      const ans = answers[q.questionId];
+      if (q.type === "multiple_choice") {
+        return Array.isArray(ans) && ans.length > 0;
+      }
+      return ans !== undefined && ans !== null && ans !== "";
+    });
 
-  const handleSelect = (questionId: string, optionId: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+  const handleSelect = (questionId: string, optionId: string, isMultiple: boolean) => {
+    setAnswers((prev) => {
+      if (isMultiple) {
+        const current = (prev[questionId] as string[]) || [];
+        const next = current.includes(optionId)
+          ? current.filter((id) => id !== optionId)
+          : [...current, optionId];
+        return { ...prev, [questionId]: next };
+      }
+      return { ...prev, [questionId]: optionId };
+    });
   };
 
   const handleSubmit = () => {
     const payload: AnswerPayload[] = questions.map((q) => {
-      const isChoice = q.type === "single_choice";
+      const isSingle = q.type === "single_choice";
+      const isMultiple = q.type === "multiple_choice";
       const answer = answers[q.questionId];
       
       return {
         questionId: q.questionId,
-        selectedOptionId: isChoice ? (answer as string) : null,
-        textResponse: !isChoice ? (answer as string) : null,
-        skipped: !answer,
+        selectedOptionId: isSingle ? (answer as string) : null,
+        selectedOptionIds: isMultiple ? (answer as string[]) : [],
+        textResponse: q.type === "open_ended" ? (answer as string) : null,
+        skipped: !answer || (isMultiple && (answer as string[]).length === 0),
       };
     });
 
@@ -169,11 +196,15 @@ export function PublicPollPage() {
                 {q.options.length > 0 ? (
                   <div className="space-y-2">
                     {q.options.map((opt) => {
-                      const selected = answers[q.questionId] === opt.optionId;
+                      const isMultiple = q.type === "multiple_choice";
+                      const selected = isMultiple 
+                        ? (answers[q.questionId] as string[] || []).includes(opt.optionId)
+                        : answers[q.questionId] === opt.optionId;
+                      
                       return (
                         <button
                           key={opt.optionId}
-                          onClick={() => handleSelect(q.questionId, opt.optionId)}
+                          onClick={() => handleSelect(q.questionId, opt.optionId, isMultiple)}
                           className={`flex w-full items-center gap-3 border p-3 text-left text-sm transition-colors ${
                             selected
                               ? "border-primary bg-primary/10 text-primary"
@@ -181,12 +212,14 @@ export function PublicPollPage() {
                           }`}
                         >
                           <div
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center transition-colors ${
+                              isMultiple ? "rounded" : "rounded-full"
+                            } border-2 ${
                               selected ? "border-primary" : "border-muted-foreground/40"
                             }`}
                           >
                             {selected && (
-                              <div className="h-2 w-2 rounded-full bg-primary" />
+                              <div className={`h-2 w-2 ${isMultiple ? "rounded-sm" : "rounded-full"} bg-primary`} />
                             )}
                           </div>
                           {opt.text}
@@ -232,11 +265,11 @@ export function PublicPollPage() {
 
 // ─── State screens ─────────────────────────────────────────────────────────────
 function ThankYouState({
-  isPublished,
+  isResultsPublic,
   shareToken,
   totalResponses,
 }: {
-  isPublished: boolean;
+  isResultsPublic: boolean;
   shareToken: string;
   totalResponses: number;
 }) {
@@ -255,7 +288,7 @@ function ThankYouState({
           Your response has been recorded. You're among{" "}
           <strong>{totalResponses + 1}</strong> respondents.
         </p>
-        {isPublished && (
+        {isResultsPublic && (
           <Button onClick={() => navigate(`/p/${shareToken}/results`)}>
             View Results
           </Button>
@@ -265,7 +298,14 @@ function ThankYouState({
   );
 }
 
-function PollClosedState() {
+function PollClosedState({
+  isResultsPublic,
+  shareToken,
+}: {
+  isResultsPublic: boolean;
+  shareToken: string;
+}) {
+  const navigate = useNavigate();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <motion.div
@@ -279,9 +319,14 @@ function PollClosedState() {
         <h2 className="mb-3 text-2xl font-bold tracking-tight">This poll has ended</h2>
         <p className="mb-8 text-muted-foreground leading-relaxed">
           The creator has closed this poll or the deadline has passed.
-          Results will be available once the creator publishes them.
+          {isResultsPublic ? " You can still view the results below." : " Results will be available once the creator publishes them."}
         </p>
         <div className="flex flex-col gap-3">
+          {isResultsPublic && (
+            <Button onClick={() => navigate(`/p/${shareToken}/results`)} className="w-full">
+              View Results
+            </Button>
+          )}
           <Button
             variant="outline"
             className="w-full font-medium"
@@ -298,15 +343,27 @@ function PollClosedState() {
   );
 }
 
-function AlreadyRespondedState() {
+function AlreadyRespondedState({
+  isResultsPublic,
+  shareToken,
+}: {
+  isResultsPublic: boolean;
+  shareToken: string;
+}) {
+  const navigate = useNavigate();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="border border-border bg-card p-10 text-center max-w-sm w-full">
         <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" />
         <h2 className="mb-2 text-xl font-bold">Already Responded</h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="mb-6 text-sm text-muted-foreground">
           You've already submitted a response to this poll.
         </p>
+        {isResultsPublic && (
+          <Button onClick={() => navigate(`/p/${shareToken}/results`)}>
+            View Results
+          </Button>
+        )}
       </div>
     </div>
   );

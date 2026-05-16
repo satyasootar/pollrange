@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 const answerItemZodSchema = z.object({
   questionId: z.custom<mongoose.Types.ObjectId>(),
   selectedOptionId: z.custom<mongoose.Types.ObjectId>().nullable().optional(),
+  selectedOptionIds: z.array(z.custom<mongoose.Types.ObjectId>()).optional().default([]),
   textResponse: z.string().nullable().optional(),
   skipped: z.boolean(),
 });

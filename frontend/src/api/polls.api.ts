@@ -37,8 +37,8 @@ export const pollsApi = {
   delete: (pollId: string) =>
     api.delete(`/polls/${pollId}`),
 
-  publish: (pollId: string) =>
-    api.post<{ data: Poll }>(`/polls/${pollId}/publish`),
+  publish: (pollId: string, mode: "live" | "permanent" = "permanent") =>
+    api.post<{ data: Poll }>(`/polls/${pollId}/publish`, { mode }),
 
   close: (pollId: string) =>
     api.patch<{ data: Poll }>(`/polls/${pollId}/close`),

@@ -56,7 +56,7 @@ export interface PollOption {
 export interface PollQuestion {
   _id: string;
   text: string;
-  type: "single_choice" | "open_ended";
+  type: "single_choice" | "multiple_choice" | "open_ended";
   options: PollOption[];
   isMandatory: boolean;
   order: number;
@@ -95,7 +95,7 @@ export interface Poll {
 export interface PublicPollQuestion {
   questionId: string;
   text: string;
-  type: "single_choice" | "open_ended";
+  type: "single_choice" | "multiple_choice" | "open_ended";
   isMandatory: boolean;
   order: number;
   options: { optionId: string; text: string; order: number }[];
@@ -122,6 +122,7 @@ export interface PublicPoll {
 export interface AnswerPayload {
   questionId: string;
   selectedOptionId: string | null;
+  selectedOptionIds: string[]; // For multiple choice
   textResponse?: string | null;
   skipped: boolean;
 }
@@ -143,7 +144,7 @@ export interface OptionStat {
 export interface QuestionStat {
   questionId: string;
   questionText: string;
-  type: "single_choice" | "open_ended";
+  type: "single_choice" | "multiple_choice" | "open_ended";
   isMandatory: boolean;
   responseCount: number;
   skippedCount: number;
@@ -205,7 +206,7 @@ export interface BuilderOption {
 export interface BuilderQuestion {
   id: string; // local uuid
   text: string;
-  type: "single_choice" | "open_ended";
+  type: "single_choice" | "multiple_choice" | "open_ended";
   isMandatory: boolean;
   options: BuilderOption[];
 }

@@ -76,7 +76,7 @@ export function useDeletePoll() {
 export function usePublishPoll(pollId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => pollsApi.publish(pollId),
+    mutationFn: (mode: "live" | "permanent" = "permanent") => pollsApi.publish(pollId, mode),
     onSuccess: (res) => {
       const poll = res.data.data;
       qc.invalidateQueries({ queryKey: pollKeys.detail(pollId) });
