@@ -45,16 +45,24 @@ const GoogleIcon = () => (
   </svg>
 );
 
-export function GoogleAuthButton() {
+interface GoogleAuthButtonProps {
+  /** Path to return to after auth (defaults to the ?redirect= query param). */
+  redirect?: string;
+  /** Runs right before the redirect — use it to persist in-progress state. */
+  onBeforeRedirect?: () => void;
+}
+
+export function GoogleAuthButton({ redirect, onBeforeRedirect }: GoogleAuthButtonProps = {}) {
   const handleGoogleLogin = () => {
+    onBeforeRedirect?.();
     const params = new URLSearchParams(window.location.search);
-    const redirect = params.get("redirect");
+    const state = redirect ?? params.get("redirect") ?? undefined;
     const googleUrl = new URL(`${config.apiUrl}/auth/google`, window.location.origin);
-    
-    if (redirect) {
-      googleUrl.searchParams.set("state", redirect);
+
+    if (state) {
+      googleUrl.searchParams.set("state", state);
     }
-    
+
     window.location.href = googleUrl.toString();
   };
 

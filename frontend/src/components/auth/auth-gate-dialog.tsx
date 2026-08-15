@@ -9,12 +9,17 @@ import {
 } from "@/components/ui/dialog"
 import { LoginForm } from "./login-form"
 import { RegisterForm } from "./register-form"
+import { GoogleAuthButton } from "./google-auth-button"
 
 interface AuthGateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Called after a successful login/registration. */
   onAuthenticated: () => void
+  /** Path to return to after the Google redirect (e.g. the poll URL). */
+  googleRedirect?: string
+  /** Runs before the Google redirect — persist in-progress state here. */
+  onBeforeGoogle?: () => void
 }
 
 /**
@@ -22,7 +27,13 @@ interface AuthGateDialogProps {
  * authenticated poll). Reuses the standard auth forms; on success it closes and
  * fires onAuthenticated so the caller can continue the interrupted flow.
  */
-export function AuthGateDialog({ open, onOpenChange, onAuthenticated }: AuthGateDialogProps) {
+export function AuthGateDialog({
+  open,
+  onOpenChange,
+  onAuthenticated,
+  googleRedirect,
+  onBeforeGoogle,
+}: AuthGateDialogProps) {
   const [mode, setMode] = useState<"login" | "register">("login")
 
   const handleSuccess = () => {
@@ -42,6 +53,16 @@ export function AuthGateDialog({ open, onOpenChange, onAuthenticated }: AuthGate
             submitted automatically once you're in.
           </DialogDescription>
         </DialogHeader>
+
+        <GoogleAuthButton redirect={googleRedirect} onBeforeRedirect={onBeforeGoogle} />
+
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            or
+          </span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
 
         {mode === "login" ? (
           <LoginForm

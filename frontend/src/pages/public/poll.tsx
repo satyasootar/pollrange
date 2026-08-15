@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
@@ -19,6 +19,24 @@ type ProcessedQuestion = Omit<PublicPollQuestion, "options"> & {
   options: (RawOption & { optionId: string })[];
 };
 
+type AnswerMap = Record<string, string | string[] | null>;
+
+function buildAnswerPayload(questions: ProcessedQuestion[], ans: AnswerMap): AnswerPayload[] {
+  return questions.map((q) => {
+    const isSingle = q.type === "single_choice";
+    const isMultiple = q.type === "multiple_choice";
+    const answer = ans[q.questionId];
+
+    return {
+      questionId: q.questionId,
+      selectedOptionId: isSingle ? (answer as string) : null,
+      selectedOptionIds: isMultiple ? (answer as string[]) : [],
+      textResponse: q.type === "open_ended" ? (answer as string) : null,
+      skipped: !answer || (isMultiple && (answer as string[]).length === 0),
+    };
+  });
+}
+
 export function PublicPollPage() {
   const { shareToken } = useParams<{ shareToken: string }>();
   const navigate = useNavigate();
@@ -26,10 +44,12 @@ export function PublicPollPage() {
   const { data: statusData } = usePollStatus(shareToken!);
   const submitResponse = useSubmitResponse(poll?.pollId || "", shareToken!);
 
-  const [answers, setAnswers] = useState<Record<string, string | string[] | null>>({});
+  const [answers, setAnswers] = useState<AnswerMap>({});
   const [submitted, setSubmitted] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
+  const pendingKey = `kollects_pending_${shareToken}`;
+  const resumedRef = useRef(false);
 
   const pollId = poll?.pollId ?? "";
 
@@ -66,6 +86,25 @@ export function PublicPollPage() {
       navigate(`/p/${shareToken}/results`, { replace: true });
     }
   }, [poll?.status, shareToken, navigate]);
+
+  // Resume a submit that was interrupted by the Google auth redirect: if we
+  // return logged in with stashed answers, restore them and submit once.
+  useEffect(() => {
+    if (resumedRef.current || !poll || !user) return;
+    const raw = localStorage.getItem(pendingKey);
+    if (!raw) return;
+    resumedRef.current = true;
+    localStorage.removeItem(pendingKey);
+    try {
+      const saved = JSON.parse(raw) as AnswerMap;
+      submitResponse.mutate(buildAnswerPayload(questions, saved), {
+        onSuccess: () => setSubmitted(true),
+      });
+    } catch {
+      /* ignore corrupt pending data */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poll, user]);
 
   if (isLoading) {
     return (
@@ -134,25 +173,15 @@ export function PublicPollPage() {
     });
   };
 
-  const doSubmit = () => {
-    const payload: AnswerPayload[] = questions.map((q) => {
-      const isSingle = q.type === "single_choice";
-      const isMultiple = q.type === "multiple_choice";
-      const answer = answers[q.questionId];
-
-      return {
-        questionId: q.questionId,
-        selectedOptionId: isSingle ? (answer as string) : null,
-        selectedOptionIds: isMultiple ? (answer as string[]) : [],
-        textResponse: q.type === "open_ended" ? (answer as string) : null,
-        skipped: !answer || (isMultiple && (answer as string[]).length === 0),
-      };
-    });
-
-    submitResponse.mutate(payload, {
+  const doSubmit = (ans: AnswerMap = answers) => {
+    submitResponse.mutate(buildAnswerPayload(questions, ans), {
       onSuccess: () => setSubmitted(true),
     });
   };
+
+  // Google auth is a full-page redirect, so stash the answers first; the resume
+  // effect submits them when we come back logged in.
+  const savePending = () => localStorage.setItem(pendingKey, JSON.stringify(answers));
 
   const handleSubmit = () => {
     // Authenticated polls require a logged-in respondent: gate on the auth modal,
@@ -288,7 +317,9 @@ export function PublicPollPage() {
       <AuthGateDialog
         open={authOpen}
         onOpenChange={setAuthOpen}
-        onAuthenticated={doSubmit}
+        onAuthenticated={() => doSubmit()}
+        googleRedirect={`/p/${shareToken}`}
+        onBeforeGoogle={savePending}
       />
     </motion.div>
   );
