@@ -3,7 +3,7 @@ import { BarChart3 } from "lucide-react";
 export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/10">
-      <div className="max-w-[1400px] mx-auto px-12 py-20 grid grid-cols-2 md:grid-cols-5 gap-12">
+      <div className="max-w-350 mx-auto px-12 py-20 grid grid-cols-2 md:grid-cols-5 gap-12">
         <div className="col-span-2">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-8 h-8 bg-foreground text-background flex items-center justify-center">
@@ -45,7 +45,7 @@ export function Footer() {
         ))}
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-12 py-6 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="max-w-350 mx-auto px-12 py-6 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
         <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
           © 2025 Kollects — All Rights Reserved
         </p>

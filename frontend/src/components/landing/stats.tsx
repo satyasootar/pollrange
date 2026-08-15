@@ -5,7 +5,7 @@ import { fadeUp, stagger } from "@/lib/animations";
 export function Stats() {
   return (
     <section id="stats" className="border-b border-border">
-      <div className="max-w-[1400px] mx-auto px-12 py-24">
+      <div className="max-w-350 mx-auto px-12 py-24">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
           <motion.div variants={fadeUp} className="mb-16 text-start">
             <SectionLabel>By The Numbers</SectionLabel>

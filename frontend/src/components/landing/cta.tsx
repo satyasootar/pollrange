@@ -8,7 +8,7 @@ import { fadeUp, stagger } from "@/lib/animations";
 export function CTA() {
   return (
     <section className="border-b border-border">
-      <div className="max-w-[1400px] mx-auto px-12 py-32">
+      <div className="max-w-350 mx-auto px-12 py-32">
         <motion.div
           initial="hidden"
           whileInView="visible"

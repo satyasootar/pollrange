@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="flex flex-col items-center justify-center border border-dashed border-destructive/50 bg-destructive/5 p-8 text-center">
           <AlertCircle className="mb-2 h-8 w-8 text-destructive" />
           <h3 className="text-sm font-semibold text-destructive">Something went wrong</h3>
-          <p className="mt-1 text-xs text-muted-foreground max-w-[200px]">
+          <p className="mt-1 text-xs text-muted-foreground max-w-50">
             We couldn't render this component. Try refreshing the page.
           </p>
           <Button 
