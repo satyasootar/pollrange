@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { FullAnalytics, WordCloudItem, TimelinePoint } from "@/types";
+import type { FullAnalytics, WordCloudItem, TimelinePoint, RespondentEntry } from "@/types";
 
 export const analyticsApi = {
   getSnapshot: (pollId: string) =>
@@ -9,6 +9,9 @@ export const analyticsApi = {
 
   getFull: (pollId: string) =>
     api.get<{ data: FullAnalytics }>(`/analytics/${pollId}/full`),
+
+  getRespondents: (pollId: string) =>
+    api.get<{ data: RespondentEntry[] }>(`/analytics/${pollId}/respondents`),
 
   getSummary: (pollId: string) =>
     api.get<{ data: { totalResponses: number; completionRate: number; status: string } }>(

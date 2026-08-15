@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as AnalyticsService from "./analytics.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
+import { ApiError } from "../../utils/ApiError.js";
 import { Poll } from "../poll/poll.model.js";
 
 /**
@@ -83,6 +84,23 @@ export async function getFullAnalytics(req: Request, res: Response) {
     return res.status(200).json(
         new ApiResponse(200, mappedData, "Full analytics fetched successfully")
     );
+}
+
+/**
+ * Lists individual respondents (name + submission time) for the poll owner.
+ * Exposes PII, so it verifies the requester owns the poll before returning data.
+ */
+export async function getRespondents(req: Request, res: Response) {
+    const { pollId } = req.params;
+    const user = (req as any).user;
+
+    const poll = await Poll.findOne({ _id: pollId, creatorId: user._id, isDeleted: false });
+    if (!poll) {
+        throw new ApiError(404, "Poll not found or unauthorized");
+    }
+
+    const data = await AnalyticsService.getPollRespondents(pollId as string);
+    return res.status(200).json(new ApiResponse(200, data, "Respondents fetched successfully"));
 }
 
 export async function getSummary(req: Request, res: Response) {

@@ -51,6 +51,26 @@ export async function getWordCloudData(pollId: string, questionId: string) {
 }
 
 /**
+ * Lists individual respondents for a poll (name/email for authenticated
+ * responses, "Anonymous" otherwise) with their submission timestamp.
+ * Caller must verify poll ownership before calling this — it returns PII.
+ */
+export async function getPollRespondents(pollId: string) {
+    const responses = await ResponseModel.find({ pollId })
+        .select("respondentId submittedAt isComplete")
+        .populate("respondentId", "name email")
+        .sort({ submittedAt: -1 });
+
+    return responses.map((r: any) => ({
+        responseId: r._id,
+        name: r.respondentId?.name ?? "Anonymous",
+        email: r.respondentId?.email ?? null,
+        submittedAt: r.submittedAt,
+        isComplete: r.isComplete,
+    }));
+}
+
+/**
  * Gets a comprehensive analytics snapshot for a poll including:
  * - Total responses
  * - Completion rate

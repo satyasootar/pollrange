@@ -8,6 +8,7 @@ const router = Router();
 router.get("/:pollId/wordcloud/:questionId", verifyJWT, AnalyticsController.getWordCloud);
 router.get("/:pollId/snapshot", verifyJWT, AnalyticsController.getSnapshot);
 router.get("/:pollId/full", verifyJWT, AnalyticsController.getFullAnalytics);
+router.get("/:pollId/respondents", verifyJWT, AnalyticsController.getRespondents);
 router.get("/:pollId/summary", verifyJWT, AnalyticsController.getSummary);
 router.get("/:pollId/timeline", verifyJWT, AnalyticsController.getTimeline);
 router.get("/:pollId/export", verifyJWT, AnalyticsController.exportData);

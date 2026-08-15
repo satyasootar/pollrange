@@ -7,6 +7,7 @@ export const analyticsKeys = {
   timeline: (pollId: string) => ["analytics", pollId, "timeline"] as const,
   wordCloud: (pollId: string, questionId: string) =>
     ["analytics", pollId, "wordcloud", questionId] as const,
+  respondents: (pollId: string) => ["analytics", pollId, "respondents"] as const,
 };
 
 export function useFullAnalytics(pollId: string) {
@@ -36,6 +37,15 @@ export function useTimeline(pollId: string, groupBy: "hour" | "day" = "day") {
     queryFn: () => analyticsApi.getTimeline(pollId, groupBy),
     select: (res) => res.data.data,
     enabled: !!pollId,
+  });
+}
+
+export function useRespondents(pollId: string, enabled = true) {
+  return useQuery({
+    queryKey: analyticsKeys.respondents(pollId),
+    queryFn: () => analyticsApi.getRespondents(pollId),
+    select: (res) => res.data.data,
+    enabled: !!pollId && enabled,
   });
 }
 

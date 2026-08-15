@@ -177,6 +177,14 @@ export interface FullAnalytics {
   timeline: TimelinePoint[];
 }
 
+export interface RespondentEntry {
+  responseId: string;
+  name: string;
+  email: string | null;
+  submittedAt: string;
+  isComplete: boolean;
+}
+
 // ─── Socket event payloads ────────────────────────────────────────────────────
 export interface NewResponsePayload {
   pollId: string;

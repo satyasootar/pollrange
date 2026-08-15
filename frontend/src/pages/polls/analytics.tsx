@@ -27,7 +27,7 @@ import {
   Zap
 } from "lucide-react";
 import { analyticsApi } from "@/api/analytics.api";
-import { useFullAnalytics } from "@/hooks/use-analytics";
+import { useFullAnalytics, useRespondents } from "@/hooks/use-analytics";
 import { usePoll, usePublishPoll, useClosePoll, useReopenPoll, useRegenerateToken } from "@/hooks/use-polls";
 import { usePollSocket } from "@/hooks/use-poll-socket";
 import { useQueryClient } from "@tanstack/react-query";
@@ -39,6 +39,7 @@ import { OverviewCards } from "@/components/analytics/overview-cards";
 import { AnalyticsSkeleton } from "@/components/analytics/analytics-skeleton";
 import { SnapshotDialog } from "@/components/analytics/snapshot-dialog";
 import { QRCardDialog } from "@/components/analytics/qr-card-dialog";
+import { RespondentsList } from "@/components/analytics/respondents-list";
 import { ReopenPollDialog } from "@/components/analytics/reopen-poll-dialog";
 import { useAuthStore } from "@/store/use-auth-store";
 import { buildShareUrl, copyToClipboard, formatDatetime } from "@/lib/utils";
@@ -58,6 +59,11 @@ export function AnalyticsPage() {
 
   const { data: poll } = usePoll(pollId!);
   const { data: analytics, isLoading } = useFullAnalytics(pollId!);
+  const isAuthenticatedPoll = poll?.responseMode === "authenticated";
+  const { data: respondents, isLoading: isRespondentsLoading } = useRespondents(
+    pollId!,
+    isAuthenticatedPoll
+  );
   const publish = usePublishPoll(pollId!);
   const close = useClosePoll(pollId!);
   const reopen = useReopenPoll(pollId!);
@@ -259,6 +265,16 @@ export function AnalyticsPage() {
           {analytics.timeline.length > 0 && (
             <motion.div variants={fadeUp}>
               <TimelineChart data={analytics.timeline} />
+            </motion.div>
+          )}
+
+          {/* Respondents (authenticated polls only — shows who answered and when) */}
+          {isAuthenticatedPoll && (
+            <motion.div variants={fadeUp}>
+              <RespondentsList
+                respondents={respondents ?? []}
+                isLoading={isRespondentsLoading}
+              />
             </motion.div>
           )}
         </motion.div>
