@@ -1,12 +1,12 @@
-# PollRange
+# Kollects
 
 **Capture the Choice of your Audience.**
 
-PollRange is a high-performance, real-time audience engagement platform designed to bridge the gap between question and insight. Whether you're a content creator, a product manager, or an educator, PollRange provides the tools to build sophisticated multi-question polls, share them instantly, and watch responses flow in with live, data-driven analytics.
+Kollects is a high-performance, real-time audience engagement platform designed to bridge the gap between question and insight. Whether you're a content creator, a product manager, or an educator, Kollects provides the tools to build sophisticated multi-question polls, share them instantly, and watch responses flow in with live, data-driven analytics.
 
-## 🚀 What is PollRange?
+## 🚀 What is Kollects?
 
-PollRange is more than just a survey tool; it's a real-time feedback engine. It allows users to create interactive polls that support various question types, from single-choice selections to open-ended text responses. The platform is built for speed and reliability, ensuring that as soon as a vote is cast, the results are updated across all active dashboards instantly.
+Kollects is more than just a survey tool; it's a real-time feedback engine. It allows users to create interactive polls that support various question types, from single-choice selections to open-ended text responses. The platform is built for speed and reliability, ensuring that as soon as a vote is cast, the results are updated across all active dashboards instantly.
 
 ## 🛠️ How it Works
 
@@ -17,11 +17,11 @@ PollRange is more than just a survey tool; it's a real-time feedback engine. It 
 
 ## 💡 The Problem it Solves
 
-Traditional survey tools often suffer from "data lag"—the time between gathering feedback and being able to act on it. PollRange solves this by:
+Traditional survey tools often suffer from "data lag"—the time between gathering feedback and being able to act on it. Kollects solves this by:
 -   **Eliminating Latency:** Real-time WebSocket integration means you see the data *as it happens*.
 -   **Reducing Friction:** No complex setups or bloated interfaces. Creators can go from an idea to a live poll in under a minute.
 -   **Ensuring Data Integrity:** Built-in duplicate detection (IP hashing and session tracking) ensures that your analytics reflect unique audience choices.
--   **Providing Visual Clarity:** Instead of raw spreadsheets, PollRange delivers beautiful, instant visualizations that make trends obvious at a glance.
+-   **Providing Visual Clarity:** Instead of raw spreadsheets, Kollects delivers beautiful, instant visualizations that make trends obvious at a glance.
 
 ## 💻 Tech Stack
 

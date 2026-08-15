@@ -15,7 +15,7 @@ export function generateSessionToken(): string {
 
 /** Get or create a session token for a specific poll */
 export function getOrCreateSessionToken(pollId: string): string {
-  const key = `pollrange_session_${pollId}`;
+  const key = `kollects_session_${pollId}`;
   const existing = localStorage.getItem(key);
   if (existing) return existing;
   const token = generateSessionToken();

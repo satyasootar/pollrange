@@ -34,7 +34,7 @@ export function Hero() {
             variants={fadeUp} custom={2}
             className="mt-10 text-base text-muted-foreground max-w-xl leading-relaxed font-medium"
           >
-            PollRange lets you build multi-question polls, share them instantly, and watch
+            Kollects lets you build multi-question polls, share them instantly, and watch
             responses flow in live — with real-time analytics your audience can trust.
           </motion.p>
 

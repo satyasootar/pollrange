@@ -14,6 +14,7 @@ export const config = {
   apiUrl: baseUrl.apiUrl,
   socketUrl: baseUrl.socketUrl,
   appUrl: baseUrl.appUrl,
+  siteDomain: import.meta.env.VITE_SITE_DOMAIN || "kollects.com",
 } as const;
 
 // Optional: Validate required config on startup

@@ -335,7 +335,7 @@ function PollClosedState({
             Create Your Own Poll
           </Button>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-            PollRange Public Gateway
+            Kollects Public Gateway
           </p>
         </div>
       </motion.div>

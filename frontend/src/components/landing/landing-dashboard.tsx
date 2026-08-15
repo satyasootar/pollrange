@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { DashboardView } from "../dashboard/dashboard-view";
 import { useAuthStore } from "@/store/use-auth-store";
+import { config } from "@/config/config";
 import { cn, formatDate } from "@/lib/utils";
 import type { Poll, PollFilters } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
@@ -264,10 +265,11 @@ export function LandingDashboard() {
   , [selectedPollId]);
 
   const urlPath = useMemo(() => {
-    if (activeTab === "dashboard") return "pollrange.com/dashboard";
-    if (activeTab === "history") return "pollrange.com/history";
-    if (activeTab === "analytics") return `pollrange.com/polls/${selectedPollId}/analytics`;
-    return "pollrange.com";
+    const domain = config.siteDomain;
+    if (activeTab === "dashboard") return `${domain}/dashboard`;
+    if (activeTab === "history") return `${domain}/history`;
+    if (activeTab === "analytics") return `${domain}/polls/${selectedPollId}/analytics`;
+    return domain;
   }, [activeTab, selectedPollId]);
 
   const filteredPolls = useMemo(() => {
@@ -326,7 +328,7 @@ export function LandingDashboard() {
               <div className="flex items-center gap-3 border-b border-border px-6 h-20">
                 <img src="/logo/logo1.png" alt="Logo" className="h-8 w-auto" />
                 <span className="font-black tracking-tighter text-foreground uppercase text-xl">
-                  PollRange
+                  Kollects
                 </span>
               </div>
               

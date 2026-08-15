@@ -11,9 +11,9 @@ export function Navbar() {
       <div className="max-w-[1400px] mx-auto px-12 h-[72px] flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3 cursor-pointer group/logo">
           <div className="flex items-center justify-center">
-            <img src="/logo/logo1.png" alt="PollRange Logo" className="h-8 w-auto object-contain" />
+            <img src="/logo/logo1.png" alt="Kollects Logo" className="h-8 w-auto object-contain" />
           </div>
-          <span className="text-xl font-black uppercase tracking-tighter">PollRange</span>
+          <span className="text-xl font-black uppercase tracking-tighter">Kollects</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-8 font-mono text-xs uppercase tracking-widest">

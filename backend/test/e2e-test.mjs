@@ -1,5 +1,5 @@
 /**
- * PollRange End-to-End Backend Test
+ * Kollects End-to-End Backend Test
  * ==================================
  * Tests the complete user flow:
  *  1. Register & login multiple users

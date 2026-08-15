@@ -9,7 +9,7 @@ export function Footer() {
             <div className="w-8 h-8 bg-foreground text-background flex items-center justify-center">
               <BarChart3 className="w-4 h-4" />
             </div>
-            <span className="text-lg font-black uppercase tracking-tighter">PollRange</span>
+            <span className="text-lg font-black uppercase tracking-tighter">Kollects</span>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
             The modern standard for audience feedback. Fast, real-time, and built for everyone.
@@ -47,7 +47,7 @@ export function Footer() {
 
       <div className="max-w-[1400px] mx-auto px-12 py-6 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
         <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-          © 2025 PollRange — All Rights Reserved
+          © 2025 Kollects — All Rights Reserved
         </p>
         <div className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground uppercase">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />

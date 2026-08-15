@@ -41,9 +41,9 @@ export function RegisterPage() {
       >
         <motion.div variants={fadeUp} className="mb-8 flex items-center gap-2">
           <div className="flex items-center justify-center">
-            <img src="/logo/logo1.png" alt="PollRange Logo" className="h-8 w-auto object-contain" />
+            <img src="/logo/logo1.png" alt="Kollects Logo" className="h-8 w-auto object-contain" />
           </div>
-          <span className="font-semibold text-foreground">PollRange</span>
+          <span className="font-semibold text-foreground">Kollects</span>
         </motion.div>
 
         <motion.div variants={fadeUp} className="mb-6">

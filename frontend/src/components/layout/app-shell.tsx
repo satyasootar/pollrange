@@ -105,10 +105,10 @@ export function AppShell() {
         }}
       >
         <div className="flex items-center justify-center">
-          <img src="/logo/logo1.png" alt="PollRange Logo" className="h-6 w-auto object-contain" />
+          <img src="/logo/logo1.png" alt="Kollects Logo" className="h-6 w-auto object-contain" />
         </div>
         <span className="font-semibold tracking-tight text-foreground uppercase">
-          PollRange
+          Kollects
         </span>
       </div>
 
@@ -249,9 +249,9 @@ export function AppShell() {
               className="flex cursor-pointer items-center gap-2 md:hidden "
               onClick={() => navigate("/dashboard")}
             >
-              <img src="/logo/logo1.png" alt="PollRange Logo" className="h-6 w-auto" />
+              <img src="/logo/logo1.png" alt="Kollects Logo" className="h-6 w-auto" />
               <span className="font-semibold tracking-tight text-foreground uppercase text-sm">
-                PollRange
+                Kollects
               </span>
             </div>
           </div>

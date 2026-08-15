@@ -79,7 +79,7 @@ export function SnapshotDialog({
   const [isCopied, setIsCopied] = useState(false);
   const [orientation, setOrientation] = useState<Orientation>("portrait");
 
-  const marketingMessage = `Check out the results for "${analytics.pollTitle}" on PollRange! 🚀 Real-time insights and beautiful visualizations.`;
+  const marketingMessage = `Check out the results for "${analytics.pollTitle}" on Kollects! 🚀 Real-time insights and beautiful visualizations.`;
   const encodedMessage = encodeURIComponent(marketingMessage);
   const encodedUrl = encodeURIComponent(shareUrl);
 
@@ -124,7 +124,7 @@ export function SnapshotDialog({
       });
       
       const link = document.createElement("a");
-      link.download = `pollrange-snapshot-${analytics.pollTitle.toLowerCase().replace(/\s+/g, "-")}.png`;
+      link.download = `kollects-snapshot-${analytics.pollTitle.toLowerCase().replace(/\s+/g, "-")}.png`;
       link.href = dataUrl;
       link.click();
       
@@ -193,10 +193,10 @@ export function SnapshotDialog({
               <div className="bg-muted/5 border-b border-border p-6 flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center bg-primary p-2">
-                    <img src="/logo/logo1.png" alt="PollRange" className="h-full w-auto" />
+                    <img src="/logo/logo1.png" alt="Kollects" className="h-full w-auto" />
                   </div>
                   <div>
-                    <span className="block font-black tracking-tighter text-foreground text-2xl leading-none uppercase">PollRange</span>
+                    <span className="block font-black tracking-tighter text-foreground text-2xl leading-none uppercase">Kollects</span>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60">Insight Report</span>
                   </div>
                 </div>
@@ -324,7 +324,7 @@ export function SnapshotDialog({
               {/* Footer */}
               <div className="mt-auto border-t border-border p-8 bg-muted/5 flex justify-between items-center">
                 <div className="space-y-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">PollRange Official</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Kollects Official</p>
                   <p className="text-[10px] font-mono text-muted-foreground/60 tracking-tighter">{shareUrl.replace(/^https?:\/\//, '')}</p>
                 </div>
                 <div className="flex items-center gap-4">
