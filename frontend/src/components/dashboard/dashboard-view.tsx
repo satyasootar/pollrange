@@ -173,7 +173,7 @@ export function DashboardView({
                   setStatus(tab.value);
                   setPage(1);
                 }}
-                className={`whitespace-nowrap rounded-none border px-3 py-1.5 text-[10px] font-medium transition-colors sm:text-xs ${
+                className={`flex h-12 items-center whitespace-nowrap rounded-none border px-3 text-[10px] font-medium transition-colors sm:text-xs ${
                   status === tab.value
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground"
