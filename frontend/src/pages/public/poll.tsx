@@ -7,6 +7,8 @@ import { usePublicPoll, useSubmitResponse, usePollStatus } from "@/hooks/use-pub
 import { fadeUp, stagger, pageTransition } from "@/lib/animations";
 import type { AnswerPayload, PublicPollQuestion } from "@/types";
 import { timeUntilExpiry, shuffle } from "@/lib/utils";
+import { useAuthStore } from "@/store/use-auth-store";
+import { AuthGateDialog } from "@/components/auth/auth-gate-dialog";
 
 // The backend returns Mongoose subdocuments, so ids arrive as `_id`; the typed
 // `questionId`/`optionId` may be absent. Model both and normalize below.
@@ -26,6 +28,8 @@ export function PublicPollPage() {
 
   const [answers, setAnswers] = useState<Record<string, string | string[] | null>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const user = useAuthStore((s) => s.user);
 
   const pollId = poll?.pollId ?? "";
 
@@ -130,12 +134,12 @@ export function PublicPollPage() {
     });
   };
 
-  const handleSubmit = () => {
+  const doSubmit = () => {
     const payload: AnswerPayload[] = questions.map((q) => {
       const isSingle = q.type === "single_choice";
       const isMultiple = q.type === "multiple_choice";
       const answer = answers[q.questionId];
-      
+
       return {
         questionId: q.questionId,
         selectedOptionId: isSingle ? (answer as string) : null,
@@ -148,6 +152,16 @@ export function PublicPollPage() {
     submitResponse.mutate(payload, {
       onSuccess: () => setSubmitted(true),
     });
+  };
+
+  const handleSubmit = () => {
+    // Authenticated polls require a logged-in respondent: gate on the auth modal,
+    // then auto-submit once they're in.
+    if (poll.responseMode === "authenticated" && !user) {
+      setAuthOpen(true);
+      return;
+    }
+    doSubmit();
   };
 
   const answeredCount = Object.keys(answers).length;
@@ -270,6 +284,12 @@ export function PublicPollPage() {
           </Button>
         </motion.div>
       </div>
+
+      <AuthGateDialog
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        onAuthenticated={doSubmit}
+      />
     </motion.div>
   );
 }
