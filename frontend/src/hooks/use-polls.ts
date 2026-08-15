@@ -103,7 +103,7 @@ export function useClosePoll(pollId: string) {
 export function useReopenPoll(pollId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => pollsApi.reopen(pollId),
+    mutationFn: (expiresAt?: string | null) => pollsApi.reopen(pollId, expiresAt),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: pollKeys.detail(pollId) });
       qc.invalidateQueries({ queryKey: pollKeys.all });

@@ -259,9 +259,9 @@ export async function closePoll(userId: string, pollId: string) {
 /**
  * Reopens a closed poll and optionally sets a new expiration date.
  */
-export async function reopenPoll(userId: string, pollId: string) {
+export async function reopenPoll(userId: string, pollId: string, expiresAt?: Date | null) {
     const poll = await Poll.findOne({ _id: pollId, creatorId: userId, isDeleted: false });
-    
+
     if (!poll) {
         throw new ApiError(404, "Poll not found or unauthorized");
     }
@@ -272,9 +272,14 @@ export async function reopenPoll(userId: string, pollId: string) {
 
     poll.status = "active";
     poll.closedAt = undefined;
-    // Default to 7 days from now if it was already expired
-    if (poll.expiresAt && poll.expiresAt < new Date()) {
-        poll.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    // null/undefined => reopen forever (no expiry); a date sets a new deadline.
+    if (expiresAt === null || expiresAt === undefined) {
+        poll.expiresAt = undefined;
+    } else {
+        if (expiresAt <= new Date()) {
+            throw new ApiError(400, "New expiry date must be in the future");
+        }
+        poll.expiresAt = expiresAt;
     }
 
     await poll.save();

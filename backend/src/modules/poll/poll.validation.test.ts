@@ -3,6 +3,7 @@ import {
   createPollSchema,
   updatePollSchema,
   publishPollSchema,
+  reopenPollSchema,
 } from "./poll.validation.js";
 
 const validPollInput = {
@@ -99,6 +100,27 @@ describe("updatePollSchema", () => {
   it("does not surface server-controlled fields", () => {
     const parsed = updatePollSchema.parse({ title: "New", status: "closed" });
     expect(parsed).not.toHaveProperty("status");
+  });
+});
+
+describe("reopenPollSchema", () => {
+  it("treats an absent expiresAt as forever (undefined)", () => {
+    const parsed = reopenPollSchema.parse({});
+    expect(parsed.expiresAt).toBeUndefined();
+  });
+
+  it("accepts null for forever", () => {
+    const parsed = reopenPollSchema.parse({ expiresAt: null });
+    expect(parsed.expiresAt).toBeNull();
+  });
+
+  it("coerces an ISO string into a Date deadline", () => {
+    const parsed = reopenPollSchema.parse({ expiresAt: "2030-06-01T12:00:00.000Z" });
+    expect(parsed.expiresAt).toBeInstanceOf(Date);
+  });
+
+  it("rejects a non-date string", () => {
+    expect(reopenPollSchema.safeParse({ expiresAt: "whenever" }).success).toBe(false);
   });
 });
 

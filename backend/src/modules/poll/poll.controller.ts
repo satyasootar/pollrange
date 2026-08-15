@@ -3,7 +3,7 @@ import * as PollService from "./poll.service.js";
 import * as AnalyticsService from "../analytics/analytics.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Poll } from "./poll.model.js";
-import { publishPollSchema, createPollSchema, updatePollSchema } from "./poll.validation.js";
+import { publishPollSchema, createPollSchema, updatePollSchema, reopenPollSchema } from "./poll.validation.js";
 
 /**
  * Handles creation of a new poll for the authenticated user.
@@ -160,7 +160,8 @@ export async function closePoll(req: Request, res: Response) {
 export async function reopenPoll(req: Request, res: Response) {
     const user = (req as any).user;
     const { pollId } = req.params;
-    const poll = await PollService.reopenPoll(user._id.toString(), pollId as string);
+    const { expiresAt } = reopenPollSchema.parse(req.body);
+    const poll = await PollService.reopenPoll(user._id.toString(), pollId as string, expiresAt);
     return res.status(200).json(new ApiResponse(200, poll, "Poll reopened successfully"));
 }
 

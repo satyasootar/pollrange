@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -12,6 +13,7 @@ import {
   RefreshCw,
   Lock,
 } from "lucide-react";
+import { ReopenPollDialog } from "@/components/analytics/reopen-poll-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +64,7 @@ export function PollCard({ poll, isCompact = false, onSelect }: PollCardProps) {
   const reopenPoll = useReopenPoll(poll._id);
   const regenerateToken = useRegenerateToken(poll._id);
   const removePoll = useDashboardStore((s) => s.removePoll);
+  const [reopenOpen, setReopenOpen] = useState(false);
   const statusCfg = STATUS_CONFIG[poll.status];
   const shareUrl = buildShareUrl(poll.shareToken);
 
@@ -156,7 +159,7 @@ export function PollCard({ poll, isCompact = false, onSelect }: PollCardProps) {
               )}
 
               {poll.status === "closed" && (
-                <DropdownMenuItem onClick={() => reopenPoll.mutate()}>
+                <DropdownMenuItem onClick={() => setReopenOpen(true)}>
                   <RotateCcw className="mr-2 h-4 w-4" /> Reopen Poll
                 </DropdownMenuItem>
               )}
@@ -221,6 +224,17 @@ export function PollCard({ poll, isCompact = false, onSelect }: PollCardProps) {
             </Button>
           )}
         </div>
+      </div>
+
+      <div onClick={(e) => e.stopPropagation()}>
+        <ReopenPollDialog
+          open={reopenOpen}
+          onOpenChange={setReopenOpen}
+          isPending={reopenPoll.isPending}
+          onConfirm={(expiresAt) =>
+            reopenPoll.mutate(expiresAt, { onSuccess: () => setReopenOpen(false) })
+          }
+        />
       </div>
     </motion.div>
   );

@@ -43,8 +43,8 @@ export const pollsApi = {
   close: (pollId: string) =>
     api.patch<{ data: Poll }>(`/polls/${pollId}/close`),
 
-  reopen: (pollId: string) =>
-    api.patch<{ data: Poll }>(`/polls/${pollId}/reopen`),
+  reopen: (pollId: string, expiresAt?: string | null) =>
+    api.patch<{ data: Poll }>(`/polls/${pollId}/reopen`, { expiresAt }),
 
   regenerateToken: (pollId: string) =>
     api.post<{ data: { shareToken: string } }>(`/polls/${pollId}/regenerate-token`),

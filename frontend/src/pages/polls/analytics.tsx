@@ -39,6 +39,7 @@ import { OverviewCards } from "@/components/analytics/overview-cards";
 import { AnalyticsSkeleton } from "@/components/analytics/analytics-skeleton";
 import { SnapshotDialog } from "@/components/analytics/snapshot-dialog";
 import { QRCardDialog } from "@/components/analytics/qr-card-dialog";
+import { ReopenPollDialog } from "@/components/analytics/reopen-poll-dialog";
 import { useAuthStore } from "@/store/use-auth-store";
 import { buildShareUrl, copyToClipboard, formatDatetime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -53,6 +54,7 @@ export function AnalyticsPage() {
   const [realtimeCount, setRealtimeCount] = useState<number | null>(null);
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
   const [isQRCardOpen, setIsQRCardOpen] = useState(false);
+  const [isReopenOpen, setIsReopenOpen] = useState(false);
 
   const { data: poll } = usePoll(pollId!);
   const { data: analytics, isLoading } = useFullAnalytics(pollId!);
@@ -223,7 +225,7 @@ export function AnalyticsPage() {
                   <span>Close Poll</span>
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem onClick={() => reopen.mutate()}>
+                <DropdownMenuItem onClick={() => setIsReopenOpen(true)}>
                   <Unlock className="mr-2 h-4 w-4" />
                   <span>Reopen Poll</span>
                 </DropdownMenuItem>
@@ -267,6 +269,15 @@ export function AnalyticsPage() {
         onClose={() => setIsSnapshotOpen(false)}
         analytics={analytics}
         shareUrl={shareUrl}
+      />
+
+      <ReopenPollDialog
+        open={isReopenOpen}
+        onOpenChange={setIsReopenOpen}
+        isPending={reopen.isPending}
+        onConfirm={(expiresAt) =>
+          reopen.mutate(expiresAt, { onSuccess: () => setIsReopenOpen(false) })
+        }
       />
 
       {isQRCardOpen && (

@@ -83,3 +83,11 @@ export const publishPollSchema = z.object({
 });
 
 export type IPublishPoll = z.infer<typeof publishPollSchema>;
+
+// Reopen a closed poll: `expiresAt` null/absent means "open forever" (no expiry),
+// a date sets a new deadline.
+export const reopenPollSchema = z.object({
+  expiresAt: z.coerce.date().nullable().optional(),
+});
+
+export type IReopenPoll = z.infer<typeof reopenPollSchema>;
