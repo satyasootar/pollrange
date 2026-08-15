@@ -190,7 +190,7 @@ export function AnalyticsPage() {
           {/* More Actions Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+              <Button variant="outline" size="icon-sm" className="shrink-0">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
