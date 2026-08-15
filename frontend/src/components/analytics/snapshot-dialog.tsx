@@ -174,7 +174,7 @@ export function SnapshotDialog({
             <div 
               ref={cardRef}
               className={cn(
-                "relative bg-background border border-border shadow-2xl transition-all duration-500 origin-center h-fit",
+                "relative flex flex-col bg-background border border-border shadow-2xl transition-all duration-500 origin-center h-fit",
                 orientation === "portrait" ? "w-100 min-h-150" : "w-162.5 min-h-100"
               )}
             >
@@ -187,7 +187,7 @@ export function SnapshotDialog({
               <div className="h-1.5 w-full bg-primary" />
 
               {/* Branding Header */}
-              <div className="bg-muted/5 border-b border-border p-6 flex justify-between items-start">
+              <div className="bg-muted/5 border-b border-border px-8 py-6 flex justify-between items-start gap-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center bg-primary p-2">
                     <img src="/logo/logo1.png" alt="Kollects" className="h-full w-auto" />
@@ -213,7 +213,7 @@ export function SnapshotDialog({
 
               {/* Card Content */}
               <div className={cn(
-                "p-8",
+                "flex-1 p-8",
                 orientation === "landscape" ? "grid grid-cols-2 gap-8" : "space-y-8"
               )}>
                 <div className="space-y-6">
@@ -239,16 +239,16 @@ export function SnapshotDialog({
                            </p>
                         </div>
 
-                        {q.type === "single_choice" ? (
-                          <div className="space-y-2.5 pl-8">
-                            {q.options.slice(0, 4).map((opt, i) => (
-                              <div key={opt.optionId} className="space-y-1">
-                                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider mb-1">
-                                   <span className="truncate pr-4 text-muted-foreground">{opt.optionText}</span>
-                                   <span>{opt.percentage}%</span>
+                        {q.type !== "open_ended" ? (
+                          <div className="space-y-3 pl-8">
+                            {q.options.map((opt, i) => (
+                              <div key={opt.optionId} className="space-y-1.5">
+                                <div className="flex items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-wider">
+                                   <span className="min-w-0 flex-1 truncate text-muted-foreground">{opt.optionText}</span>
+                                   <span className="shrink-0 tabular-nums">{opt.percentage}%</span>
                                 </div>
                                 <div className="relative h-2 w-full bg-muted/20">
-                                  <motion.div 
+                                  <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${opt.percentage}%` }}
                                     transition={{ duration: 1, delay: idx * 0.1 }}
@@ -257,27 +257,22 @@ export function SnapshotDialog({
                                 </div>
                               </div>
                             ))}
-                            {q.options.length > 4 && (
-                               <p className="text-[10px] font-bold text-muted-foreground italic pl-1">
-                                 + {q.options.length - 4} more options
-                               </p>
-                            )}
                           </div>
                         ) : (
                           <div className="pl-8 space-y-3">
                              {q.wordCloudData && q.wordCloudData.length > 0 ? (
                                <div className="flex flex-wrap gap-2">
-                                  {q.wordCloudData.slice(0, 8).map((word) => (
-                                    <span 
-                                      key={word.text} 
+                                  {q.wordCloudData.slice(0, 12).map((word) => (
+                                    <span
+                                      key={word.text}
                                       className="px-2 py-1 bg-primary/5 border border-primary/20 text-[10px] font-bold text-primary uppercase tracking-tight"
                                     >
                                       {word.text} ({word.value})
                                     </span>
                                   ))}
-                                  {q.wordCloudData.length > 8 && (
+                                  {q.wordCloudData.length > 12 && (
                                      <span className="text-[10px] font-bold text-muted-foreground opacity-60 flex items-center gap-1">
-                                        <ChevronRight className="h-3 w-3" /> and {q.wordCloudData.length - 8} others
+                                        <ChevronRight className="h-3 w-3" /> and {q.wordCloudData.length - 12} others
                                      </span>
                                   )}
                                </div>
@@ -294,24 +289,32 @@ export function SnapshotDialog({
                 </div>
 
                 {orientation === "landscape" && (
-                   <div className="flex flex-col justify-center items-center p-8 bg-muted/5 border border-border/50 space-y-6">
-                      <div className="text-center space-y-2">
-                         <div className="mx-auto h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-                            <TrendingUp className="h-8 w-8 text-primary" />
+                   <div className="flex flex-col justify-center p-8 bg-muted/5 border border-border/50 space-y-6">
+                      <div className="flex items-center gap-3">
+                         <div className="h-12 w-12 shrink-0 bg-primary/10 flex items-center justify-center border border-primary/20">
+                            <TrendingUp className="h-6 w-6 text-primary" />
                          </div>
-                         <h3 className="text-lg font-black uppercase tracking-tight">Growth Trend</h3>
-                         <p className="text-xs text-muted-foreground leading-relaxed max-w-50">
-                            High engagement detected. This poll is outperforming 85% of similar surveys in this category.
-                         </p>
+                         <div>
+                            <h3 className="text-base font-black uppercase tracking-tight leading-none">Summary</h3>
+                            <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Real-time results</p>
+                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 w-full">
-                         <div className="bg-background border border-border p-3 text-center">
-                            <span className="block text-[8px] font-bold uppercase text-muted-foreground">Unique Voters</span>
-                            <span className="text-xl font-black">{analytics.totalResponses}</span>
+                      <div className="grid grid-cols-2 gap-3 w-full">
+                         <div className="bg-background border border-border p-3">
+                            <span className="block text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Responses</span>
+                            <span className="text-xl font-black text-primary">{analytics.totalResponses}</span>
                          </div>
-                         <div className="bg-background border border-border p-3 text-center">
-                            <span className="block text-[8px] font-bold uppercase text-muted-foreground">Status</span>
-                            <span className="text-xl font-black text-emerald-500">LIVE</span>
+                         <div className="bg-background border border-border p-3">
+                            <span className="block text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Completion</span>
+                            <span className="text-xl font-black">{analytics.completionRate}%</span>
+                         </div>
+                         <div className="bg-background border border-border p-3">
+                            <span className="block text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Questions</span>
+                            <span className="text-xl font-black">{analytics.questions.length}</span>
+                         </div>
+                         <div className="bg-background border border-border p-3">
+                            <span className="block text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Generated</span>
+                            <span className="text-xs font-black">{new Date().toLocaleDateString()}</span>
                          </div>
                       </div>
                    </div>
