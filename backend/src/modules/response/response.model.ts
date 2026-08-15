@@ -68,8 +68,18 @@ const responseSchema = new Schema<IResponse>(
 );
 
 responseSchema.index({ pollId: 1, submittedAt: -1 });
-responseSchema.index({ pollId: 1, respondentId: 1 }, { sparse: true });
-responseSchema.index({ pollId: 1, sessionToken: 1 });
 responseSchema.index({ pollId: 1, ipHash: 1, submittedAt: 1 });
+
+// One response per identity per poll — the race-safe backstop for duplicate detection.
+// respondentId only applies to authenticated responses, so scope its uniqueness with a
+// partial filter (nulls from anonymous submissions must not collide).
+responseSchema.index(
+  { pollId: 1, sessionToken: 1 },
+  { unique: true }
+);
+responseSchema.index(
+  { pollId: 1, respondentId: 1 },
+  { unique: true, partialFilterExpression: { respondentId: { $exists: true } } }
+);
 
 export const ResponseModel = mongoose.model<IResponse>("Response", responseSchema);

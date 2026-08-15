@@ -3,14 +3,15 @@ import * as PollService from "./poll.service.js";
 import * as AnalyticsService from "../analytics/analytics.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Poll } from "./poll.model.js";
-import { publishPollSchema } from "./poll.validation.js";
+import { publishPollSchema, createPollSchema, updatePollSchema } from "./poll.validation.js";
 
 /**
  * Handles creation of a new poll for the authenticated user.
  */
 export async function createPoll(req: Request, res: Response) {
     const user = (req as any).user;
-    const poll = await PollService.createPoll(user._id.toString(), req.body);
+    const validatedData = createPollSchema.parse(req.body);
+    const poll = await PollService.createPoll(user._id.toString(), validatedData);
     return res.status(201).json(new ApiResponse(201, poll, "Poll created successfully"));
 }
 
@@ -48,7 +49,8 @@ export async function getPollDetail(req: Request, res: Response) {
 export async function updatePoll(req: Request, res: Response) {
     const user = (req as any).user;
     const { pollId } = req.params;
-    const poll = await PollService.updatePoll(user._id.toString(), pollId as string, req.body);
+    const validatedData = updatePollSchema.parse(req.body);
+    const poll = await PollService.updatePoll(user._id.toString(), pollId as string, validatedData);
     return res.status(200).json(new ApiResponse(200, poll, "Poll updated successfully"));
 }
 

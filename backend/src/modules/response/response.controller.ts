@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import * as ResponseService from "./response.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
+import { submitResponseSchema } from "./response.validation.js";
 import crypto from "crypto";
 
 /**
@@ -12,12 +13,14 @@ export async function submitResponse(req: Request, res: Response) {
     const { pollId } = req.params;
     const user = (req as any).user;
     
+    const validatedData = submitResponseSchema.parse(req.body);
+
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     const ipHash = crypto.createHash("sha256").update(ip).digest("hex");
-    
+
     const response = await ResponseService.submitResponse(
-        pollId as string, 
-        req.body, 
+        pollId as string,
+        validatedData,
         {
             respondentId: user?._id?.toString(),
             ipHash,

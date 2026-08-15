@@ -1,4 +1,5 @@
 import { Poll } from "../modules/poll/poll.model.js";
+import { emitPollStatusChange } from "../socket/index.js";
 
 /**
  * Background job that checks for expired polls and marks them as 'closed'.
@@ -6,18 +7,29 @@ import { Poll } from "../modules/poll/poll.model.js";
  */
 export async function watchPollExpiry() {
     try {
-        const result = await Poll.updateMany(
-            {
-                status: "active",
-                expiresAt: { $lt: new Date() }
-            },
-            {
-                $set: { 
-                    status: "closed",
-                    closedAt: new Date()
-                }
-            }
+        const now = new Date();
+
+        // Fetch the ids first so we can broadcast a status change for each closed poll.
+        const expiredPolls = await Poll.find(
+            { status: "active", expiresAt: { $lt: now } },
+            { _id: 1 }
         );
+
+        if (expiredPolls.length === 0) return;
+
+        const closedAt = new Date();
+        const result = await Poll.updateMany(
+            { status: "active", expiresAt: { $lt: now } },
+            { $set: { status: "closed", closedAt } }
+        );
+
+        for (const poll of expiredPolls) {
+            emitPollStatusChange(poll._id.toString(), {
+                status: "closed",
+                closedAt,
+                reason: "expired",
+            });
+        }
 
         if (result.modifiedCount > 0) {
             console.log(`[ExpiryJob] Automatically closed ${result.modifiedCount} expired polls.`);

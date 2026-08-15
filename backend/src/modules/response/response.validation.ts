@@ -21,3 +21,13 @@ export const responseZodSchema = z.object({
 });
 
 export type IResponse = z.infer<typeof responseZodSchema>;
+
+// Request-facing schema for POST /responses/:pollId.
+// pollId comes from the route param; ipHash/userAgent/submittedAt are set server-side.
+export const submitResponseSchema = z.object({
+  sessionToken: z.string().min(1),
+  answers: z.array(answerItemZodSchema).min(1),
+  isComplete: z.boolean().default(true),
+});
+
+export type ISubmitResponse = z.infer<typeof submitResponseSchema>;

@@ -3,7 +3,6 @@ import { Poll } from "../poll/poll.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { emitAnalyticsUpdate } from "../../socket/index.js";
 import mongoose from "mongoose";
-import config from "../../config/config.js";
 
 /**
  * Processes a poll response submission.
@@ -34,33 +33,53 @@ export async function submitResponse(
         throw new ApiError(401, "Authentication is required to vote on this poll");
     }
 
-    // Prevent duplicate submissions from the same identity (Enforce only in production)
-    if (config.ENVIRONMENT === "production") {
-        const dupFilters: any[] = [];
-        if (meta.respondentId) {
-            dupFilters.push({ pollId, respondentId: meta.respondentId });
-        }
-        if (meta.ipHash && responseData.sessionToken) {
-            dupFilters.push({ pollId, ipHash: meta.ipHash, sessionToken: responseData.sessionToken });
-        }
-
-        if (dupFilters.length > 0) {
-            const existing = await ResponseModel.findOne({ $or: dupFilters });
-            if (existing) {
-                throw new ApiError(403, "You have already submitted a response to this poll");
-            }
+    // Ensure every mandatory question has a non-skipped answer.
+    const answeredQuestionIds = new Set(
+        (responseData.answers || [])
+            .filter((a: any) => !a.skipped)
+            .map((a: any) => a.questionId?.toString())
+    );
+    for (const question of poll.questions as any[]) {
+        if (question.isMandatory && !answeredQuestionIds.has(question._id.toString())) {
+            throw new ApiError(400, "All mandatory questions must be answered");
         }
     }
 
-    // Create the response document
-    const response = await ResponseModel.create({
-        ...responseData,
-        pollId,
-        respondentId: meta.respondentId,
-        ipHash: meta.ipHash,
-        userAgent: meta.userAgent,
-        submittedAt: new Date(),
-    });
+    // Prevent duplicate submissions from the same identity (enforced in all environments).
+    const dupFilters: any[] = [];
+    if (meta.respondentId) {
+        dupFilters.push({ pollId, respondentId: meta.respondentId });
+    }
+    if (responseData.sessionToken) {
+        dupFilters.push({ pollId, sessionToken: responseData.sessionToken });
+    }
+
+    if (dupFilters.length > 0) {
+        const existing = await ResponseModel.findOne({ $or: dupFilters });
+        if (existing) {
+            throw new ApiError(403, "You have already submitted a response to this poll");
+        }
+    }
+
+    // Create the response document.
+    // The unique indexes on {pollId, sessionToken} / {pollId, respondentId} are the
+    // race-safe backstop for the check above, so translate their duplicate-key error.
+    let response;
+    try {
+        response = await ResponseModel.create({
+            ...responseData,
+            pollId,
+            respondentId: meta.respondentId,
+            ipHash: meta.ipHash,
+            userAgent: meta.userAgent,
+            submittedAt: new Date(),
+        });
+    } catch (err: any) {
+        if (err?.code === 11000) {
+            throw new ApiError(403, "You have already submitted a response to this poll");
+        }
+        throw err;
+    }
 
     // Atomic increment of totalResponses
     await Poll.updateOne({ _id: pollId }, { $inc: { totalResponses: 1 } });

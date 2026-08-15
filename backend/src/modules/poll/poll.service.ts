@@ -2,13 +2,14 @@ import { Poll } from "./poll.model.js";
 import { ResponseModel } from "../response/response.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import crypto from "crypto";
-import type { IPoll } from "./poll.validation.js";
+import type { IPoll, ICreatePoll, IUpdatePoll } from "./poll.validation.js";
 import * as AnalyticsService from "../analytics/analytics.service.js";
+import { emitPollStatusChange } from "../../socket/index.js";
 
 /**
  * Creates a new poll for a user and assigns a unique share token.
  */
-export async function createPoll(userId: string, pollData: Partial<IPoll>) {
+export async function createPoll(userId: string, pollData: ICreatePoll) {
     const shareToken = crypto.randomUUID();
     
     return await Poll.create({
@@ -16,7 +17,7 @@ export async function createPoll(userId: string, pollData: Partial<IPoll>) {
         creatorId: userId,
         shareToken,
         status: "active",
-    });
+    } as any);
 }
 
 /**
@@ -73,7 +74,7 @@ export async function listPollsByCreator(userId: string, filters: { status?: str
 /**
  * Updates a poll's details if it has no responses yet.
  */
-export async function updatePoll(userId: string, pollId: string, updateData: Partial<IPoll>) {
+export async function updatePoll(userId: string, pollId: string, updateData: IUpdatePoll) {
     const poll = await Poll.findOneAndUpdate(
         { _id: pollId, creatorId: userId, totalResponses: 0 },
         { $set: updateData },
@@ -196,8 +197,14 @@ export async function publishPollResults(userId: string, pollId: string, mode: "
 
     poll.isResultsPublic = true;
     poll.resultsPublishedAt = new Date();
-    
+
     await poll.save();
+
+    emitPollStatusChange(poll._id.toString(), {
+        status: poll.status,
+        closedAt: poll.closedAt,
+        reason: mode === "permanent" ? "published" : "results-live",
+    });
 
     return poll;
 }
@@ -240,6 +247,12 @@ export async function closePoll(userId: string, pollId: string) {
     poll.closedAt = new Date();
     await poll.save();
 
+    emitPollStatusChange(poll._id.toString(), {
+        status: "closed",
+        closedAt: poll.closedAt,
+        reason: "closed-by-creator",
+    });
+
     return poll;
 }
 
@@ -263,8 +276,14 @@ export async function reopenPoll(userId: string, pollId: string) {
     if (poll.expiresAt && poll.expiresAt < new Date()) {
         poll.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     }
-    
+
     await poll.save();
+
+    emitPollStatusChange(poll._id.toString(), {
+        status: "active",
+        closedAt: null,
+        reason: "reopened",
+    });
 
     return poll;
 }
