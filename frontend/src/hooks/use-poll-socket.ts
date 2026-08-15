@@ -23,7 +23,9 @@ export function usePollSocket({
 }: UsePollSocketOptions) {
   const { accessToken } = useAuthStore();
   const handlersRef = useRef({ onAnalyticsUpdate, onNewResponse, onStatusChange });
-  handlersRef.current = { onAnalyticsUpdate, onNewResponse, onStatusChange };
+  useEffect(() => {
+    handlersRef.current = { onAnalyticsUpdate, onNewResponse, onStatusChange };
+  });
 
   const [isConnected, setIsConnected] = useState(false);
   const joinedRef = useRef(false);

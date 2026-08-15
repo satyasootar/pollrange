@@ -7,7 +7,7 @@ let socket: Socket | null = null;
 
 export function getSocket(accessToken?: string): Socket {
   if (socket) {
-    const currentToken = (socket.auth as any)?.token;
+    const currentToken = (socket.auth as { token?: string })?.token;
     if (currentToken !== accessToken) {
       socket.auth = accessToken ? { token: accessToken } : {};
       if (socket.connected) {

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/utils";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -42,8 +43,8 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       setAuth(user, accessToken);
       toast.success("Account created successfully!");
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Registration failed");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error) || "Registration failed");
     } finally {
       setIsLoading(false);
     }

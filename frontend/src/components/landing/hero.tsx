@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Zap, ArrowRight } from "lucide-react";
 import { SectionLabel } from "./shared";
 import { fadeUp, stagger } from "@/lib/animations";
-import { config } from "@/config/config";
 import { LandingDashboard } from "./landing-dashboard";
 
 export function Hero() {

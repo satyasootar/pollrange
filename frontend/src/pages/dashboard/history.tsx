@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useResponseHistory } from "@/hooks/use-responses";
-import { formatDate, timeAgo } from "@/lib/utils";
+import { timeAgo } from "@/lib/utils";
 import { ExternalLink, BarChart3, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

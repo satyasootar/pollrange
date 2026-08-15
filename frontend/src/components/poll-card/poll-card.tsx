@@ -20,7 +20,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { Poll, PollStatus } from "@/types";
 import { timeUntilExpiry, buildShareUrl, copyToClipboard, formatDate, cn } from "@/lib/utils";
 import { useDeletePoll, useClosePoll, useReopenPoll, useRegenerateToken } from "@/hooks/use-polls";

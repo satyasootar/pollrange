@@ -13,8 +13,6 @@ api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError<{ error?: { message?: string } }>) => {
     const status = error.response?.status;
-    const message =
-      error.response?.data?.error?.message ?? "Something went wrong.";
 
     if (status === 401) {
       // Try silent token refresh

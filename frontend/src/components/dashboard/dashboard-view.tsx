@@ -5,6 +5,7 @@ import {
   Search,
   Filter,
   AlertCircle,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ const STATUS_TABS: { label: string; value: PollFilters["status"] }[] = [
 interface Stat {
   label: string;
   value: string | number;
-  icon: any;
+  icon: LucideIcon;
   color: string;
 }
 

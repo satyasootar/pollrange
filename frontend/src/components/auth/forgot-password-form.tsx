@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft } from "lucide-react";
 
@@ -37,8 +38,8 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       await api.post("/auth/forgot-password", data);
       setIsSubmitted(true);
       toast.success("Reset link sent to your email!");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Something went wrong");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error) || "Something went wrong");
     } finally {
       setIsLoading(false);
     }

@@ -1,4 +1,4 @@
-import type { Variants } from "framer-motion";
+import type { Transition, Variants } from "framer-motion";
 
 // ─── Core Variants ─────────────────────────────────────────────────────────────
 export const fadeUp: Variants = {
@@ -70,7 +70,7 @@ export const cardHover: Variants = {
   rest: { y: 0 },
   hover: {
     y: -3,
-    transition: { duration: 0.25, ease: "easeOut" } as any,
+    transition: { duration: 0.25, ease: "easeOut" } as Transition,
   },
 };
 

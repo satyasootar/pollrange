@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import type { FullAnalytics } from "@/types";
 import { Users, TrendingUp, CheckSquare, UserCheck } from "lucide-react";
 import { numberPulse } from "@/lib/animations";

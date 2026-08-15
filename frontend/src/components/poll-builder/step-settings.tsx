@@ -52,12 +52,12 @@ export function StepSettings() {
   const hasExpiry = watch("hasExpiry");
 
   const onSubmit = (data: FormValues) => {
-    // If hasExpiry is false, we clear the expiresAt field
-    const submitData = {
-      ...data,
-      expiresAt: data.hasExpiry ? data.expiresAt : null,
-    };
-    updateMeta(submitData);
+    const { hasExpiry, ...rest } = data;
+    // If hasExpiry is false, clear the expiresAt field (stored as an empty string).
+    updateMeta({
+      ...rest,
+      expiresAt: hasExpiry ? (data.expiresAt ?? "") : "",
+    });
     nextStep();
   };
 

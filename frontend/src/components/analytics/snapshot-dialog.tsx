@@ -1,14 +1,12 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { 
-  Download, 
-  Share2, 
-  X, 
-  Camera, 
-  Check, 
-  Copy, 
-  Smartphone, 
-  Monitor, 
+  Download,
+  Share2,
+  Check,
+  Copy,
+  Smartphone,
+  Monitor,
   Layout,
   ChevronRight,
   TrendingUp
@@ -25,7 +23,6 @@ import {
 import { toast } from "sonner";
 import type { FullAnalytics } from "@/types";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/components/theme-provider";
 
 function TwitterIcon({ className }: { className?: string }) {
   return (
@@ -270,7 +267,7 @@ export function SnapshotDialog({
                           <div className="pl-8 space-y-3">
                              {q.wordCloudData && q.wordCloudData.length > 0 ? (
                                <div className="flex flex-wrap gap-2">
-                                  {q.wordCloudData.slice(0, 8).map((word, i) => (
+                                  {q.wordCloudData.slice(0, 8).map((word) => (
                                     <span 
                                       key={word.text} 
                                       className="px-2 py-1 bg-primary/5 border border-primary/20 text-[10px] font-bold text-primary uppercase tracking-tight"

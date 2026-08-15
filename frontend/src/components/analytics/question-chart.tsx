@@ -7,7 +7,7 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
-import { TrendingUp, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import type { QuestionStat } from "@/types";
 import { WordCloudWidget } from "./word-cloud-widget";
 import { ErrorBoundary } from "../error-boundary";
@@ -18,7 +18,12 @@ interface QuestionChartProps {
 
 const COLORS = ["#6366f1", "#818cf8", "#4f46e5", "#4338ca", "#3730a3"];
 
-const CustomTooltip = ({ active, payload }: any) => {
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: { name: string; count: number; pct: number } }>;
+}
+
+const CustomTooltip = ({ active, payload }: TooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (

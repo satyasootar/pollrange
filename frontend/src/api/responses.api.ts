@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { ApiResponse, Poll } from "@/types";
+import type { ApiResponse } from "@/types";
 
 export interface ResponseHistoryItem {
   _id: string;

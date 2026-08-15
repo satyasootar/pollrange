@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/utils";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -42,8 +43,8 @@ export function LoginForm({ onSuccess, onForgotPassword }: LoginFormProps) {
       setAuth(user, accessToken);
       toast.success("Welcome back!");
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Login failed");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error) || "Login failed");
     } finally {
       setIsLoading(false);
     }

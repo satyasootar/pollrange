@@ -2,7 +2,6 @@ import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { usePublishedResults } from "@/hooks/use-public-poll";
 import { QuestionChart } from "@/components/analytics/question-chart";
-import { ErrorBoundary } from "@/components/error-boundary";
 import { fadeUp, stagger } from "@/lib/animations";
 import { Users } from "lucide-react";
 import type { FullAnalytics } from "@/types";

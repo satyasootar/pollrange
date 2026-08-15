@@ -21,10 +21,9 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { DashboardView } from "../dashboard/dashboard-view";
-import { useAuthStore } from "@/store/use-auth-store";
 import { config } from "@/config/config";
 import { cn, formatDate } from "@/lib/utils";
-import type { Poll, PollFilters } from "@/types";
+import type { Poll, PollFilters, User } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 
 const MOCK_POLLS: Poll[] = [
@@ -159,7 +158,20 @@ const MOCK_POLLS: Poll[] = [
   }
 ];
 
-const MOCK_ANALYTICS: Record<string, any> = {
+interface MockAnalytics {
+  totalResponses: number;
+  completionRate: number;
+  anonymous: number;
+  authenticated: number;
+  questions: {
+    text: string;
+    responses: number;
+    topAnswer: string;
+    options: { label: string; count: number; pct: number }[];
+  }[];
+}
+
+const MOCK_ANALYTICS: Record<string, MockAnalytics> = {
   "demo-1": {
     totalResponses: 1284,
     completionRate: 94,
@@ -221,7 +233,7 @@ const MOCK_ANALYTICS: Record<string, any> = {
   }
 };
 
-const DEFAULT_ANALYTICS = {
+const DEFAULT_ANALYTICS: MockAnalytics = {
   totalResponses: 10,
   completionRate: 100,
   anonymous: 0,
@@ -254,7 +266,6 @@ const DEFAULT_ANALYTICS = {
 
 export function LandingDashboard() {
   const navigate = useNavigate();
-  const { user: realUser } = useAuthStore();
   const [status, setStatus] = useState<PollFilters["status"]>("all");
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"dashboard" | "history" | "analytics">("dashboard");
@@ -394,7 +405,7 @@ export function LandingDashboard() {
                     className="h-full"
                    >
                      <DashboardView
-                        user={{ name: "Satya", isEmailVerified: true } as any}
+                        user={{ name: "Satya", isEmailVerified: true } as unknown as User}
                         polls={filteredPolls}
                         isLoading={false}
                         stats={stats}
@@ -501,7 +512,7 @@ function AnalyticsView({ poll, onBack, onAction }: { poll: Poll, onBack: () => v
         </div>
 
         <div className="space-y-6">
-          {analytics.questions.map((q: any, i: number) => (
+          {analytics.questions.map((q, i) => (
             <div key={i} className="bg-card border border-border p-8 relative">
               <div className="absolute top-8 right-8 bg-muted/50 border border-border px-3 py-1.5 flex flex-col items-center">
                 <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">Top answer</span>
@@ -511,7 +522,7 @@ function AnalyticsView({ poll, onBack, onAction }: { poll: Poll, onBack: () => v
               <p className="text-xs text-muted-foreground mb-8">{q.responses} responses • 0 skipped</p>
               
               <div className="space-y-4">
-                {q.options.map((opt: any, idx: number) => (
+                {q.options.map((opt, idx) => (
                   <div key={idx} className="relative">
                     <div className="flex justify-between items-center mb-1.5 px-1">
                       <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{opt.label}</span>

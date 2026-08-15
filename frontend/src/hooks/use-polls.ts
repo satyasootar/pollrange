@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { pollsApi } from "@/api/polls.api";
 import type { PollFilters, PollBuilderForm } from "@/types";
 import { getApiErrorMessage, buildShareUrl } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
 
 export const pollKeys = {
   all: ["polls"] as const,
@@ -36,7 +35,6 @@ export function usePoll(pollId: string) {
 
 export function useCreatePoll() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: (form: PollBuilderForm) => pollsApi.create(form),

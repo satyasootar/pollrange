@@ -3,13 +3,14 @@ import { toast } from "sonner";
 import { authApi } from "@/api/auth.api";
 import { getApiErrorMessage } from "@/lib/utils";
 import { useAuthStore } from "@/store/use-auth-store";
+import type { UserBranding } from "@/types";
 
 export function useUpdateProfile() {
   const qc = useQueryClient();
   const { setUser } = useAuthStore();
 
   return useMutation({
-    mutationFn: (data: { name?: string; avatarUrl?: string; branding?: any }) => authApi.updateProfile(data),
+    mutationFn: (data: { name?: string; avatarUrl?: string; branding?: Partial<UserBranding> }) => authApi.updateProfile(data),
     onSuccess: (res) => {
       const user = res.data.data.user;
       setUser(user);
@@ -22,7 +23,7 @@ export function useUpdateProfile() {
 
 export function useChangePassword() {
   return useMutation({
-    mutationFn: ({ oldPassword, newPassword }: any) => authApi.changePassword(oldPassword, newPassword),
+    mutationFn: ({ oldPassword, newPassword }: { oldPassword: string; newPassword: string }) => authApi.changePassword(oldPassword, newPassword),
     onSuccess: () => {
       toast.success("Password changed successfully!");
     },

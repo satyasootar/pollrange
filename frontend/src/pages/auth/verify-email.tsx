@@ -1,24 +1,24 @@
-import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useVerifyEmail } from "@/hooks/use-auth-actions";
+import { getApiErrorMessage } from "@/lib/utils";
 import { fadeUp } from "@/lib/animations";
 
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const token = searchParams.get("token");
   const { mutate: verify, isPending, isSuccess, isError, error } = useVerifyEmail();
-  const [attempted, setAttempted] = useState(false);
+  const attemptedRef = useRef(false);
 
   useEffect(() => {
-    if (token && !attempted) {
+    if (token && !attemptedRef.current) {
+      attemptedRef.current = true;
       verify(token);
-      setAttempted(true);
     }
-  }, [token, verify, attempted]);
+  }, [token, verify]);
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -80,7 +80,7 @@ export function VerifyEmailPage() {
             </div>
             <h1 className="mb-2 text-2xl font-bold tracking-tight">Verification Failed</h1>
             <p className="mb-8 text-muted-foreground">
-              {(error as any)?.response?.data?.message || "The verification link may be expired or invalid."}
+              {getApiErrorMessage(error) || "The verification link may be expired or invalid."}
             </p>
             <div className="flex flex-col gap-3">
               <Button asChild className="w-full">

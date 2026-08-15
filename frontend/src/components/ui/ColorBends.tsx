@@ -219,12 +219,12 @@ export default function ColorBends({
 
     handleResize();
 
-    if ('ResizeObserver' in window) {
+    if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(handleResize);
       ro.observe(container);
       resizeObserverRef.current = ro;
     } else {
-      (window as any).addEventListener('resize', handleResize);
+      window.addEventListener('resize', handleResize);
     }
 
     const loop = () => {

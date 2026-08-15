@@ -3,25 +3,19 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
-  Plus,
   LogOut,
-  BarChart3,
   User,
-  ChevronRight,
   Menu,
-  X,
   MoreVertical,
   Sun,
   Moon,
   Monitor,
   History,
   ShieldAlert,
-  Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useLogout } from "@/hooks/use-auth";
-import { useResponseHistory } from "@/hooks/use-responses";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import {
@@ -36,7 +30,6 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -92,9 +85,8 @@ export function AppShell() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { data: history, isLoading: historyLoading } = useResponseHistory();
 
-  const SidebarContent = () => (
+  const sidebarContent = (
     <>
       {/* Logo */}
       <div
@@ -213,7 +205,7 @@ export function AppShell() {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border md:flex">
-        <SidebarContent />
+        {sidebarContent}
       </aside>
 
       {/* Mobile Sidebar Overlay */}
@@ -234,7 +226,7 @@ export function AppShell() {
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-background md:hidden"
             >
-              <SidebarContent />
+              {sidebarContent}
             </motion.aside>
           </>
         )}

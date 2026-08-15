@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
-import { BarChart3 } from "lucide-react";
 
 export function Navbar() {
   const { user } = useAuthStore();
