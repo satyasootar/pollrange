@@ -1,18 +1,14 @@
 import { motion } from "framer-motion";
-import { Copy, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePollBuilderStore } from "@/store/use-poll-builder-store";
 import { useCreatePoll } from "@/hooks/use-polls";
 import { fadeUp, stagger } from "@/lib/animations";
 import { formatDatetime } from "@/lib/utils";
-import { toast } from "sonner";
-
-import { useNavigate } from "react-router-dom";
 
 export function StepReview() {
-  const { form, prevStep, reset } = usePollBuilderStore();
+  const { form, prevStep, setSuccessData, setStep } = usePollBuilderStore();
   const createPoll = useCreatePoll();
-  const navigate = useNavigate();
 
   const handlePublish = () => {
     const sanitizedForm = {
@@ -26,10 +22,9 @@ export function StepReview() {
     createPoll.mutate(sanitizedForm, {
       onSuccess: (res) => {
         const poll = res.data.data;
-        // Reset the store BEFORE navigating so the form is clean for the next use
-        reset();
-        toast.success("Poll published successfully!");
-        navigate(`/polls/${poll._id}/analytics`);
+        // Advance to the success step, which shows the shareable link.
+        setSuccessData({ pollId: poll._id, shareToken: poll.shareToken });
+        setStep(4);
       },
     });
   };
@@ -86,11 +81,11 @@ export function StepReview() {
                     <span className="ml-1 text-destructive">*</span>
                   )}
                 </p>
-                {q.type === "single_choice" ? (
+                {q.type !== "open_ended" ? (
                   <ul className="mt-2 space-y-1">
                     {q.options.map((o, oi) => (
                       <li key={o.id} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0" />
+                        <div className={`h-3.5 w-3.5 border border-muted-foreground/40 shrink-0 ${q.type === "multiple_choice" ? "rounded-sm" : "rounded-full"}`} />
                         {o.text || `Option ${oi + 1}`}
                       </li>
                     ))}

@@ -23,6 +23,38 @@ export function getOrCreateSessionToken(pollId: string): string {
   return token;
 }
 
+/** Small deterministic PRNG (mulberry32) seeded from a string. */
+function seededRandom(seed: string): () => number {
+  let h = 1779033703 ^ seed.length;
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let a = h >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Return a new array shuffled with an unbiased Fisher-Yates algorithm.
+ * When a `seed` is given the order is deterministic for that seed, so the same
+ * input always produces the same order (stable across re-renders/refetches).
+ */
+export function shuffle<T>(items: readonly T[], seed?: string): T[] {
+  const rand = seed !== undefined ? seededRandom(seed) : Math.random;
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 export function formatDate(date: string | Date): string {
   return format(new Date(date), "MMM d, yyyy");
 }

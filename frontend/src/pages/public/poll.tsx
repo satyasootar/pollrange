@@ -1,48 +1,60 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Clock, Lock, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePublicPoll, useSubmitResponse, usePollStatus } from "@/hooks/use-public-poll";
 import { fadeUp, stagger, pageTransition } from "@/lib/animations";
-import type { AnswerPayload } from "@/types";
-import { timeUntilExpiry } from "@/lib/utils";
+import type { AnswerPayload, PublicPollQuestion } from "@/types";
+import { timeUntilExpiry, shuffle } from "@/lib/utils";
+
+// The backend returns Mongoose subdocuments, so ids arrive as `_id`; the typed
+// `questionId`/`optionId` may be absent. Model both and normalize below.
+type RawOption = { optionId?: string; _id?: string; text: string; order: number };
+type RawQuestion = Omit<PublicPollQuestion, "options"> & { _id?: string; options: RawOption[] };
+
+type ProcessedQuestion = Omit<PublicPollQuestion, "options"> & {
+  options: (RawOption & { optionId: string })[];
+};
 
 export function PublicPollPage() {
   const { shareToken } = useParams<{ shareToken: string }>();
   const navigate = useNavigate();
   const { data: poll, isLoading, error } = usePublicPoll(shareToken!);
   const { data: statusData } = usePollStatus(shareToken!);
-  const submitResponse = useSubmitResponse(poll?.pollId || (poll as any)?._id || "");
+  const submitResponse = useSubmitResponse(poll?.pollId || "", shareToken!);
 
   const [answers, setAnswers] = useState<Record<string, string | string[] | null>>({});
   const [submitted, setSubmitted] = useState(false);
 
-  const questions = useMemo(() => {
+  const pollId = poll?.pollId ?? "";
+
+  // Normalize ids and apply randomization. The shuffle is seeded by the stable pollId,
+  // so the order is deterministic per poll and stays fixed across re-renders and
+  // background refetches — it never reshuffles under the respondent while answering.
+  const questions = useMemo<ProcessedQuestion[]>(() => {
     if (!poll?.questions) return [];
-    
-    // First, map the questions to ensure we have consistent IDs and randomized options if needed
-    let processedQuestions = poll.questions.map(q => {
-      const qId = q.questionId || (q as any)._id;
-      let opts = q.options.map(opt => ({
+
+    let processedQuestions: ProcessedQuestion[] = (poll.questions as RawQuestion[]).map((q) => {
+      const qId = q.questionId || q._id || "";
+      let opts = q.options.map((opt) => ({
         ...opt,
-        optionId: opt.optionId || (opt as any)._id
+        optionId: opt.optionId || opt._id || "",
       }));
 
       if (poll.settings.randomizeOptions) {
-        opts = [...opts].sort(() => Math.random() - 0.5);
+        opts = shuffle(opts, `${pollId}:${qId}`);
       }
 
       return { ...q, questionId: qId, options: opts };
     });
 
-    // Then, randomize the questions themselves if needed
     if (poll.settings.randomizeQuestions) {
-      processedQuestions = [...processedQuestions].sort(() => Math.random() - 0.5);
+      processedQuestions = shuffle(processedQuestions, `${pollId}:questions`);
     }
 
     return processedQuestions;
-  }, [poll]);
+  }, [poll, pollId]);
 
   // Redirect if published
   useEffect(() => {
@@ -139,7 +151,6 @@ export function PublicPollPage() {
   };
 
   const answeredCount = Object.keys(answers).length;
-  const totalRequired = questions.filter((q) => q.isMandatory).length;
 
   return (
     <motion.div

@@ -2,23 +2,20 @@ import { useState, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { toPng } from "html-to-image";
 import { 
-  Download, 
-  Printer, 
-  Copy, 
-  Check, 
-  Building2, 
-  Palette, 
-  Type, 
-  AlignLeft, 
-  AlignCenter, 
+  Download,
+  Printer,
+  Copy,
+  Check,
+  Palette,
+  Type,
+  AlignLeft,
+  AlignCenter,
   AlignRight,
-  RefreshCw,
   Maximize2
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -28,10 +25,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { buildShareUrl } from "@/lib/utils";
 import type { UserBranding } from "@/types";
 
 interface QRCardDialogProps {
   pollId: string;
+  shareToken: string;
   pollTitle: string;
   defaultBranding?: UserBranding;
   trigger?: React.ReactNode;
@@ -39,7 +38,7 @@ interface QRCardDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function QRCardDialog({ pollId, pollTitle, defaultBranding, trigger, open, onOpenChange }: QRCardDialogProps) {
+export function QRCardDialog({ pollId, shareToken, pollTitle, defaultBranding, trigger, open, onOpenChange }: QRCardDialogProps) {
   const [branding, setBranding] = useState<UserBranding>({
     companyName: defaultBranding?.companyName || "",
     businessDetails: defaultBranding?.businessDetails || "",
@@ -57,7 +56,7 @@ export function QRCardDialog({ pollId, pollTitle, defaultBranding, trigger, open
 
   const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const pollUrl = `${window.location.origin}/p/${pollId}`;
+  const pollUrl = buildShareUrl(shareToken);
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
@@ -68,7 +67,7 @@ export function QRCardDialog({ pollId, pollTitle, defaultBranding, trigger, open
       link.href = dataUrl;
       link.click();
       toast.success("QR Card downloaded!");
-    } catch (err) {
+    } catch {
       toast.error("Failed to generate image");
     }
   };
@@ -286,7 +285,7 @@ export function QRCardDialog({ pollId, pollTitle, defaultBranding, trigger, open
                     style={{ 
                       backgroundColor: cardStyles.backgroundColor,
                       color: cardStyles.textColor,
-                      textAlign: cardStyles.alignment as any
+                      textAlign: cardStyles.alignment as "left" | "center" | "right"
                     }}
                   >
                     {/* Header Section */}

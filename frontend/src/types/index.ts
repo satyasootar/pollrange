@@ -110,6 +110,7 @@ export interface PublicPoll {
   expiresAt: string;
   totalResponses: number;
   requiresAuth: boolean;
+  isResultsPublic?: boolean;
   alreadyResponded: boolean;
   settings: Pick<
     PollSettings,
@@ -183,11 +184,13 @@ export interface NewResponsePayload {
   timestamp: string;
 }
 
+// The server emits only { pollId, totalResponses, questions(raw) } and the client
+// refetches full analytics over REST, so richer fields are not guaranteed here.
 export interface AnalyticsUpdatePayload {
   pollId: string;
   totalResponses: number;
-  completionRate: number;
-  questions: QuestionStat[];
+  completionRate?: number;
+  questions?: unknown;
 }
 
 export interface PollStatusChangePayload {

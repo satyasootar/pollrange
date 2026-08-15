@@ -25,6 +25,7 @@ interface PollBuilderState {
   prevStep: () => void;
   setSuccessData: (data: { pollId: string; shareToken: string } | null) => void;
   updateMeta: (patch: Partial<Omit<PollBuilderForm, "questions">>) => void;
+  setForm: (form: Partial<PollBuilderForm>) => void;
   addQuestion: () => void;
   removeQuestion: (id: string) => void;
   updateQuestion: (id: string, patch: Partial<BuilderQuestion>) => void;
@@ -60,6 +61,10 @@ export const usePollBuilderStore = create<PollBuilderState>()((set) => ({
 
   updateMeta: (patch) =>
     set((s) => ({ form: { ...s.form, ...patch } })),
+
+  // Replace the whole form (including questions) — used to prefill the edit flow.
+  setForm: (form) =>
+    set((s) => ({ form: { ...s.form, ...form } })),
 
   addQuestion: () =>
     set((s) => ({

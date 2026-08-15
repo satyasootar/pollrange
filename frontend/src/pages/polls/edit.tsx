@@ -19,23 +19,40 @@ export function EditPollPage() {
   const { pollId } = useParams<{ pollId: string }>();
   const navigate = useNavigate();
   const { data: poll, isLoading } = usePoll(pollId!);
-  const { step, form, updateMeta } = usePollBuilderStore();
+  const { step, setForm, reset } = usePollBuilderStore();
 
   // Prefill builder with existing poll
   useEffect(() => {
     if (poll) {
-      if (poll.status !== "draft") {
+      // A poll can only be edited while it has no responses.
+      if (poll.totalResponses > 0) {
         navigate(`/polls/${pollId}/analytics`, { replace: true });
         return;
       }
-      updateMeta({
+      setForm({
         title: poll.title,
         description: poll.description ?? "",
-        expiresAt: poll.expiresAt.slice(0, 16),
+        expiresAt: poll.expiresAt ? poll.expiresAt.slice(0, 16) : "",
         responseMode: poll.responseMode,
         settings: poll.settings,
+        questions: poll.questions
+          .slice()
+          .sort((a, b) => a.order - b.order)
+          .map((q) => ({
+            id: q._id,
+            text: q.text,
+            type: q.type,
+            isMandatory: q.isMandatory,
+            options: q.options
+              .slice()
+              .sort((a, b) => a.order - b.order)
+              .map((o) => ({ id: o._id, text: o.text })),
+          })),
       });
     }
+    // Clear the builder when leaving the edit page so a later "create" starts fresh.
+    return () => reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poll]);
 
   if (isLoading) return null;

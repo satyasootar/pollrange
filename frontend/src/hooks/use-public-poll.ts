@@ -33,11 +33,13 @@ export function usePublishedResults(shareToken: string) {
   });
 }
 
-export function useSubmitResponse(pollId: string) {
+export function useSubmitResponse(pollId: string, shareToken: string) {
   return useMutation({
     mutationFn: (answers: AnswerPayload[]) => {
-      const sessionToken = getOrCreateSessionToken(pollId);
-      return publicApi.submitResponse(pollId, { 
+      // Key the session token by shareToken so it matches the token used on
+      // read/status checks; the pollId is only used for the request URL.
+      const sessionToken = getOrCreateSessionToken(shareToken);
+      return publicApi.submitResponse(pollId, {
         sessionToken, 
         answers,
         isComplete: true 

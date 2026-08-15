@@ -6,9 +6,6 @@ import {
   Copy,
   ExternalLink,
   Radio,
-  Users,
-  TrendingUp,
-  CheckSquare,
   Lock,
   Unlock,
   Download,
@@ -25,13 +22,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   ChevronDown,
-  Globe,
   Zap
 } from "lucide-react";
 import { analyticsApi } from "@/api/analytics.api";
-import { config } from "@/config/config";
 import { useFullAnalytics } from "@/hooks/use-analytics";
 import { usePoll, usePublishPoll, useClosePoll, useReopenPoll, useRegenerateToken } from "@/hooks/use-polls";
 import { usePollSocket } from "@/hooks/use-poll-socket";
@@ -40,7 +35,6 @@ import { analyticsKeys } from "@/hooks/use-analytics";
 import { pollKeys } from "@/hooks/use-polls";
 import { QuestionChart } from "@/components/analytics/question-chart";
 import { TimelineChart } from "@/components/analytics/timeline-chart";
-import { ErrorBoundary } from "@/components/error-boundary";
 import { OverviewCards } from "@/components/analytics/overview-cards";
 import { AnalyticsSkeleton } from "@/components/analytics/analytics-skeleton";
 import { SnapshotDialog } from "@/components/analytics/snapshot-dialog";
@@ -57,7 +51,6 @@ export function AnalyticsPage() {
   const qc = useQueryClient();
   const { user } = useAuthStore();
   const [realtimeCount, setRealtimeCount] = useState<number | null>(null);
-  const [isLive, setIsLive] = useState(false);
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
   const [isQRCardOpen, setIsQRCardOpen] = useState(false);
 
@@ -106,7 +99,7 @@ export function AnalyticsPage() {
       link.click();
       link.remove();
       toast.success("Data exported successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to export data");
     }
   };
@@ -117,8 +110,6 @@ export function AnalyticsPage() {
 
   if (isLoading) return <AnalyticsSkeleton />;
   if (!analytics || !poll) return null;
-
-  const totalResponses = realtimeCount ?? analytics.totalResponses;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -279,9 +270,10 @@ export function AnalyticsPage() {
       />
 
       {isQRCardOpen && (
-        <QRCardDialog 
-          pollId={pollId!} 
-          pollTitle={poll.title} 
+        <QRCardDialog
+          pollId={pollId!}
+          shareToken={poll.shareToken}
+          pollTitle={poll.title}
           defaultBranding={user?.branding}
           open={isQRCardOpen}
           onOpenChange={setIsQRCardOpen}

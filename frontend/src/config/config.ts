@@ -2,12 +2,12 @@ const baseUrl = import.meta.env.VITE_ENV === "production"
   ? {
     apiUrl: import.meta.env.VITE_API_URL || "/api",
     socketUrl: import.meta.env.VITE_SOCKET_URL || "/",
-    appUrl: window.location.origin,
+    appUrl: import.meta.env.VITE_APP_URL || window.location.origin,
   }
   : {
     apiUrl: "http://localhost:3030/api",
     socketUrl: "http://localhost:3030",
-    appUrl: window.location.origin,
+    appUrl: import.meta.env.VITE_APP_URL || window.location.origin,
   };
 
 export const config = {

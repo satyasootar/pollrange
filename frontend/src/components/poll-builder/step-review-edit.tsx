@@ -52,7 +52,7 @@ export function StepReviewEdit({ pollId }: { pollId: string }) {
               Q{qi + 1}: {q.text}
               {q.isMandatory && <span className="ml-1 text-destructive">*</span>}
             </p>
-            {q.type === "single_choice" && (
+            {q.type !== "open_ended" && (
               <ul className="mt-2 space-y-1">
                 {q.options.map((o, oi) => (
                   <li key={o.id} className="text-xs text-muted-foreground">• {o.text || `Option ${oi + 1}`}</li>
