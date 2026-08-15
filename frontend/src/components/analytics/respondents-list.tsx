@@ -1,6 +1,6 @@
 import { Users } from "lucide-react";
 import type { RespondentEntry } from "@/types";
-import { formatDatetime, timeAgo } from "@/lib/utils";
+import { formatDatetime } from "@/lib/utils";
 
 interface RespondentsListProps {
   respondents: RespondentEntry[];
@@ -35,11 +35,8 @@ export function RespondentsList({ respondents, isLoading }: RespondentsListProps
                   <p className="truncate text-xs text-muted-foreground">{r.email}</p>
                 )}
               </div>
-              <span
-                className="shrink-0 text-xs text-muted-foreground"
-                title={formatDatetime(r.submittedAt)}
-              >
-                {timeAgo(r.submittedAt)}
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {formatDatetime(r.submittedAt)}
               </span>
             </div>
           ))}
