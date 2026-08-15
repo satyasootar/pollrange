@@ -175,7 +175,7 @@ export function SnapshotDialog({
               ref={cardRef}
               className={cn(
                 "relative bg-background border border-border shadow-2xl transition-all duration-500 origin-center h-fit",
-                orientation === "portrait" ? "w-[400px] min-h-[600px]" : "w-[650px] min-h-[400px]"
+                orientation === "portrait" ? "w-100 min-h-150" : "w-162.5 min-h-100"
               )}
             >
               {/* Decorative background pattern */}
@@ -300,7 +300,7 @@ export function SnapshotDialog({
                             <TrendingUp className="h-8 w-8 text-primary" />
                          </div>
                          <h3 className="text-lg font-black uppercase tracking-tight">Growth Trend</h3>
-                         <p className="text-xs text-muted-foreground leading-relaxed max-w-[200px]">
+                         <p className="text-xs text-muted-foreground leading-relaxed max-w-50">
                             High engagement detected. This poll is outperforming 85% of similar surveys in this category.
                          </p>
                       </div>

@@ -308,7 +308,7 @@ export function LandingDashboard() {
   };
 
   return (
-    <div className="w-full relative aspect-video max-h-[700px] overflow-hidden border border-border bg-background shadow-none group/dash flex flex-col">
+    <div className="w-full relative aspect-video max-h-175 overflow-hidden border border-border bg-background shadow-none group/dash flex flex-col">
       <div className="flex shrink-0 items-center gap-4 border-b border-border bg-muted/50 px-4 h-12 z-30">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500/20" />
@@ -456,7 +456,7 @@ export function LandingDashboard() {
         </div>
       </div>
 
-      <div className="absolute inset-0 z-20 pointer-events-none border-[12px] border-background/5" />
+      <div className="absolute inset-0 z-20 pointer-events-none border-12 border-background/5" />
     </div>
   );
 }

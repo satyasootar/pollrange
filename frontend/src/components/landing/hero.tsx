@@ -9,7 +9,7 @@ import { LandingDashboard } from "./landing-dashboard";
 export function Hero() {
   return (
     <section className="relative border-b border-border">
-      <div className="max-w-[1400px] mx-auto px-12 pt-12 pb-32">
+      <div className="max-w-350 mx-auto px-12 pt-12 pb-32">
         <motion.div initial="hidden" animate="visible" variants={stagger}>
           <motion.div variants={fadeUp} custom={0}>
             <SectionLabel><Zap className="w-3 h-3" /> Real-time audience polling</SectionLabel>
@@ -24,7 +24,7 @@ export function Hero() {
             of your{" "}
             <span className="relative inline-block">
               Audience
-              <span className="absolute -bottom-2 left-0 right-0 h-[3px] bg-primary" />
+              <span className="absolute -bottom-2 left-0 right-0 h-0.75 bg-primary" />
             </span>
             .
           </motion.h1>

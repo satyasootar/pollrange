@@ -7,7 +7,7 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-sm">
-      <div className="max-w-[1400px] mx-auto px-12 h-[72px] flex items-center justify-between">
+      <div className="max-w-350 mx-auto px-12 h-18 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3 cursor-pointer group/logo">
           <div className="flex items-center justify-center">
             <img src="/logo/logo1.png" alt="Kollects Logo" className="h-8 w-auto object-contain" />
