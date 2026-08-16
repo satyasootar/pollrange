@@ -10,13 +10,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PollCard } from "@/components/poll-card/poll-card";
 import { PollCardSkeleton } from "@/components/poll-card/poll-card-skeleton";
 import { fadeUp, stagger } from "@/lib/animations";
 import { cn } from "@/lib/utils";
-import type { User, Poll, PaginationMeta, PollFilters } from "@/types";
+import type { User, Poll, PaginationMeta, PollFilters, PollStatus } from "@/types";
 
-const STATUS_TABS: { label: string; value: PollFilters["status"] }[] = [
+const STATUS_TABS: { label: string; value: PollStatus | "all" }[] = [
   { label: "All", value: "all" },
   { label: "Active", value: "active" },
   { label: "Draft", value: "draft" },
@@ -136,23 +144,36 @@ export function DashboardView({
             <motion.div
               key={stat.label}
               variants={fadeUp}
-              className={cn("border border-border bg-card p-4 shadow-none sm:p-5", isCompact && "p-3 sm:p-4")}
+              className={cn(
+                "group border-2 border-border bg-card p-4 shadow-none transition-colors hover:border-primary/40 sm:p-5",
+                isCompact && "p-3 sm:p-4"
+              )}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:text-xs">
-                  {stat.label}
-                </span>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-xs">
+                    {stat.label}
+                  </span>
+                  <p className="mt-1.5 text-2xl font-bold tabular-nums sm:mt-2 sm:text-3xl">
+                    {stat.value}
+                  </p>
+                </div>
+                <div
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center border border-current/30 bg-current/10",
+                    stat.color,
+                    isCompact && "h-7 w-7"
+                  )}
+                >
+                  <stat.icon className="h-4 w-4" />
+                </div>
               </div>
-              <p className="mt-1 text-2xl font-bold tabular-nums sm:mt-2 sm:text-3xl">
-                {stat.value}
-              </p>
             </motion.div>
           ))}
         </motion.div>
 
         {/* Filters */}
-        <div className={cn("mb-6 flex flex-col gap-4 sm:flex-row sm:items-center", isCompact && "mb-4")}>
+        <div className={cn("mb-6 flex items-center justify-between", isCompact && "mb-4")}>
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -165,24 +186,38 @@ export function DashboardView({
               }}
             />
           </div>
-          <div className="flex flex-wrap gap-1 pb-1 scrollbar-none sm:pb-0">
-            {STATUS_TABS.map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => {
-                  setStatus(tab.value);
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Filter polls by status"
+                className="relative border-border shadow-none hover:shadow-none focus-visible:border-primary"
+              >
+                <Filter className="h-4 w-4" />
+                {status !== "all" && (
+                  <span className="absolute right-1 top-1 h-1.5 w-1.5 bg-primary" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Status</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={status}
+                onValueChange={(value) => {
+                  setStatus(value as PollFilters["status"]);
                   setPage(1);
                 }}
-                className={`flex h-12 items-center whitespace-nowrap rounded-none border px-3 text-[10px] font-medium transition-colors sm:text-xs ${
-                  status === tab.value
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-                }`}
               >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+                {STATUS_TABS.map((tab) => (
+                  <DropdownMenuRadioItem key={tab.value} value={tab.value}>
+                    {tab.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Poll grid */}

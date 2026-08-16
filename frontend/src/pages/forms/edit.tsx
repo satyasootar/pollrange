@@ -1,0 +1,78 @@
+import { useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, AlertCircle } from "lucide-react";
+import { useFormBuilderStore } from "@/store/use-form-builder-store";
+import { useForm } from "@/hooks/use-forms";
+import { StepFormSettings } from "@/components/form-builder/step-form-settings";
+import { StepFormQuestions } from "@/components/form-builder/step-form-questions";
+import { StepFormReviewEdit } from "@/components/form-builder/step-form-review-edit";
+import { slideInRight } from "@/lib/animations";
+import { formEntityToBuilder } from "@/lib/form-mappers";
+
+const STEPS = [
+  { num: 1, label: "Settings" },
+  { num: 2, label: "Questions" },
+  { num: 3, label: "Save" },
+];
+
+export function EditFormPage() {
+  const { formId } = useParams<{ formId: string }>();
+  const { data: form, isLoading } = useForm(formId!);
+  const { step, setForm, reset } = useFormBuilderStore();
+
+  useEffect(() => {
+    if (form) setForm(formEntityToBuilder(form));
+    return () => reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
+
+  if (isLoading) return null;
+
+  if (!form) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <AlertCircle className="mr-2 h-5 w-5 text-destructive" />
+        Form not found.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-8 md:h-20">
+        <h1 className="text-xl font-semibold">Edit Form</h1>
+        <div className="flex items-center gap-0">
+          {STEPS.map((s, i) => (
+            <div key={s.num} className="flex items-center">
+              <div
+                className={`flex h-7 w-7 items-center justify-center border text-xs font-semibold transition-colors ${
+                  step > s.num
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : step === s.num
+                      ? "border-primary text-primary"
+                      : "border-border text-muted-foreground"
+                }`}
+              >
+                {step > s.num ? <Check className="h-3.5 w-3.5" /> : s.num}
+              </div>
+              <span className={`ml-2 hidden text-sm sm:block ${step === s.num ? "font-medium" : "text-muted-foreground"}`}>
+                {s.label}
+              </span>
+              {i < STEPS.length - 1 && <div className="mx-3 h-px w-8 bg-border" />}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <AnimatePresence mode="wait">
+          <motion.div key={step} variants={slideInRight} initial="hidden" animate="visible" exit="exit">
+            {step === 1 && <StepFormSettings />}
+            {step === 2 && <StepFormQuestions />}
+            {step === 3 && <StepFormReviewEdit formId={formId!} hasResponses={form.totalResponses > 0} />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}

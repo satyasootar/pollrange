@@ -111,11 +111,3 @@ export const progressBar = (pct: number) => ({
   initial: { width: 0 },
   animate: { width: `${pct}%`, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } },
 });
-
-// ─── Skeleton pulse ───────────────────────────────────────────────────────────
-export const skeletonVariants: Variants = {
-  pulse: {
-    opacity: [0.5, 1, 0.5],
-    transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
-  },
-};

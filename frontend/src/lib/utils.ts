@@ -13,6 +13,21 @@ export function generateSessionToken(): string {
   return uuidv4();
 }
 
+/**
+ * Generate a 24-char hex string compatible with a Mongo ObjectId. Used as stable
+ * client-side ids for form sections/questions/options so branching targets, quiz
+ * answer keys, and option counters keep the same identity after persistence.
+ */
+export function newObjectId(): string {
+  const timestamp = Math.floor(Date.now() / 1000)
+    .toString(16)
+    .padStart(8, "0");
+  const rest = Array.from({ length: 16 }, () =>
+    Math.floor(Math.random() * 16).toString(16)
+  ).join("");
+  return timestamp + rest;
+}
+
 /** Get or create a session token for a specific poll */
 export function getOrCreateSessionToken(pollId: string): string {
   const key = `kollects_session_${pollId}`;
@@ -84,6 +99,22 @@ export function timeUntilExpiry(expiresAt: string | null | undefined): string {
 export function buildShareUrl(shareToken: string): string {
   const base = config.appUrl;
   return `${base}/p/${shareToken}`;
+}
+
+export function buildFormShareUrl(shareToken: string): string {
+  return `${config.appUrl}/f/${shareToken}`;
+}
+
+/** Trigger a browser download for a Blob (used for CSV export). */
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export function copyToClipboard(text: string): Promise<void> {

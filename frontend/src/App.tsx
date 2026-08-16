@@ -13,16 +13,22 @@ import { VerifyEmailPage } from "@/pages/auth/verify-email";
 
 import { ProtectedRoute, GuestRoute } from "@/components/layout/protected-route";
 import { AppShell } from "@/components/layout/app-shell";
+import { OnboardingPage } from "@/pages/onboarding";
 
 import { DashboardPage } from "@/pages/dashboard";
 import { ProfilePage } from "@/pages/dashboard/profile";
 import { HistoryPage } from "@/pages/dashboard/history";
+import { FormsPage } from "@/pages/dashboard/forms";
 import { CreatePollPage } from "@/pages/polls/create";
 import { EditPollPage } from "@/pages/polls/edit";
 import { AnalyticsPage } from "@/pages/polls/analytics";
+import { CreateFormPage } from "@/pages/forms/create";
+import { EditFormPage } from "@/pages/forms/edit";
+import { FormAnalyticsPage } from "@/pages/forms/analytics";
 
 import { PublicPollPage } from "@/pages/public/poll";
 import { PublishedResultsPage } from "@/pages/public/results";
+import { PublicFormPage } from "@/pages/public/form";
 import { NotFoundPage } from "@/pages/not-found";
 
 export function App() {
@@ -59,10 +65,15 @@ export function App() {
           <Route path="/p/:shareToken" element={<PublicPollPage />} />
           <Route path="/p/:shareToken/results" element={<PublishedResultsPage />} />
 
+          {/* Public form routes */}
+          <Route path="/f/:shareToken" element={<PublicFormPage />} />
+
           {/* Protected creator routes */}
           <Route element={<ProtectedRoute />}>
+            <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/dashboard" element={<AppShell />}>
               <Route index element={<DashboardPage />} />
+              <Route path="forms" element={<FormsPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="history" element={<HistoryPage />} />
             </Route>
@@ -70,6 +81,9 @@ export function App() {
               <Route path="/polls/create" element={<CreatePollPage />} />
               <Route path="/polls/:pollId/edit" element={<EditPollPage />} />
               <Route path="/polls/:pollId/analytics" element={<AnalyticsPage />} />
+              <Route path="/forms/create" element={<CreateFormPage />} />
+              <Route path="/forms/:formId/edit" element={<EditFormPage />} />
+              <Route path="/forms/:formId/analytics" element={<FormAnalyticsPage />} />
             </Route>
           </Route>
 

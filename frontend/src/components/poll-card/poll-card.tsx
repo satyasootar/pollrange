@@ -90,6 +90,14 @@ export function PollCard({ poll, isCompact = false, onSelect }: PollCardProps) {
       {/* Header */}
       <div className={cn("flex items-start justify-between p-5 pb-3", isCompact && "p-3 pb-2")}>
         <div className="flex-1 min-w-0 pr-2">
+          <h3
+            className={cn("line-clamp-2 text-base font-semibold leading-snug transition-colors group-hover:text-primary", isCompact && "text-sm")}
+          >
+            {poll.title}
+          </h3>
+        </div>
+
+        <div className="flex items-center gap-2">
           <span
             className={cn(`inline-flex items-center border px-2 py-0.5 text-xs font-medium ${statusCfg.className}`, isCompact && "text-[10px] px-1.5")}
           >
@@ -98,15 +106,8 @@ export function PollCard({ poll, isCompact = false, onSelect }: PollCardProps) {
             )}
             {statusCfg.label}
           </span>
-          <h3
-            className={cn("mt-2 line-clamp-2 text-base font-semibold leading-snug transition-colors group-hover:text-primary", isCompact && "text-sm mt-1")}
-          >
-            {poll.title}
-          </h3>
-        </div>
-
-        <div onClick={(e) => e.stopPropagation()}>
-          <DropdownMenu>
+          <div onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -179,6 +180,7 @@ export function PollCard({ poll, isCompact = false, onSelect }: PollCardProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </div>
 

@@ -52,5 +52,9 @@ export const SOCKET_EVENTS = {
   POLL_STATUS_CHANGE: "poll-status-change",
   POLL_CLOSED: "poll-closed",
   POLL_PUBLISHED: "poll-published",
+  JOIN_FORM_ROOM: "join-form-room",
+  LEAVE_FORM_ROOM: "leave-form-room",
+  FORM_ANALYTICS_UPDATE: "form-analytics-update",
+  FORM_STATUS_CHANGE: "form-status-change",
   ERROR: "socket-error",
 } as const;

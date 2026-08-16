@@ -3,6 +3,7 @@ import { Server as HttpServer } from "node:http";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import { Poll } from "../modules/poll/poll.model.js";
+import { Form } from "../modules/form/form.model.js";
 
 let io: SocketServer;
 
@@ -69,6 +70,31 @@ export function initializeSocket(server: HttpServer) {
     socket.on("leave-poll-room", ({ pollId }: { pollId: string }) => {
       socket.leave(`poll_${pollId}`);
     });
+
+    socket.on("join-form-room", async ({ formId }: { formId: string }) => {
+      try {
+        const form = await Form.findOne({ _id: formId, isDeleted: false }).select(
+          "creatorId isResultsPublic status"
+        );
+        if (!form) return;
+
+        const userId = (socket as any).userId as string | undefined;
+        const isOwner = userId && form.creatorId.toString() === userId;
+        const isPublic = form.isResultsPublic || form.status === "published";
+
+        if (isOwner || isPublic) {
+          socket.join(`form_${formId}`);
+        } else {
+          socket.emit("socket-error", { message: "Not authorized to join this form room" });
+        }
+      } catch {
+        // Ignore malformed formId / lookup errors.
+      }
+    });
+
+    socket.on("leave-form-room", ({ formId }: { formId: string }) => {
+      socket.leave(`form_${formId}`);
+    });
   });
 
   return io;
@@ -103,5 +129,26 @@ export function emitPollStatusChange(
 ) {
   if (io) {
     io.to(`poll_${pollId}`).emit("poll-status-change", { pollId, ...data });
+  }
+}
+
+/**
+ * Broadcasts an analytics update to all clients joined to a specific form room.
+ */
+export function emitFormAnalyticsUpdate(formId: string, data: any) {
+  if (io) {
+    io.to(`form_${formId}`).emit("form-analytics-update", data);
+  }
+}
+
+/**
+ * Broadcasts a form status change (closed / published / reopened) to a form room.
+ */
+export function emitFormStatusChange(
+  formId: string,
+  data: { status: string; closedAt?: Date | null | undefined; reason?: string }
+) {
+  if (io) {
+    io.to(`form_${formId}`).emit("form-status-change", { formId, ...data });
   }
 }

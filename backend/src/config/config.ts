@@ -23,6 +23,9 @@ interface Config {
     GOOGLE_CLIENT_SECRET: string;
     GOOGLE_CALLBACK_URL: string;
     CLIENT_URL: string;
+    CLOUDINARY_CLOUD_NAME: string;
+    CLOUDINARY_API_KEY: string;
+    CLOUDINARY_API_SECRET: string;
 }
 
 const PORT = process.env.PORT || 8080;
@@ -51,6 +54,9 @@ const config: Config = {
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
     GOOGLE_CALLBACK_URL: `${BACKEND_URL}/api/auth/google/callback`,
     CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || "",
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || "",
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || "",
 };
 
 export default config;
