@@ -32,6 +32,15 @@ export const userZodSchema = z.object({
     logoUrl: z.string().optional(),
     qrColor: z.string().optional(),
   }).optional(),
+
+  hasCompletedOnboarding: z.boolean().default(false),
+  onboarding: z.object({
+    usage: z.enum(["company", "education", "public_sector", "non_profit", "student", "other"]).optional(),
+    usageDetail: z.string().optional(),
+    intent: z.enum(["explore", "create_polls", "other"]).optional(),
+    plan: z.enum(["free", "basic", "pro"]).optional(),
+    firstAction: z.enum(["word_cloud", "polls", "quiz", "open_ended"]).optional(),
+  }).optional(),
 });
 
 export const updateProfileZodSchema = z.object({
@@ -45,5 +54,14 @@ export const updateProfileZodSchema = z.object({
   }).optional(),
 });
 
+export const completeOnboardingZodSchema = z.object({
+  usage: z.enum(["company", "education", "public_sector", "non_profit", "student", "other"]),
+  usageDetail: z.string().min(1).optional(),
+  intent: z.enum(["explore", "create_polls", "other"]),
+  plan: z.enum(["free", "basic", "pro"]),
+  firstAction: z.enum(["word_cloud", "polls", "quiz", "open_ended"]),
+});
+
 export type IUser = z.infer<typeof userZodSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileZodSchema>;
+export type CompleteOnboardingInput = z.infer<typeof completeOnboardingZodSchema>;

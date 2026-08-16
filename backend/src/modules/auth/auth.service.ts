@@ -6,9 +6,10 @@ import { User } from "../user/user.model.js";
 import { Session } from "../session/session.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { sendEmail } from "../../utils/mail.js";
-import { 
-    userZodSchema, 
-    type UpdateProfileInput 
+import {
+    userZodSchema,
+    type UpdateProfileInput,
+    type CompleteOnboardingInput
 } from "../user/user.validation.js";
 import type { 
     RegisterInput, 
@@ -266,7 +267,23 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
     }
 
     await user.save();
-    
+
+    const updatedUser = await User.findById(userId).select("-passwordHash");
+    return updatedUser;
+}
+
+/**
+ * Records the new-user onboarding answers and marks onboarding as complete.
+ */
+export async function completeOnboarding(userId: string, input: CompleteOnboardingInput) {
+    const user = await User.findById(userId);
+    if (!user) throw new ApiError(404, "User not found");
+
+    user.hasCompletedOnboarding = true;
+    user.onboarding = { ...input };
+
+    await user.save();
+
     const updatedUser = await User.findById(userId).select("-passwordHash");
     return updatedUser;
 }

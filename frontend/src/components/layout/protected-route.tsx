@@ -1,10 +1,11 @@
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/api/auth.api";
 import { useAuthStore } from "@/store/use-auth-store";
 
 export function ProtectedRoute() {
   const { user, setUser, clearAuth, isHydrated } = useAuthStore();
+  const location = useLocation();
 
   const { isLoading } = useQuery({
     queryKey: ["me"],
@@ -34,6 +35,10 @@ export function ProtectedRoute() {
 
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  if (!user.hasCompletedOnboarding && location.pathname !== "/onboarding") {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <Outlet />;

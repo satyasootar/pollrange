@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { User } from "@/types";
+import type { User, CompleteOnboardingPayload } from "@/types";
 
 export interface RegisterPayload {
   name: string;
@@ -41,10 +41,13 @@ export const authApi = {
   verifyEmail: (data: { token: string }) =>
     api.post("/auth/verify-email", data),
 
-  updateProfile: (data: { 
-    name?: string; 
-    avatarUrl?: string; 
-    branding?: Partial<User["branding"]> 
+  updateProfile: (data: {
+    name?: string;
+    avatarUrl?: string;
+    branding?: Partial<User["branding"]>
   }) =>
     api.patch<{ data: { user: User } }>("/auth/me", data),
+
+  completeOnboarding: (data: CompleteOnboardingPayload) =>
+    api.post<{ data: { user: User } }>("/auth/complete-onboarding", data),
 };

@@ -8,7 +8,7 @@ import {
     resetPasswordSchema, 
     verifyEmailSchema 
 } from "./auth.validation.js";
-import { updateProfileZodSchema } from "../user/user.validation.js";
+import { updateProfileZodSchema, completeOnboardingZodSchema } from "../user/user.validation.js";
 import config from "../../config/config.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
@@ -129,6 +129,16 @@ export async function updateProfile(req: Request, res: Response) {
     const updatedUser = await AuthService.updateProfile((req as any).user!._id.toString(), validatedData);
     
     return res.status(200).json(new ApiResponse(200, { user: updatedUser }, "Profile updated successfully"));
+}
+
+/**
+ * Completes the new-user onboarding flow for the authenticated user.
+ */
+export async function completeOnboarding(req: Request, res: Response) {
+    const validatedData = completeOnboardingZodSchema.parse(req.body);
+    const updatedUser = await AuthService.completeOnboarding((req as any).user!._id.toString(), validatedData);
+
+    return res.status(200).json(new ApiResponse(200, { user: updatedUser }, "Onboarding completed"));
 }
 
 /**

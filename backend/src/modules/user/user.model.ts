@@ -61,6 +61,31 @@ const userSchema = new Schema<IUser>(
       logoUrl: { type: String, default: "" },
       qrColor: { type: String, default: "#000000" },
     },
+
+    hasCompletedOnboarding: {
+      type: Boolean,
+      default: false,
+    },
+
+    onboarding: {
+      usage: {
+        type: String,
+        enum: ["company", "education", "public_sector", "non_profit", "student", "other"],
+      },
+      usageDetail: String,
+      intent: {
+        type: String,
+        enum: ["explore", "create_polls", "other"],
+      },
+      plan: {
+        type: String,
+        enum: ["free", "basic", "pro"],
+      },
+      firstAction: {
+        type: String,
+        enum: ["word_cloud", "polls", "quiz", "open_ended"],
+      },
+    },
   },
   {
     timestamps: true,
