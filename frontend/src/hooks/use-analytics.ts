@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { analyticsApi } from "@/api/analytics.api";
+import type { TimelineGranularity } from "@/types";
 
 export const analyticsKeys = {
   full: (pollId: string) => ["analytics", pollId, "full"] as const,
   summary: (pollId: string) => ["analytics", pollId, "summary"] as const,
-  timeline: (pollId: string) => ["analytics", pollId, "timeline"] as const,
+  timeline: (pollId: string, groupBy: TimelineGranularity) =>
+    ["analytics", pollId, "timeline", groupBy] as const,
   wordCloud: (pollId: string, questionId: string) =>
     ["analytics", pollId, "wordcloud", questionId] as const,
   respondents: (pollId: string) => ["analytics", pollId, "respondents"] as const,
@@ -31,9 +33,9 @@ export function useAnalyticsSummary(pollId: string) {
   });
 }
 
-export function useTimeline(pollId: string, groupBy: "hour" | "day" = "day") {
+export function useTimeline(pollId: string, groupBy: TimelineGranularity = "day") {
   return useQuery({
-    queryKey: analyticsKeys.timeline(pollId),
+    queryKey: analyticsKeys.timeline(pollId, groupBy),
     queryFn: () => analyticsApi.getTimeline(pollId, groupBy),
     select: (res) => res.data.data,
     enabled: !!pollId,

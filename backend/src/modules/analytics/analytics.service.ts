@@ -1,7 +1,13 @@
 import { ResponseModel } from "../response/response.model.js";
 import { Poll } from "../poll/poll.model.js";
 import { ApiError } from "../../utils/ApiError.js";
+import { aggregateTimeline, type Granularity } from "../../utils/timeline.js";
 import mongoose from "mongoose";
+
+/** Response timeline bucketed by the requested granularity (hour/day/week/month). */
+export async function getPollTimeline(pollId: string, groupBy: Granularity) {
+    return aggregateTimeline(ResponseModel, "pollId", pollId, groupBy);
+}
 
 const STOP_WORDS = new Set([
     "a", "an", "the", "and", "or", "but", "if", "then", "else", "when", "at", "from", "by", "for", "with", "about", 

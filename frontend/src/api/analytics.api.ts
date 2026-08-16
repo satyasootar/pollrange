@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { FullAnalytics, WordCloudItem, TimelinePoint, RespondentEntry } from "@/types";
+import type { FullAnalytics, WordCloudItem, TimelinePoint, RespondentEntry, TimelineGranularity } from "@/types";
 
 export const analyticsApi = {
   getSnapshot: (pollId: string) =>
@@ -18,7 +18,7 @@ export const analyticsApi = {
       `/analytics/${pollId}/summary`
     ),
 
-  getTimeline: (pollId: string, groupBy: "hour" | "day" = "day") =>
+  getTimeline: (pollId: string, groupBy: TimelineGranularity = "day") =>
     api.get<{ data: TimelinePoint[] }>(`/analytics/${pollId}/timeline`, {
       params: { groupBy },
     }),

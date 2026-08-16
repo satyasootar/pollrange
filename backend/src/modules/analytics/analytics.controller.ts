@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import * as AnalyticsService from "./analytics.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
+import { parseGranularity } from "../../utils/timeline.js";
 import { Poll } from "../poll/poll.model.js";
 
 /**
@@ -119,15 +120,11 @@ export async function getSummary(req: Request, res: Response) {
 
 export async function getTimeline(req: Request, res: Response) {
     const { pollId } = req.params;
-    const snapshot = await AnalyticsService.getPollAnalyticsSnapshot(pollId as string);
-    
-    const mappedTimeline = snapshot.timeline.map((t: any) => ({
-        date: t._id,
-        count: t.count
-    }));
+    const groupBy = parseGranularity(req.query.groupBy);
+    const data = await AnalyticsService.getPollTimeline(pollId as string, groupBy);
 
     return res.status(200).json(
-        new ApiResponse(200, mappedTimeline, "Timeline fetched successfully")
+        new ApiResponse(200, data, "Timeline fetched successfully")
     );
 }
 

@@ -27,7 +27,7 @@ import {
   Zap
 } from "lucide-react";
 import { analyticsApi } from "@/api/analytics.api";
-import { useFullAnalytics, useRespondents } from "@/hooks/use-analytics";
+import { useFullAnalytics, useRespondents, useTimeline } from "@/hooks/use-analytics";
 import { usePoll, usePublishPoll, useClosePoll, useReopenPoll, useRegenerateToken } from "@/hooks/use-polls";
 import { usePollSocket } from "@/hooks/use-poll-socket";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,7 +45,7 @@ import { useAuthStore } from "@/store/use-auth-store";
 import { buildShareUrl, copyToClipboard, formatDatetime } from "@/lib/utils";
 import { toast } from "sonner";
 import { stagger, fadeUp } from "@/lib/animations";
-import type { AnalyticsUpdatePayload } from "@/types";
+import type { AnalyticsUpdatePayload, TimelineGranularity } from "@/types";
 
 export function AnalyticsPage() {
   const { pollId } = useParams<{ pollId: string }>();
@@ -59,6 +59,8 @@ export function AnalyticsPage() {
 
   const { data: poll } = usePoll(pollId!);
   const { data: analytics, isLoading } = useFullAnalytics(pollId!);
+  const [timelineGroupBy, setTimelineGroupBy] = useState<TimelineGranularity>("day");
+  const { data: timeline } = useTimeline(pollId!, timelineGroupBy);
   const isAuthenticatedPoll = poll?.responseMode === "authenticated";
   const { data: respondents, isLoading: isRespondentsLoading } = useRespondents(
     pollId!,
@@ -75,6 +77,7 @@ export function AnalyticsPage() {
       setRealtimeCount(data.totalResponses);
       // Invalidate and refetch analytics
       qc.invalidateQueries({ queryKey: analyticsKeys.full(pollId!) });
+      qc.invalidateQueries({ queryKey: ["analytics", pollId!, "timeline"] });
     },
     [pollId, qc]
   );
@@ -262,9 +265,13 @@ export function AnalyticsPage() {
           ))}
 
           {/* Timeline */}
-          {analytics.timeline.length > 0 && (
+          {analytics.totalResponses > 0 && (
             <motion.div variants={fadeUp}>
-              <TimelineChart data={analytics.timeline} />
+              <TimelineChart
+                data={timeline ?? []}
+                groupBy={timelineGroupBy}
+                onGroupByChange={setTimelineGroupBy}
+              />
             </motion.div>
           )}
 
