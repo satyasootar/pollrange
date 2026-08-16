@@ -1,0 +1,3 @@
+- Prefers exact timestamps (precise date/time values) in UI displays rather than relative/vague terms like "About 1 hour ago". Confidence: 0.9
+- Hardcoded configuration values (e.g., URLs like kollects.com) should be sourced from environment variables rather than embedded directly in source code. Confidence: 0.85
+- Uses environment-specific configuration files (e.g., `.env.production`) for both frontend and backend projects, maintaining all correct key-value pairs per environment. Confidence: 0.85

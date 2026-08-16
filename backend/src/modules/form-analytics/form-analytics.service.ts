@@ -2,12 +2,13 @@ import { FormResponse } from "../form-response/form-response.model.js";
 import { Form } from "../form/form.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { CHOICE_TYPES, GRID_TYPES } from "../form/form.validation.js";
-import { aggregateTimeline, type Granularity } from "../../utils/timeline.js";
+import { aggregateTimeline, fillSeries, type Granularity } from "../../utils/timeline.js";
 import mongoose from "mongoose";
 
-/** Response timeline bucketed by the requested granularity (hour/day/week/month). */
+/** Response timeline bucketed by the requested granularity, zero-filled for a continuous chart. */
 export async function getFormTimeline(formId: string, groupBy: Granularity) {
-  return aggregateTimeline(FormResponse, "formId", formId, groupBy);
+  const raw = await aggregateTimeline(FormResponse, "formId", formId, groupBy);
+  return fillSeries(raw, groupBy);
 }
 
 function flattenQuestions(form: any): any[] {

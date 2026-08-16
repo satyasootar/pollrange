@@ -1,0 +1,2 @@
+- Wants consistent UI components (e.g., navbar, header) reused across different pages (e.g., history page should match the dashboard page's navbar) rather than page-specific variations. Confidence: 0.7
+- Prefers status badges on the right side of card components rather than the left/opt side, keeping title text on the left and actions/badges on the right. Confidence: 0.8

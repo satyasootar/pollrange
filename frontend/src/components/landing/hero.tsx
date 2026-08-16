@@ -33,8 +33,8 @@ export function Hero() {
             variants={fadeUp} custom={2}
             className="mt-10 text-base text-muted-foreground max-w-xl leading-relaxed font-medium"
           >
-            Kollects lets you build multi-question polls, share them instantly, and watch
-            responses flow in live — with real-time analytics your audience can trust.
+            Kollects lets you build polls, forms, and quizzes, share them instantly, and watch
+            responses flow in live — with a unified analytics dashboard your audience can trust.
           </motion.p>
 
           <motion.div variants={fadeUp} custom={3} className="mt-12 flex flex-wrap items-center gap-4">

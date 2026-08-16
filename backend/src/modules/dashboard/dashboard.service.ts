@@ -3,7 +3,7 @@ import { Poll } from "../poll/poll.model.js";
 import { Form } from "../form/form.model.js";
 import { ResponseModel } from "../response/response.model.js";
 import { FormResponse } from "../form-response/form-response.model.js";
-import { aggregateTimelineForIds, type Granularity } from "../../utils/timeline.js";
+import { aggregateTimelineForIds, bucketKeys, type Granularity } from "../../utils/timeline.js";
 
 const STATUSES = ["active", "published", "draft", "closed", "expired"];
 const ACTIVE = new Set(["active", "published"]);
@@ -42,14 +42,20 @@ export async function getDashboardOverview(userId: string, groupBy: Granularity)
     aggregateTimelineForIds(ResponseModel, "pollId", pollIds, groupBy),
     aggregateTimelineForIds(FormResponse, "formId", formIds, groupBy),
   ]);
-  const byDate = new Map<string, { date: string; polls: number; forms: number }>();
-  for (const t of pollTl) byDate.set(t.date, { date: t.date, polls: t.count, forms: 0 });
-  for (const t of formTl) {
-    const e = byDate.get(t.date) ?? { date: t.date, polls: 0, forms: 0 };
-    e.forms = t.count;
-    byDate.set(t.date, e);
-  }
-  const timeline = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  // Build a continuous, zero-filled series so both series share one axis and gaps
+  // render as zeros. Trim leading buckets with no activity at all.
+  const pollCounts = new Map(pollTl.map((t) => [t.date, t.count]));
+  const formCounts = new Map(formTl.map((t) => [t.date, t.count]));
+  const hasData = pollTl.length > 0 || formTl.length > 0;
+  const full = hasData
+    ? bucketKeys(groupBy).map((date) => ({
+        date,
+        polls: pollCounts.get(date) ?? 0,
+        forms: formCounts.get(date) ?? 0,
+      }))
+    : [];
+  const firstActive = full.findIndex((p) => p.polls > 0 || p.forms > 0);
+  const timeline = firstActive <= 0 ? full : full.slice(firstActive);
 
   return {
     totals: {

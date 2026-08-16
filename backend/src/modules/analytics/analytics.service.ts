@@ -1,12 +1,13 @@
 import { ResponseModel } from "../response/response.model.js";
 import { Poll } from "../poll/poll.model.js";
 import { ApiError } from "../../utils/ApiError.js";
-import { aggregateTimeline, type Granularity } from "../../utils/timeline.js";
+import { aggregateTimeline, fillSeries, type Granularity } from "../../utils/timeline.js";
 import mongoose from "mongoose";
 
-/** Response timeline bucketed by the requested granularity (hour/day/week/month). */
+/** Response timeline bucketed by the requested granularity, zero-filled for a continuous chart. */
 export async function getPollTimeline(pollId: string, groupBy: Granularity) {
-    return aggregateTimeline(ResponseModel, "pollId", pollId, groupBy);
+    const raw = await aggregateTimeline(ResponseModel, "pollId", pollId, groupBy);
+    return fillSeries(raw, groupBy);
 }
 
 const STOP_WORDS = new Set([

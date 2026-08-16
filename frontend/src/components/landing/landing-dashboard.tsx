@@ -8,6 +8,8 @@ import {
   Clock,
   Users,
   TrendingUp,
+  Activity,
+  FileText,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
@@ -19,12 +21,65 @@ import {
   Camera,
   Copy,
   RotateCcw,
+  type LucideIcon,
 } from "lucide-react";
 import { DashboardView } from "../dashboard/dashboard-view";
+import { ResponsesAreaChart } from "@/components/dashboard/responses-area-chart";
+import { SplitDonut } from "@/components/dashboard/split-donut";
+import { StatusChart } from "@/components/dashboard/status-chart";
+import { TopList } from "@/components/dashboard/top-list";
 import { config } from "@/config/config";
 import { cn, formatDate } from "@/lib/utils";
-import type { Poll, PollFilters, User } from "@/types";
+import type { Poll, PollFilters, User, DashboardOverview, TimelineGranularity } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
+
+type Tab = "overview" | "polls" | "forms" | "history" | "analytics";
+
+// Two weeks of demo activity — deliberately includes empty days to show the
+// zero-filled, continuous timeline the real dashboard renders.
+function buildMockTimeline(): DashboardOverview["timeline"] {
+  const pollsSeq = [12, 18, 0, 25, 30, 14, 0, 21, 40, 55, 38, 60, 45, 70];
+  const formsSeq = [5, 8, 10, 0, 12, 20, 15, 0, 18, 22, 0, 28, 30, 26];
+  const out: DashboardOverview["timeline"] = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    out.push({ date: key, polls: pollsSeq[13 - i]!, forms: formsSeq[13 - i]! });
+  }
+  return out;
+}
+
+const MOCK_OVERVIEW: DashboardOverview = {
+  totals: { polls: 6, forms: 4, responses: 2310, active: 4, drafts: 1 },
+  responsesSplit: { polls: 1284, forms: 1026 },
+  statusBreakdown: [
+    { status: "active", polls: 2, forms: 2 },
+    { status: "published", polls: 1, forms: 0 },
+    { status: "draft", polls: 1, forms: 1 },
+    { status: "closed", polls: 2, forms: 1 },
+  ],
+  topPolls: [
+    { id: "demo-1", title: "Q2 Product Strategy Survey", responses: 1284, status: "active" },
+    { id: "demo-2", title: "Customer Satisfaction 2024", responses: 856, status: "published" },
+    { id: "demo-6", title: "User Persona Research", responses: 112, status: "closed" },
+    { id: "demo-5", title: "Team Offsite Feedback", responses: 48, status: "closed" },
+  ],
+  topForms: [
+    { id: "form-1", title: "Job Application Form", responses: 512, status: "active" },
+    { id: "form-2", title: "Onboarding Quiz", responses: 318, status: "active" },
+    { id: "form-3", title: "Event Registration", responses: 141, status: "closed" },
+    { id: "form-4", title: "Bug Report Form", responses: 55, status: "draft" },
+  ],
+  timeline: buildMockTimeline(),
+};
+
+const MOCK_FORMS = [
+  { title: "Job Application Form", desc: "Collect applications with resume file uploads and screening questions.", responses: 512, questions: 12, status: "active" },
+  { title: "Onboarding Quiz", desc: "Auto-graded quiz with instant scoring for new hires.", responses: 318, questions: 8, status: "active" },
+  { title: "Event Registration", desc: "Multi-section registration with dietary and session choices.", responses: 141, questions: 9, status: "closed" },
+  { title: "Bug Report Form", desc: "Structured bug intake with severity grid and screenshots.", responses: 55, questions: 6, status: "draft" },
+];
 
 const MOCK_POLLS: Poll[] = [
   {
@@ -268,7 +323,7 @@ export function LandingDashboard() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<PollFilters["status"]>("all");
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "history" | "analytics">("dashboard");
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [selectedPollId, setSelectedPollId] = useState<string | null>(null);
 
   const selectedPoll = useMemo(() => 
@@ -277,8 +332,10 @@ export function LandingDashboard() {
 
   const urlPath = useMemo(() => {
     const domain = config.siteDomain;
-    if (activeTab === "dashboard") return `${domain}/dashboard`;
-    if (activeTab === "history") return `${domain}/history`;
+    if (activeTab === "overview") return `${domain}/dashboard/overview`;
+    if (activeTab === "polls") return `${domain}/dashboard`;
+    if (activeTab === "forms") return `${domain}/dashboard/forms`;
+    if (activeTab === "history") return `${domain}/dashboard/history`;
     if (activeTab === "analytics") return `${domain}/polls/${selectedPollId}/analytics`;
     return domain;
   }, [activeTab, selectedPollId]);
@@ -344,40 +401,30 @@ export function LandingDashboard() {
               </div>
               
               <nav className="flex-1 py-6 px-3 space-y-2">
-                <button 
-                  onClick={() => setActiveTab("dashboard")}
-                  className={cn(
-                    "w-full flex items-center justify-between px-4 py-3 transition-colors relative",
-                    activeTab === "dashboard" || activeTab === "analytics"
-                      ? "bg-primary/10 text-primary border border-primary/20" 
-                      : "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <LayoutDashboard className="h-5 w-5" />
-                    <span className={cn("font-medium", (activeTab === "dashboard" || activeTab === "analytics") && "font-bold")}>Dashboard</span>
-                  </div>
-                  {(activeTab === "dashboard" || activeTab === "analytics") && (
-                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary" />
-                  )}
-                </button>
-                <button 
-                  onClick={() => setActiveTab("history")}
-                  className={cn(
-                    "w-full flex items-center justify-between px-4 py-3 transition-colors relative",
-                    activeTab === "history" 
-                      ? "bg-primary/10 text-primary border border-primary/20" 
-                      : "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <History className="h-5 w-5" />
-                    <span className={cn("font-medium", activeTab === "history" && "font-bold")}>History</span>
-                  </div>
-                  {activeTab === "history" && (
-                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary" />
-                  )}
-                </button>
+                {([
+                  { id: "overview", label: "Overview", icon: LayoutDashboard },
+                  { id: "polls", label: "Polls", icon: BarChart3 },
+                  { id: "forms", label: "Forms", icon: FileText },
+                  { id: "history", label: "History", icon: History },
+                ] as { id: Tab; label: string; icon: LucideIcon }[]).map((item) => {
+                  const active = activeTab === item.id || (item.id === "polls" && activeTab === "analytics");
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3 transition-colors relative",
+                        active ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <item.icon className="h-5 w-5" />
+                        <span className={cn("font-medium", active && "font-bold")}>{item.label}</span>
+                      </div>
+                      {active && <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary" />}
+                    </button>
+                  );
+                })}
               </nav>
 
               <div className="border-t border-border p-5">
@@ -396,9 +443,33 @@ export function LandingDashboard() {
 
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
                <AnimatePresence mode="wait">
-                 {activeTab === "dashboard" && (
-                   <motion.div 
-                    key="dashboard"
+                 {activeTab === "overview" && (
+                   <motion.div
+                    key="overview"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="h-full"
+                   >
+                    <OverviewView />
+                   </motion.div>
+                 )}
+
+                 {activeTab === "forms" && (
+                   <motion.div
+                    key="forms"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="h-full"
+                   >
+                    <FormsView onAction={handleAction} />
+                   </motion.div>
+                 )}
+
+                 {activeTab === "polls" && (
+                   <motion.div
+                    key="polls"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
@@ -445,7 +516,7 @@ export function LandingDashboard() {
                    >
                     <AnalyticsView 
                       poll={selectedPoll} 
-                      onBack={() => setActiveTab("dashboard")} 
+                      onBack={() => setActiveTab("polls")} 
                       onAction={handleAction}
                     />
                    </motion.div>
@@ -610,5 +681,101 @@ function HistoryView({ onAction }: { onAction: () => void }) {
       </div>
     </div>
   </div>
+  );
+}
+
+function OverviewView() {
+  const [groupBy, setGroupBy] = useState<TimelineGranularity>("day");
+  const o = MOCK_OVERVIEW;
+  const tiles: { label: string; value: number; icon: LucideIcon; color: string }[] = [
+    { label: "Total Responses", value: o.totals.responses, icon: Users, color: "text-primary" },
+    { label: "Active", value: o.totals.active, icon: Activity, color: "text-emerald-500" },
+    { label: "Polls", value: o.totals.polls, icon: BarChart3, color: "text-amber-500" },
+    { label: "Forms", value: o.totals.forms, icon: FileText, color: "text-muted-foreground" },
+  ];
+  return (
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
+      <div className="flex h-20 shrink-0 items-center border-b border-border px-8">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Overview</h1>
+          <p className="text-sm text-muted-foreground">Analytics across all your polls and forms</p>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-6">
+        <div className="grid grid-cols-4 gap-4">
+          {tiles.map((s) => (
+            <div key={s.label} className="border-2 border-border bg-card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</span>
+                  <p className="mt-2 text-3xl font-bold tabular-nums">{s.value.toLocaleString()}</p>
+                </div>
+                <div className={cn("flex h-9 w-9 items-center justify-center border border-current/30 bg-current/10", s.color)}>
+                  <s.icon className="h-4 w-4" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <ResponsesAreaChart data={o.timeline} groupBy={groupBy} onGroupByChange={setGroupBy} />
+        <div className="grid grid-cols-2 gap-6">
+          <SplitDonut polls={o.responsesSplit.polls} forms={o.responsesSplit.forms} />
+          <StatusChart data={o.statusBreakdown} />
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <TopList title="Top polls" items={o.topPolls} accent="var(--chart-1)" onSelect={() => {}} emptyLabel="No polls yet." />
+          <TopList title="Top forms" items={o.topForms} accent="var(--chart-3)" onSelect={() => {}} emptyLabel="No forms yet." />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormsView({ onAction }: { onAction: () => void }) {
+  const STATUS_STYLES: Record<string, string> = {
+    active: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600",
+    closed: "bg-muted border-border text-muted-foreground",
+    draft: "bg-amber-500/10 border-amber-500/20 text-amber-600",
+  };
+  return (
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
+      <div className="flex h-20 shrink-0 items-center justify-between border-b border-border px-8">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Forms</h1>
+          <p className="text-sm text-muted-foreground">Build rich forms, quizzes, and surveys</p>
+        </div>
+        <button
+          onClick={onAction}
+          className="flex items-center gap-2 bg-primary px-4 py-2.5 text-sm font-bold uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          <FileText className="h-4 w-4" /> Create Form
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="grid grid-cols-3 gap-4 auto-rows-min">
+          {MOCK_FORMS.map((f) => (
+            <button
+              key={f.title}
+              onClick={onAction}
+              className="flex flex-col border border-border bg-card p-5 text-left transition-colors hover:border-primary/40"
+            >
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span className={cn("border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", STATUS_STYLES[f.status])}>
+                  {f.status}
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{f.questions} questions</span>
+              </div>
+              <h3 className="mb-1 text-base font-bold leading-tight">{f.title}</h3>
+              <p className="mb-4 line-clamp-2 text-xs text-muted-foreground">{f.desc}</p>
+              <div className="mt-auto flex items-center gap-2 text-sm font-semibold tabular-nums">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                {f.responses.toLocaleString()}
+                <span className="text-xs font-normal text-muted-foreground">responses</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
