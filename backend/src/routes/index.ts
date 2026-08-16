@@ -9,6 +9,7 @@ import formRouter from "../modules/form/form.route.js";
 import formPublicRouter from "../modules/form/form.public.route.js";
 import formResponseRouter from "../modules/form-response/form-response.route.js";
 import formAnalyticsRouter from "../modules/form-analytics/form-analytics.route.js";
+import dashboardRouter from "../modules/dashboard/dashboard.route.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const rootRouter = Router();
@@ -28,5 +29,6 @@ rootRouter.use("/forms", formRouter);
 rootRouter.use("/public/forms", optionalAuth, formPublicRouter);
 rootRouter.use("/form-responses", formResponseRouter);
 rootRouter.use("/form-analytics", formAnalyticsRouter);
+rootRouter.use("/dashboard", dashboardRouter);
 
 export default rootRouter;

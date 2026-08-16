@@ -12,6 +12,8 @@ import {
   Monitor,
   History,
   ShieldAlert,
+  FileText,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
@@ -32,7 +34,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard/overview", icon: LayoutDashboard, label: "Overview" },
+  { to: "/dashboard", icon: BarChart3, label: "Polls" },
+  { to: "/dashboard/forms", icon: FileText, label: "Forms" },
   { to: "/dashboard/history", icon: History, label: "History" },
 ];
 
@@ -50,7 +54,7 @@ function NavItem({
   return (
     <NavLink
       to={to}
-      end={to === "/dashboard" || to === "/dashboard/history"}
+      end
       onClick={onClick}
       className={({ isActive }) =>
         cn(

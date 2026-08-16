@@ -16,6 +16,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { OnboardingPage } from "@/pages/onboarding";
 
 import { DashboardPage } from "@/pages/dashboard";
+import { OverviewPage } from "@/pages/dashboard/overview";
 import { ProfilePage } from "@/pages/dashboard/profile";
 import { HistoryPage } from "@/pages/dashboard/history";
 import { FormsPage } from "@/pages/dashboard/forms";
@@ -73,6 +74,7 @@ export function App() {
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/dashboard" element={<AppShell />}>
               <Route index element={<DashboardPage />} />
+              <Route path="overview" element={<OverviewPage />} />
               <Route path="forms" element={<FormsPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="history" element={<HistoryPage />} />
