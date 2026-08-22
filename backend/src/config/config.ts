@@ -60,11 +60,9 @@ const config: Config = {
     CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || "",
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || "",
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || "",
-    // AI assistant — OpenAI SDK pointed at Mistral (swap base URL/model for any
-    // OpenAI-compatible provider without code changes).
     MISTRAL_API_KEY: process.env.MISTRAL_API_KEY || "",
     MISTRAL_BASE_URL: process.env.MISTRAL_BASE_URL || "https://api.mistral.ai/v1",
-    MISTRAL_MODEL: process.env.MISTRAL_MODEL || "mistral-large-latest",
+    MISTRAL_MODEL: process.env.MISTRAL_MODEL || "mistral-small-latest",
 };
 
 export default config;
