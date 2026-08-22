@@ -11,7 +11,7 @@ import {
   RotateCcw,
   Files,
   Lock,
-  FileText,
+  Award,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -59,9 +59,11 @@ export function FormCard({ form }: { form: Form }) {
     >
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="min-w-0 flex-1 pr-2">
-          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <FileText className="h-3 w-3" /> Form{form.isQuiz ? " · Quiz" : ""}
-          </div>
+          {form.isQuiz && (
+            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+              <Award className="h-3 w-3" /> Quiz
+            </div>
+          )}
           <h3 className="line-clamp-2 text-base font-semibold leading-snug transition-colors group-hover:text-primary">
             {form.title}
           </h3>
