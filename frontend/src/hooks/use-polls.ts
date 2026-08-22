@@ -36,13 +36,14 @@ export function usePoll(pollId: string) {
 export function useCreatePoll() {
   const qc = useQueryClient();
 
+  // No hook-level onError: the review step needs to distinguish validation
+  // errors (show a fix-and-retry dialog) from generic failures (toast) itself.
   return useMutation({
     mutationFn: (form: PollBuilderForm) => pollsApi.create(form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: pollKeys.all });
       toast.success("Poll created successfully!");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
   });
 }
 

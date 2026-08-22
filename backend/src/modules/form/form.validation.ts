@@ -1,5 +1,6 @@
 import { z } from "zod";
 import mongoose from "mongoose";
+import { optionalExpiresAtSchema } from "../../utils/zod-helpers.js";
 
 // ─── Shared enums (single source of truth) ──────────────────────────────────────
 export const QUESTION_TYPES = [
@@ -214,7 +215,7 @@ export const createFormSchema = z.object({
   coverImageUrl: z.string().optional(),
   isQuiz: z.boolean().optional(),
   responseMode: z.enum(RESPONSE_MODES),
-  expiresAt: z.coerce.date().optional().nullable(),
+  expiresAt: optionalExpiresAtSchema,
   settings: formSettingsZodSchema.partial().optional(),
   sections: z.array(createSectionSchema).min(1),
 });
@@ -232,6 +233,6 @@ export const publishFormSchema = z.object({
 export type IPublishForm = z.infer<typeof publishFormSchema>;
 
 export const reopenFormSchema = z.object({
-  expiresAt: z.coerce.date().nullable().optional(),
+  expiresAt: optionalExpiresAtSchema,
 });
 export type IReopenForm = z.infer<typeof reopenFormSchema>;

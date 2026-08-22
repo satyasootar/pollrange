@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createFormSchema } from "./form.validation.js";
+import { createFormSchema, reopenFormSchema } from "./form.validation.js";
 
 const baseQuestion = {
   order: 0,
@@ -66,5 +66,36 @@ describe("createFormSchema", () => {
       expect("shareToken" in r.data).toBe(false);
       expect("status" in r.data).toBe(false);
     }
+  });
+
+  it("regression: an empty-string expiresAt (no expiry) does not 400", () => {
+    // The form builder represents "no expiry" as "" — this used to fail with
+    // Zod's confusing "expected date, received Date" message.
+    const r = createFormSchema.safeParse({
+      ...form([{ ...baseQuestion, type: "short_answer" }]),
+      expiresAt: "",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.expiresAt).toBeNull();
+  });
+
+  it("coerces a valid ISO expiresAt into a Date", () => {
+    const r = createFormSchema.safeParse({
+      ...form([{ ...baseQuestion, type: "short_answer" }]),
+      expiresAt: "2030-01-01T00:00:00.000Z",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.expiresAt).toBeInstanceOf(Date);
+  });
+});
+
+describe("reopenFormSchema", () => {
+  it("treats an empty string the same as forever", () => {
+    const parsed = reopenFormSchema.parse({ expiresAt: "" });
+    expect(parsed.expiresAt).toBeNull();
+  });
+
+  it("rejects a non-date string", () => {
+    expect(reopenFormSchema.safeParse({ expiresAt: "whenever" }).success).toBe(false);
   });
 });

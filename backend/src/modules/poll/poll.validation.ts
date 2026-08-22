@@ -1,5 +1,6 @@
 import { z } from "zod";
 import mongoose from "mongoose";
+import { optionalExpiresAtSchema } from "../../utils/zod-helpers.js";
 
 const optionZodSchema = z.object({
   text: z.string(),
@@ -63,7 +64,7 @@ export const createPollSchema = z.object({
   description: z.string().optional(),
   questions: z.array(createQuestionSchema).min(1),
   responseMode: z.enum(["anonymous", "authenticated"]),
-  expiresAt: z.coerce.date().optional().nullable(),
+  expiresAt: optionalExpiresAtSchema,
   settings: z.object({
     allowResponseEdit: z.boolean().optional(),
     showProgressBar: z.boolean().optional(),
@@ -87,7 +88,7 @@ export type IPublishPoll = z.infer<typeof publishPollSchema>;
 // Reopen a closed poll: `expiresAt` null/absent means "open forever" (no expiry),
 // a date sets a new deadline.
 export const reopenPollSchema = z.object({
-  expiresAt: z.coerce.date().nullable().optional(),
+  expiresAt: optionalExpiresAtSchema,
 });
 
 export type IReopenPoll = z.infer<typeof reopenPollSchema>;

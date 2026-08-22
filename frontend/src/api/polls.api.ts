@@ -6,7 +6,7 @@ function toCreatePayload(form: PollBuilderForm) {
   return {
     title: form.title,
     description: form.description || undefined,
-    expiresAt: form.expiresAt,
+    expiresAt: form.expiresAt || null,
     responseMode: form.responseMode,
     settings: form.settings,
     questions: form.questions.map((q, qi) => ({

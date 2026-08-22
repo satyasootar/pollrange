@@ -1,22 +1,41 @@
+import { useState } from "react";
 import { Send } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
 import { useCreateForm } from "@/hooks/use-forms";
 import { FormPreview } from "./form-preview";
-import { formatDatetime } from "@/lib/utils";
+import { PublishErrorDialog } from "@/components/builder/publish-error-dialog";
+import { formatDatetime, getApiErrorMessage, getValidationErrors, type ApiValidationError } from "@/lib/utils";
+import type { FormBuilderForm } from "@/types";
 
 export function StepFormReview() {
-  const { form, prevStep, setSuccessData } = useFormBuilderStore();
+  const { form, prevStep, setSuccessData, setStep, updateMeta } = useFormBuilderStore();
   const createForm = useCreateForm();
+  const [dialogErrors, setDialogErrors] = useState<ApiValidationError[] | null>(null);
   const totalQuestions = form.sections.reduce((n, s) => n + s.questions.length, 0);
 
-  const handlePublish = () => {
-    createForm.mutate(form, {
-      onSuccess: (res) => {
-        const created = res.data.data;
-        setSuccessData({ formId: created._id, shareToken: created.shareToken });
-      },
-    });
+  const publish = (overrides: Partial<FormBuilderForm> = {}) => {
+    createForm.mutate(
+      { ...form, ...overrides },
+      {
+        onSuccess: (res) => {
+          const created = res.data.data;
+          setSuccessData({ formId: created._id, shareToken: created.shareToken });
+        },
+        onError: (err) => {
+          const validationErrors = getValidationErrors(err);
+          if (validationErrors) setDialogErrors(validationErrors);
+          else toast.error(getApiErrorMessage(err));
+        },
+      }
+    );
+  };
+
+  const handleFixExpiryAndRetry = (expiresAt: string | null) => {
+    updateMeta({ expiresAt: expiresAt ?? "" });
+    setDialogErrors(null);
+    publish({ expiresAt: expiresAt ?? "" });
   };
 
   return (
@@ -51,11 +70,23 @@ export function StepFormReview() {
         <Button variant="outline" onClick={prevStep}>
           ← Edit Questions
         </Button>
-        <Button onClick={handlePublish} disabled={createForm.isPending} className="gap-2">
+        <Button onClick={() => publish()} disabled={createForm.isPending} className="gap-2">
           <Send className="h-4 w-4" />
           {createForm.isPending ? "Creating…" : "Publish Form"}
         </Button>
       </div>
+
+      <PublishErrorDialog
+        open={!!dialogErrors}
+        onOpenChange={(open) => !open && setDialogErrors(null)}
+        errors={dialogErrors ?? []}
+        isPending={createForm.isPending}
+        onFixExpiryAndRetry={handleFixExpiryAndRetry}
+        onGoToSettings={() => {
+          setDialogErrors(null);
+          setStep(1);
+        }}
+      />
     </div>
   );
 }

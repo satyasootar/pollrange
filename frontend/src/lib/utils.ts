@@ -121,31 +121,44 @@ export function copyToClipboard(text: string): Promise<void> {
   return navigator.clipboard.writeText(text);
 }
 
+export interface ApiValidationError {
+  path: string;
+  message: string;
+}
+
+interface ApiErrorResponse {
+  status?: number;
+  data?: {
+    message?: string;
+    error?: { message?: string };
+    errors?: ApiValidationError[];
+  };
+}
+
 /** Normalize API error to a display message */
 export function getApiErrorMessage(error: unknown): string {
   if (!error) return "An unexpected error occurred.";
-  
-  const axiosError = error as {
-    response?: { 
-      status?: number; 
-      data?: { 
-        message?: string; 
-        error?: { message?: string };
-        errors?: { message: string }[] 
-      } 
-    };
-  };
 
+  const axiosError = error as { response?: ApiErrorResponse };
   const status = axiosError?.response?.status;
   const data = axiosError?.response?.data;
-  
-  // Extract server message (check both data.message and data.error.message)
-  const serverMsg = data?.message || data?.error?.message;
-  
+
+  // Prefer the specific field error (e.g. "Invalid expiry date…") over the
+  // generic "Validation Error" wrapper message.
+  const serverMsg = data?.errors?.[0]?.message || data?.message || data?.error?.message;
+
   if (status === 401) return "Please log in to continue.";
   if (status === 403) return serverMsg || "You don't have permission to do that.";
   if (status === 404) return "Resource not found.";
   if (status === 410) return "This poll has expired.";
-  
+
   return serverMsg || "Something went wrong. Please try again.";
+}
+
+/** Extracts the field-level validation errors from a 400 Validation Error response, if present. */
+export function getValidationErrors(error: unknown): ApiValidationError[] | null {
+  const axiosError = error as { response?: ApiErrorResponse };
+  const status = axiosError?.response?.status;
+  const errors = axiosError?.response?.data?.errors;
+  return status === 400 && errors && errors.length > 0 ? errors : null;
 }

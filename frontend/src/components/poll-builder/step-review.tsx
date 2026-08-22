@@ -1,32 +1,48 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Send } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { usePollBuilderStore } from "@/store/use-poll-builder-store";
 import { useCreatePoll } from "@/hooks/use-polls";
+import { PublishErrorDialog } from "@/components/builder/publish-error-dialog";
 import { fadeUp, stagger } from "@/lib/animations";
-import { formatDatetime } from "@/lib/utils";
+import { formatDatetime, getApiErrorMessage, getValidationErrors, type ApiValidationError } from "@/lib/utils";
+import type { PollBuilderForm } from "@/types";
 
 export function StepReview() {
-  const { form, prevStep, setSuccessData, setStep } = usePollBuilderStore();
+  const { form, prevStep, setSuccessData, setStep, updateMeta } = usePollBuilderStore();
   const createPoll = useCreatePoll();
+  const [dialogErrors, setDialogErrors] = useState<ApiValidationError[] | null>(null);
 
-  const handlePublish = () => {
-    const sanitizedForm = {
-      ...form,
-      questions: form.questions.map(q => ({
-        ...q,
-        options: q.type === "open_ended" ? [] : q.options.filter(o => o.text.trim().length > 0)
-      }))
-    };
+  const sanitize = (f: PollBuilderForm): PollBuilderForm => ({
+    ...f,
+    questions: f.questions.map((q) => ({
+      ...q,
+      options: q.type === "open_ended" ? [] : q.options.filter((o) => o.text.trim().length > 0),
+    })),
+  });
 
-    createPoll.mutate(sanitizedForm, {
+  const publish = (overrides: Partial<PollBuilderForm> = {}) => {
+    createPoll.mutate(sanitize({ ...form, ...overrides }), {
       onSuccess: (res) => {
         const poll = res.data.data;
         // Advance to the success step, which shows the shareable link.
         setSuccessData({ pollId: poll._id, shareToken: poll.shareToken });
         setStep(4);
       },
+      onError: (err) => {
+        const validationErrors = getValidationErrors(err);
+        if (validationErrors) setDialogErrors(validationErrors);
+        else toast.error(getApiErrorMessage(err));
+      },
     });
+  };
+
+  const handleFixExpiryAndRetry = (expiresAt: string | null) => {
+    updateMeta({ expiresAt: expiresAt ?? "" });
+    setDialogErrors(null);
+    publish({ expiresAt: expiresAt ?? "" });
   };
 
   return (
@@ -104,7 +120,7 @@ export function StepReview() {
           ← Edit Questions
         </Button>
         <Button
-          onClick={handlePublish}
+          onClick={() => publish()}
           disabled={createPoll.isPending}
           className="gap-2"
         >
@@ -112,6 +128,18 @@ export function StepReview() {
           {createPoll.isPending ? "Creating…" : "Publish Poll"}
         </Button>
       </div>
+
+      <PublishErrorDialog
+        open={!!dialogErrors}
+        onOpenChange={(open) => !open && setDialogErrors(null)}
+        errors={dialogErrors ?? []}
+        isPending={createPoll.isPending}
+        onFixExpiryAndRetry={handleFixExpiryAndRetry}
+        onGoToSettings={() => {
+          setDialogErrors(null);
+          setStep(1);
+        }}
+      />
     </div>
   );
 }

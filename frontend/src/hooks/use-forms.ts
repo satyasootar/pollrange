@@ -30,13 +30,14 @@ export function useForm(formId: string) {
 
 export function useCreateForm() {
   const qc = useQueryClient();
+  // No hook-level onError: the review step needs to distinguish validation
+  // errors (show a fix-and-retry dialog) from generic failures (toast) itself.
   return useMutation({
     mutationFn: (form: FormBuilderForm) => formsApi.create(form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: formKeys.all });
       toast.success("Form created successfully!");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
   });
 }
 

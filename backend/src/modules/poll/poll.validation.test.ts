@@ -76,6 +76,13 @@ describe("createPollSchema", () => {
     expect(parsed.expiresAt).toBeInstanceOf(Date);
   });
 
+  it("regression: an empty-string expiresAt (no expiry) does not 400", () => {
+    // The poll builder represents "no expiry" as "" — this used to fail with
+    // Zod's confusing "expected date, received Date" message.
+    const parsed = createPollSchema.parse({ ...validPollInput, expiresAt: "" });
+    expect(parsed.expiresAt).toBeNull();
+  });
+
   it("defaults question type to single_choice and isMandatory to true", () => {
     const parsed = createPollSchema.parse({
       ...validPollInput,
@@ -121,6 +128,11 @@ describe("reopenPollSchema", () => {
 
   it("rejects a non-date string", () => {
     expect(reopenPollSchema.safeParse({ expiresAt: "whenever" }).success).toBe(false);
+  });
+
+  it("treats an empty string the same as forever", () => {
+    const parsed = reopenPollSchema.parse({ expiresAt: "" });
+    expect(parsed.expiresAt).toBeNull();
   });
 });
 
