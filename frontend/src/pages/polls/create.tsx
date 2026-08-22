@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
-import { v4 as uuidv4 } from "uuid";
 import { usePollBuilderStore } from "@/store/use-poll-builder-store";
 import { StepSettings } from "@/components/poll-builder/step-settings";
 import { StepQuestions } from "@/components/poll-builder/step-questions";
@@ -8,43 +7,13 @@ import { StepReview } from "@/components/poll-builder/step-review";
 import { StepSuccess } from "@/components/poll-builder/step-success";
 import { BuilderChatDock } from "@/components/ai/builder-chat-dock";
 import { slideInRight } from "@/lib/animations";
-import type { AiAction } from "@/types";
+import { applyPollActions, pollBuilderState } from "@/lib/ai-builder-actions";
 
 const STEPS = [
   { num: 1, label: "Settings" },
   { num: 2, label: "Questions" },
   { num: 3, label: "Review" },
 ];
-
-/** Apply AI builder actions to the poll store — one question at a time, live. */
-function applyPollActions(actions: AiAction[]) {
-  const s = usePollBuilderStore.getState();
-  const questions = [...s.form.questions];
-  const meta: { title?: string; description?: string } = {};
-  let added = false;
-  for (const a of actions) {
-    if (a.kind === "add_poll_question") {
-      added = true;
-      questions.push({
-        id: uuidv4(),
-        text: a.question.text,
-        type: a.question.type,
-        isMandatory: a.question.isMandatory ?? true,
-        options: a.question.type === "open_ended" ? [] : (a.question.options ?? []).map((text) => ({ id: uuidv4(), text })),
-      });
-    } else if (a.kind === "set_meta" && a.entity === "poll") {
-      if (a.title !== undefined) meta.title = a.title;
-      if (a.description !== undefined) meta.description = a.description;
-    }
-  }
-  s.setForm({ ...meta, questions });
-  if (added) s.setStep(2);
-}
-
-const builderState = () => {
-  const f = usePollBuilderStore.getState().form;
-  return { title: f.title, questions: f.questions.map((q) => q.text).filter(Boolean) };
-};
 
 export function CreatePollPage() {
   const { step } = usePollBuilderStore();
@@ -97,9 +66,9 @@ export function CreatePollPage() {
         </div>
       </div>
 
-      {/* AI assistant — floating, closed by default (hidden on the success step) */}
-      {step !== 4 && (
-        <BuilderChatDock surface="poll-builder" getBuilderState={builderState} onActions={applyPollActions} />
+      {/* AI assistant — floating, closed by default; only after Settings (step 1) is done */}
+      {step > 1 && step !== 4 && (
+        <BuilderChatDock surface="poll-builder" getBuilderState={pollBuilderState} onActions={applyPollActions} />
       )}
     </div>
   );
