@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
-  History,
   MoreVertical,
   BarChart3,
   Clock,
@@ -10,7 +9,6 @@ import {
   TrendingUp,
   Activity,
   FileText,
-  ExternalLink,
   ChevronLeft,
   ChevronRight,
   RotateCw,
@@ -33,7 +31,7 @@ import { cn, formatDate } from "@/lib/utils";
 import type { Poll, PollFilters, User, DashboardOverview, TimelineGranularity } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 
-type Tab = "overview" | "polls" | "forms" | "history" | "analytics";
+type Tab = "overview" | "polls" | "forms" | "analytics";
 
 // Two weeks of demo activity — deliberately includes empty days to show the
 // zero-filled, continuous timeline the real dashboard renders.
@@ -335,7 +333,6 @@ export function LandingDashboard() {
     if (activeTab === "overview") return `${domain}/dashboard/overview`;
     if (activeTab === "polls") return `${domain}/dashboard`;
     if (activeTab === "forms") return `${domain}/dashboard/forms`;
-    if (activeTab === "history") return `${domain}/dashboard/history`;
     if (activeTab === "analytics") return `${domain}/polls/${selectedPollId}/analytics`;
     return domain;
   }, [activeTab, selectedPollId]);
@@ -405,7 +402,6 @@ export function LandingDashboard() {
                   { id: "overview", label: "Overview", icon: LayoutDashboard },
                   { id: "polls", label: "Polls", icon: BarChart3 },
                   { id: "forms", label: "Forms", icon: FileText },
-                  { id: "history", label: "History", icon: History },
                 ] as { id: Tab; label: string; icon: LucideIcon }[]).map((item) => {
                   const active = activeTab === item.id || (item.id === "polls" && activeTab === "analytics");
                   return (
@@ -491,18 +487,6 @@ export function LandingDashboard() {
                         isCompact={true}
                         className="h-full overflow-hidden"
                      />
-                   </motion.div>
-                 )}
-
-                 {activeTab === "history" && (
-                   <motion.div 
-                    key="history"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="h-full"
-                   >
-                    <HistoryView onAction={handleAction} />
                    </motion.div>
                  )}
 
@@ -614,73 +598,6 @@ function AnalyticsView({ poll, onBack, onAction }: { poll: Poll, onBack: () => v
         </div>
       </div>
     </div>
-  );
-}
-
-function HistoryView({ onAction }: { onAction: () => void }) {
-  return (
-    <div className="flex-1 flex flex-col min-w-0 bg-background/50">
-      <div className="flex shrink-0 items-center border-b border-border h-20 px-8">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Poll History</h1>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="mb-8">
-          <p className="text-muted-foreground text-lg">A record of all the polls you have participated in.</p>
-        </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        {/* Card 1 */}
-        <div className="bg-card border border-border p-6 flex flex-col cursor-pointer hover:border-primary/50 transition-colors" onClick={onAction}>
-          <div className="flex items-center justify-between mb-4">
-            <span className="px-2 py-0.5 bg-muted border border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Completed
-            </span>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              ABOUT 15 HOURS AGO
-            </span>
-          </div>
-          <h3 className="text-xl font-bold mb-6 line-clamp-2">What matters most in life right now?</h3>
-          <button 
-            onClick={onAction}
-            className="mt-auto w-full py-3 px-4 border border-border hover:bg-muted transition-colors flex items-center justify-center gap-2 font-bold text-sm uppercase tracking-widest"
-          >
-            <ExternalLink className="h-4 w-4" />
-            View Poll
-          </button>
-        </div>
-
-        {/* Card 2 */}
-        <div className="bg-card border border-border p-6 flex flex-col cursor-pointer hover:border-primary/50 transition-colors" onClick={onAction}>
-          <div className="flex items-center justify-between mb-4">
-            <span className="px-2 py-0.5 bg-primary/10 border border-primary/20 text-xs font-bold text-primary uppercase tracking-wider">
-              Results Published
-            </span>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              ABOUT 15 HOURS AGO
-            </span>
-          </div>
-          <h3 className="text-xl font-bold mb-6 line-clamp-2">Daily life</h3>
-          <div className="mt-auto grid grid-cols-2 gap-3">
-            <button 
-              onClick={onAction}
-              className="py-3 px-4 border border-border hover:bg-muted transition-colors flex items-center justify-center gap-2 font-bold text-sm uppercase tracking-widest"
-            >
-              <ExternalLink className="h-4 w-4" />
-              View Poll
-            </button>
-            <button 
-              onClick={onAction}
-              className="py-3 px-4 bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center justify-center gap-2 font-bold text-sm uppercase tracking-widest"
-            >
-              <BarChart3 className="h-4 w-4" />
-              Results
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
   );
 }
 

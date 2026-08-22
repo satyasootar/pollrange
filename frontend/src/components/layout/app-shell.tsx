@@ -10,7 +10,6 @@ import {
   Sun,
   Moon,
   Monitor,
-  History,
   ShieldAlert,
   FileText,
   BarChart3,
@@ -37,7 +36,6 @@ const navItems = [
   { to: "/dashboard/overview", icon: LayoutDashboard, label: "Overview" },
   { to: "/dashboard", icon: BarChart3, label: "Polls" },
   { to: "/dashboard/forms", icon: FileText, label: "Forms" },
-  { to: "/dashboard/history", icon: History, label: "History" },
 ];
 
 function NavItem({

@@ -18,7 +18,6 @@ import { OnboardingPage } from "@/pages/onboarding";
 import { DashboardPage } from "@/pages/dashboard";
 import { OverviewPage } from "@/pages/dashboard/overview";
 import { ProfilePage } from "@/pages/dashboard/profile";
-import { HistoryPage } from "@/pages/dashboard/history";
 import { FormsPage } from "@/pages/dashboard/forms";
 import { CreatePollPage } from "@/pages/polls/create";
 import { EditPollPage } from "@/pages/polls/edit";
@@ -77,7 +76,6 @@ export function App() {
               <Route path="overview" element={<OverviewPage />} />
               <Route path="forms" element={<FormsPage />} />
               <Route path="profile" element={<ProfilePage />} />
-              <Route path="history" element={<HistoryPage />} />
             </Route>
             <Route element={<AppShell />}>
               <Route path="/polls/create" element={<CreatePollPage />} />
