@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Plus, Search, Filter, FileText, Users, TrendingUp } from "lucide-react";
+import { Plus, Search, Filter, FileText, Users, TrendingUp, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,7 +14,8 @@ import {
 import { useForms } from "@/hooks/use-forms";
 import { FormCard } from "@/components/forms/form-card";
 import { PollCardSkeleton } from "@/components/poll-card/poll-card-skeleton";
-import { fadeUp, stagger } from "@/lib/animations";
+import { StatsRow } from "@/components/dashboard/stats-row";
+import type { Stat } from "@/components/dashboard/stat-tile";
 import type { FormFilters } from "@/types";
 
 const STATUS_TABS: { label: string; value: NonNullable<FormFilters["status"]> }[] = [
@@ -35,10 +35,14 @@ export function FormsPage() {
   const forms = data?.forms ?? [];
   const pagination = data?.pagination;
 
-  const stats = [
+  // Labels/icons/colors intentionally mirror the Polls dashboard's stat tiles
+  // (same "Total Responses" / "Drafts" tiles) so only the differing tiles
+  // (Total/Active, which use a different label+icon per entity) actually change.
+  const stats: Stat[] = [
     { label: "Total Forms", value: pagination?.total ?? 0, icon: FileText, color: "text-primary" },
     { label: "Total Responses", value: forms.reduce((s, f) => s + f.totalResponses, 0), icon: Users, color: "text-emerald-500" },
     { label: "Active Forms", value: forms.filter((f) => f.status === "active").length, icon: TrendingUp, color: "text-amber-500" },
+    { label: "Drafts", value: forms.filter((f) => f.status === "draft").length, icon: Clock, color: "text-muted-foreground" },
   ];
 
   return (
@@ -54,32 +58,7 @@ export function FormsPage() {
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-6 md:px-8">
-        <motion.div
-          className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3"
-          variants={stagger}
-          initial="hidden"
-          animate="visible"
-        >
-          {stats.map((stat) => (
-            <motion.div
-              key={stat.label}
-              variants={fadeUp}
-              className="group border-2 border-border bg-card p-4 shadow-none transition-colors hover:border-primary/40 sm:p-5"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-xs">
-                    {stat.label}
-                  </span>
-                  <p className="mt-1.5 text-2xl font-bold tabular-nums sm:mt-2 sm:text-3xl">{stat.value}</p>
-                </div>
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center border border-current/30 bg-current/10 ${stat.color}`}>
-                  <stat.icon className="h-4 w-4" />
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+        <StatsRow stats={stats} className="mb-8" />
 
         <div className="mb-6 flex items-center justify-between">
           <div className="relative w-full sm:max-w-xs">
@@ -150,18 +129,11 @@ export function FormsPage() {
             </Button>
           </div>
         ) : (
-          <motion.div
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-            variants={stagger}
-            initial="hidden"
-            animate="visible"
-          >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {forms.map((form) => (
-              <motion.div key={form._id} variants={fadeUp}>
-                <FormCard form={form} />
-              </motion.div>
+              <FormCard key={form._id} form={form} />
             ))}
-          </motion.div>
+          </div>
         )}
 
         {pagination && pagination.totalPages > 1 && (

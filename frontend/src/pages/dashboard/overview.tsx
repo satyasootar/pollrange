@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Users, Activity, BarChart3, FileText, Sparkles, type LucideIcon } from "lucide-react";
 import { useDashboardOverview } from "@/hooks/use-dashboard";
 import { useAuthStore } from "@/store/use-auth-store";
@@ -9,7 +8,6 @@ import { SplitDonut } from "@/components/dashboard/split-donut";
 import { StatusChart } from "@/components/dashboard/status-chart";
 import { TopList } from "@/components/dashboard/top-list";
 import { Button } from "@/components/ui/button";
-import { fadeUp, stagger } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import type { TimelineGranularity } from "@/types";
 
@@ -38,22 +36,16 @@ export function OverviewPage() {
         </div>
         <Button onClick={() => navigate("/dashboard/chat")} className="gap-2">
           <Sparkles className="h-4 w-4" />
-          AI Assistant
+          Draft with AI
         </Button>
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-6 md:px-8">
         {/* Stats row */}
-        <motion.div
-          className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
-          variants={stagger}
-          initial="hidden"
-          animate="visible"
-        >
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
-            <motion.div
+            <div
               key={stat.label}
-              variants={fadeUp}
               className="group border-2 border-border bg-card p-4 transition-colors hover:border-primary/40 sm:p-5"
             >
               <div className="flex items-start justify-between gap-3">
@@ -69,9 +61,9 @@ export function OverviewPage() {
                   <stat.icon className="h-4 w-4" />
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
 
         {isLoading ? (
           <div className="space-y-6">
@@ -82,41 +74,31 @@ export function OverviewPage() {
             </div>
           </div>
         ) : (
-          <motion.div className="space-y-6" variants={stagger} initial="hidden" animate="visible">
-            <motion.div variants={fadeUp}>
-              <ResponsesAreaChart data={data?.timeline ?? []} groupBy={groupBy} onGroupByChange={setGroupBy} />
-            </motion.div>
+          <div className="space-y-6">
+            <ResponsesAreaChart data={data?.timeline ?? []} groupBy={groupBy} onGroupByChange={setGroupBy} />
 
             <div className="grid gap-6 lg:grid-cols-2">
-              <motion.div variants={fadeUp}>
-                <SplitDonut polls={data?.responsesSplit.polls ?? 0} forms={data?.responsesSplit.forms ?? 0} />
-              </motion.div>
-              <motion.div variants={fadeUp}>
-                <StatusChart data={data?.statusBreakdown ?? []} />
-              </motion.div>
+              <SplitDonut polls={data?.responsesSplit.polls ?? 0} forms={data?.responsesSplit.forms ?? 0} />
+              <StatusChart data={data?.statusBreakdown ?? []} />
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
-              <motion.div variants={fadeUp}>
-                <TopList
-                  title="Top polls"
-                  items={data?.topPolls ?? []}
-                  accent="var(--chart-1)"
-                  onSelect={(id) => navigate(`/polls/${id}/analytics`)}
-                  emptyLabel="No polls yet."
-                />
-              </motion.div>
-              <motion.div variants={fadeUp}>
-                <TopList
-                  title="Top forms"
-                  items={data?.topForms ?? []}
-                  accent="var(--chart-3)"
-                  onSelect={(id) => navigate(`/forms/${id}/analytics`)}
-                  emptyLabel="No forms yet."
-                />
-              </motion.div>
+              <TopList
+                title="Top polls"
+                items={data?.topPolls ?? []}
+                accent="var(--chart-1)"
+                onSelect={(id) => navigate(`/polls/${id}/analytics`)}
+                emptyLabel="No polls yet."
+              />
+              <TopList
+                title="Top forms"
+                items={data?.topForms ?? []}
+                accent="var(--chart-3)"
+                onSelect={(id) => navigate(`/forms/${id}/analytics`)}
+                emptyLabel="No forms yet."
+              />
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>

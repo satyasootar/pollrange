@@ -10,6 +10,7 @@ import { usePolls } from "@/hooks/use-polls";
 import { useRequestVerification } from "@/hooks/use-auth-actions";
 import { useAuthStore } from "@/store/use-auth-store";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
+import type { Stat } from "@/components/dashboard/stat-tile";
 import type { PollFilters } from "@/types";
 
 export function DashboardPage() {
@@ -24,7 +25,7 @@ export function DashboardPage() {
   const polls = data?.polls || [];
   const pagination = data?.pagination;
 
-  const stats = [
+  const stats: Stat[] = [
     {
       label: "Total Polls",
       value: pagination?.total ?? 0,

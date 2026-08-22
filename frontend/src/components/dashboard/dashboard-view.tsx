@@ -1,11 +1,9 @@
-import { motion } from "framer-motion";
 import {
   Plus,
   BarChart3,
   Search,
   Filter,
   AlertCircle,
-  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +18,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PollCard } from "@/components/poll-card/poll-card";
 import { PollCardSkeleton } from "@/components/poll-card/poll-card-skeleton";
-import { fadeUp, stagger } from "@/lib/animations";
+import { StatsRow } from "@/components/dashboard/stats-row";
+import type { Stat } from "@/components/dashboard/stat-tile";
 import { cn } from "@/lib/utils";
 import type { User, Poll, PaginationMeta, PollFilters, PollStatus } from "@/types";
 
@@ -31,13 +30,6 @@ const STATUS_TABS: { label: string; value: PollStatus | "all" }[] = [
   { label: "Closed", value: "closed" },
   { label: "Published", value: "published" },
 ];
-
-interface Stat {
-  label: string;
-  value: string | number;
-  icon: LucideIcon;
-  color: string;
-}
 
 interface DashboardViewProps {
   user?: User | null;
@@ -109,19 +101,15 @@ export function DashboardView({
       <div className={cn("flex-1 overflow-y-auto px-4 py-6 md:px-8 custom-scrollbar", isCompact && "py-4 px-6")}>
         {/* Verification Alert */}
         {user && !user.isEmailVerified && requestVerification && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn("mb-6", isCompact && "mb-4")}
-          >
+          <div className={cn("mb-6", isCompact && "mb-4")}>
             <Alert variant="warning">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Email not verified</AlertTitle>
               <AlertDescription className="flex items-center justify-between">
                 <span>Please verify your email to ensure full account security and access all features.</span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="h-7 border-amber-500/50 bg-transparent text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
                   onClick={requestVerification}
                   disabled={isVerifying}
@@ -130,47 +118,11 @@ export function DashboardView({
                 </Button>
               </AlertDescription>
             </Alert>
-          </motion.div>
+          </div>
         )}
 
         {/* Stats row */}
-        <motion.div
-          className={cn("mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4", isCompact && "mb-4")}
-          variants={stagger}
-          initial="hidden"
-          animate="visible"
-        >
-          {stats.map((stat) => (
-            <motion.div
-              key={stat.label}
-              variants={fadeUp}
-              className={cn(
-                "group border-2 border-border bg-card p-4 shadow-none transition-colors hover:border-primary/40 sm:p-5",
-                isCompact && "p-3 sm:p-4"
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-xs">
-                    {stat.label}
-                  </span>
-                  <p className="mt-1.5 text-2xl font-bold tabular-nums sm:mt-2 sm:text-3xl">
-                    {stat.value}
-                  </p>
-                </div>
-                <div
-                  className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center border border-current/30 bg-current/10",
-                    stat.color,
-                    isCompact && "h-7 w-7"
-                  )}
-                >
-                  <stat.icon className="h-4 w-4" />
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+        <StatsRow stats={stats} isCompact={isCompact} className={cn("mb-8", isCompact && "mb-4")} />
 
         {/* Filters */}
         <div className={cn("mb-6 flex items-center justify-between", isCompact && "mb-4")}>
@@ -233,23 +185,16 @@ export function DashboardView({
             onCreate={onCreatePoll} 
           />
         ) : (
-          <motion.div
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-            variants={stagger}
-            initial="hidden"
-            animate="visible"
-          >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {polls.map((poll) => (
-              <motion.div key={poll._id} variants={fadeUp}>
-                <PollCard 
-                  key={poll._id} 
-                  poll={poll} 
-                  isCompact={isCompact} 
-                  onSelect={onPollClick}
-                />
-              </motion.div>
+              <PollCard
+                key={poll._id}
+                poll={poll}
+                isCompact={isCompact}
+                onSelect={onPollClick}
+              />
             ))}
-          </motion.div>
+          </div>
         )}
 
         {/* Pagination */}
@@ -289,12 +234,7 @@ function EmptyState({
   onCreate: () => void; 
 }) {
   return (
-    <motion.div
-      className="flex flex-col items-center justify-center py-24 text-center"
-      variants={fadeUp}
-      initial="hidden"
-      animate="visible"
-    >
+    <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="mb-4 flex h-16 w-16 items-center justify-center border border-dashed border-border">
         {isFiltered ? (
           <Filter className="h-7 w-7 text-muted-foreground" />
@@ -306,14 +246,14 @@ function EmptyState({
         {isFiltered ? "No matches found" : "No polls yet"}
       </h3>
       <p className="mb-6 max-w-sm text-sm text-muted-foreground">
-        {isFiltered 
-          ? "Try adjusting your search or filters to find what you're looking for." 
+        {isFiltered
+          ? "Try adjusting your search or filters to find what you're looking for."
           : "Create your first poll to start collecting responses and insights."}
       </p>
       <Button onClick={onCreate} className="gap-2">
         <Plus className="h-4 w-4" />
         {isFiltered ? "Create New Poll" : "Create your first poll"}
       </Button>
-    </motion.div>
+    </div>
   );
 }
