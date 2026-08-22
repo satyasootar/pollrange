@@ -30,6 +30,13 @@ export const testState = {
   submittedPoll: null as SubmitResponsePayload | null,
   uploadCount: 0,
   failUpload: false,
+  ai: {
+    reply: "Sure!",
+    actions: [] as unknown[],
+    conversationId: "conv1",
+    messages: [] as unknown[],
+  },
+  aiLastBody: null as Record<string, unknown> | null,
 };
 
 export function resetTestState() {
@@ -40,6 +47,8 @@ export function resetTestState() {
   testState.submittedPoll = null;
   testState.uploadCount = 0;
   testState.failUpload = false;
+  testState.ai = { reply: "Sure!", actions: [], conversationId: "conv1", messages: [] };
+  testState.aiLastBody = null;
 }
 
 const ok = (data: unknown, message = "ok") =>
@@ -84,4 +93,17 @@ export const handlers = [
     return ok(makeForm({ title: body?.title ?? "Untitled" }));
   }),
   http.post(`${API}/forms/upload`, () => ok({ url: "https://cdn.test/cover.png" })),
+
+  // ─── AI assistant ─────────────────────────────────────────────────────────────
+  http.post(`${API}/ai/chat`, async ({ request }) => {
+    testState.aiLastBody = (await request.json()) as Record<string, unknown>;
+    return ok({
+      conversationId: testState.ai.conversationId,
+      reply: testState.ai.reply,
+      actions: testState.ai.actions,
+    });
+  }),
+  http.get(`${API}/ai/conversations`, () => ok([])),
+  http.get(`${API}/ai/conversations/:id`, () => ok({ _id: "conv1", title: "Chat", messages: testState.ai.messages })),
+  http.delete(`${API}/ai/conversations/:id`, () => ok({ deleted: true })),
 ];

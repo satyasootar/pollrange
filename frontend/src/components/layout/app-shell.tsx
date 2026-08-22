@@ -115,11 +115,11 @@ export function AppShell() {
         ))}
       </nav>
 
-      {/* User footer */}
-      <div className="border-t border-border p-3">
+      {/* User footer — fixed h-20 so it aligns with the top bars / chat composer */}
+      <div className="flex h-20 shrink-0 flex-col justify-center border-t border-border px-3">
         <div
           className={cn(
-            "flex items-center gap-3 border px-3 py-2.5 transition-colors duration-200",
+            "flex items-center gap-3 border px-3 py-2 transition-colors duration-200",
             isProfileActive
               ? "border-border bg-primary/10"
               : "border-transparent hover:border-border hover:bg-muted"

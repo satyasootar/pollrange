@@ -17,6 +17,7 @@ import { OnboardingPage } from "@/pages/onboarding";
 
 import { DashboardPage } from "@/pages/dashboard";
 import { OverviewPage } from "@/pages/dashboard/overview";
+import { ChatPage } from "@/pages/dashboard/chat";
 import { ProfilePage } from "@/pages/dashboard/profile";
 import { FormsPage } from "@/pages/dashboard/forms";
 import { CreatePollPage } from "@/pages/polls/create";
@@ -74,6 +75,7 @@ export function App() {
             <Route path="/dashboard" element={<AppShell />}>
               <Route index element={<DashboardPage />} />
               <Route path="overview" element={<OverviewPage />} />
+              <Route path="chat" element={<ChatPage />} />
               <Route path="forms" element={<FormsPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>

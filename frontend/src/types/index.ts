@@ -176,6 +176,69 @@ export interface TimelinePoint {
 
 export type TimelineGranularity = "minute" | "hour" | "day" | "week" | "month";
 
+// ─── AI assistant ───────────────────────────────────────────────────────────────
+export type AiSurface = "dashboard" | "poll-builder" | "form-builder";
+
+export interface AiCreatedAction {
+  kind: "created";
+  entity: "poll" | "form";
+  id: string;
+  shareToken: string;
+  url: string;
+  title: string;
+}
+export interface AiAddPollQuestionAction {
+  kind: "add_poll_question";
+  question: {
+    text: string;
+    type: "single_choice" | "multiple_choice" | "open_ended";
+    isMandatory?: boolean;
+    options?: string[];
+  };
+}
+export interface AiAddFormQuestionAction {
+  kind: "add_form_question";
+  question: {
+    type: FormQuestionType;
+    title: string;
+    isRequired?: boolean;
+    options?: string[];
+    rows?: string[];
+    columns?: string[];
+    scaleMin?: number;
+    scaleMax?: number;
+  };
+}
+export interface AiSetMetaAction {
+  kind: "set_meta";
+  entity: "poll" | "form";
+  title?: string;
+  description?: string;
+}
+export type AiAction = AiCreatedAction | AiAddPollQuestionAction | AiAddFormQuestionAction | AiSetMetaAction;
+
+export interface AiChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  actions?: AiAction[];
+}
+export interface AiChatResponse {
+  conversationId?: string;
+  reply: string;
+  actions: AiAction[];
+  title?: string;
+}
+export interface AiConversationListItem {
+  _id: string;
+  title: string;
+  updatedAt: string;
+}
+export interface AiConversationDetail {
+  _id: string;
+  title: string;
+  messages: AiChatMessage[];
+}
+
 // ─── Creator dashboard overview (polls + forms combined) ────────────────────────
 export interface DashboardTopItem {
   id: string;

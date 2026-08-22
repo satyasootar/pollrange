@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Users, Activity, BarChart3, FileText, type LucideIcon } from "lucide-react";
+import { Users, Activity, BarChart3, FileText, Sparkles, type LucideIcon } from "lucide-react";
 import { useDashboardOverview } from "@/hooks/use-dashboard";
 import { useAuthStore } from "@/store/use-auth-store";
 import { ResponsesAreaChart } from "@/components/dashboard/responses-area-chart";
 import { SplitDonut } from "@/components/dashboard/split-donut";
 import { StatusChart } from "@/components/dashboard/status-chart";
 import { TopList } from "@/components/dashboard/top-list";
+import { Button } from "@/components/ui/button";
 import { fadeUp, stagger } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import type { TimelineGranularity } from "@/types";
@@ -35,6 +36,10 @@ export function OverviewPage() {
           </h1>
           <p className="text-sm text-muted-foreground">Analytics across all your polls and forms</p>
         </div>
+        <Button onClick={() => navigate("/dashboard/chat")} className="gap-2">
+          <Sparkles className="h-4 w-4" />
+          AI Assistant
+        </Button>
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-6 md:px-8">
