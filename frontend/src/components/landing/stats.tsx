@@ -15,7 +15,7 @@ export function Stats() {
             <div className="bg-background"><StatCard value="10K+" label="Polls Created" /></div>
             <div className="bg-background"><StatCard value="500K+" label="Responses Collected" /></div>
             <div className="bg-background"><StatCard value="< 50ms" label="Real-time Latency" /></div>
-            <div className="bg-background"><StatCard value="99.9%" label="Uptime SLA" /></div>
+            <div className="bg-background"><StatCard value="99.9%" label="Uptime" /></div>
           </div>
         </motion.div>
       </div>

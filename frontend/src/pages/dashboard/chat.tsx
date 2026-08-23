@@ -113,7 +113,7 @@ export function ChatPage() {
               <Sparkles className="mx-auto mb-3 h-8 w-8 text-primary" />
               <h2 className="mb-1 text-lg font-semibold">Create with AI</h2>
               <p className="mb-5 text-sm text-muted-foreground">
-                Describe what you want and I'll build the poll or form and hand you the shareable link — right here.
+                Describe what you want. I'll build the poll or form and give you the link, right here.
               </p>
               <div className="space-y-1.5">
                 {SUGGESTIONS.map((s) => (

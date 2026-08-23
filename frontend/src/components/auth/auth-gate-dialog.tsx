@@ -49,8 +49,8 @@ export function AuthGateDialog({
             {mode === "login" ? "Sign in to submit" : "Create an account to submit"}
           </DialogTitle>
           <DialogDescription>
-            This poll requires an account. Your selected answers are kept — you'll be
-            submitted automatically once you're in.
+            This poll requires an account. Your answers are saved, and we will submit them
+            for you once you sign in.
           </DialogDescription>
         </DialogHeader>
 

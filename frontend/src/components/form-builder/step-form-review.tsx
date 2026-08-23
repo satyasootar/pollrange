@@ -60,7 +60,7 @@ export function StepFormReview() {
 
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Preview — how respondents will see this form
+            Preview: how respondents will see this form
           </p>
           <FormPreview form={form} />
         </div>

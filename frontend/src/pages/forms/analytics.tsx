@@ -22,7 +22,7 @@ function AnswerValue({
   answer: FormAnswerPayload & { questionTitleSnapshot?: string };
   question?: FormQuestion;
 }) {
-  if (answer.skipped) return <span className="text-muted-foreground">—</span>;
+  if (answer.skipped) return <span className="text-muted-foreground">Skipped</span>;
   if (answer.selectedOptionIds?.length && question?.options) {
     const texts = answer.selectedOptionIds.map(
       (id) => question.options?.find((o) => o._id === id)?.text ?? id
@@ -44,7 +44,7 @@ function AnswerValue({
     );
   }
   if (answer.scaleValue != null) return <span>{answer.scaleValue}</span>;
-  return <span>{answer.textValue ?? answer.dateValue ?? (answer.numberValue != null ? String(answer.numberValue) : "—")}</span>;
+  return <span>{answer.textValue ?? answer.dateValue ?? (answer.numberValue != null ? String(answer.numberValue) : "No answer")}</span>;
 }
 
 function IndividualResponses({ formId, form }: { formId: string; form: Form }) {
@@ -147,7 +147,7 @@ function ResponsesTable({ formId, form }: { formId: string; form: Form }) {
                 <td className="whitespace-nowrap p-3">{r.name}</td>
                 {questions.map((q) => (
                   <td key={q._id} className="p-3 align-top">
-                    {byId.get(q._id) ? <AnswerValue answer={byId.get(q._id)!} question={q} /> : <span className="text-muted-foreground">—</span>}
+                    {byId.get(q._id) ? <AnswerValue answer={byId.get(q._id)!} question={q} /> : <span className="text-muted-foreground">No answer</span>}
                   </td>
                 ))}
                 {form.isQuiz && (
