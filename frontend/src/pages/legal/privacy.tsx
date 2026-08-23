@@ -1,22 +1,41 @@
-import { StaticPageLayout, PageSection } from "@/components/layout/static-page-layout";
+import { Lock } from "lucide-react";
+import { FocusedPageLayout, FocusedSection } from "@/components/layout/focused-page-layout";
+
+const TOC = [
+  { id: "who-we-are", label: "Who we are" },
+  { id: "information-we-collect", label: "Information we collect" },
+  { id: "how-we-use-it", label: "How we use it" },
+  { id: "sharing", label: "Who we share data with" },
+  { id: "retention", label: "How long we keep data" },
+  { id: "your-rights", label: "Your rights" },
+  { id: "children", label: "Children's privacy" },
+  { id: "security", label: "Security" },
+  { id: "changes", label: "Changes to this policy" },
+  { id: "contact", label: "Contact us" },
+];
 
 export function PrivacyPage() {
   return (
-    <StaticPageLayout
+    <FocusedPageLayout
+      icon={Lock}
       eyebrow="Legal"
       title="Privacy Policy"
-      subtitle="Last updated: January 2026. This page explains what data Kollects collects, why, and how you can control it."
+      subtitle="Last updated January 2026. This page explains what data Kollects collects, why, and how you can control it."
+      summary="We collect only what's needed to run your account, your polls and forms, and the
+        answers people give. We never sell your data or use it for advertising, and you
+        can view, export, or delete your information at any time from your profile."
+      toc={TOC}
     >
-      <PageSection title="Who we are">
+      <FocusedSection id="who-we-are" title="Who we are">
         <p>
           Kollects ("we", "us", "our") provides a platform for creating polls, forms, and
           quizzes and viewing their results. This policy applies to everyone who uses our
           website, whether you create a poll or form (a "creator") or simply respond to one
           (a "respondent").
         </p>
-      </PageSection>
+      </FocusedSection>
 
-      <PageSection title="Information we collect">
+      <FocusedSection id="information-we-collect" title="Information we collect">
         <p><strong>Account information.</strong> If you create an account, we collect your name,
           email address, and a securely hashed password. If you sign up with Google, we
           receive your name, email, and profile photo from Google.</p>
@@ -31,9 +50,9 @@ export function PrivacyPage() {
           information. We cannot reverse this hash back into an IP address.</p>
         <p><strong>Cookies.</strong> We use cookies to keep you signed in and to remember your
           session. We do not use cookies for advertising.</p>
-      </PageSection>
+      </FocusedSection>
 
-      <PageSection title="How we use your information">
+      <FocusedSection id="how-we-use-it" title="How we use your information">
         <ul className="list-disc space-y-1.5 pl-5">
           <li>To run your account and let you build and manage polls and forms.</li>
           <li>To show you and your respondents accurate, up-to-date results.</li>
@@ -41,9 +60,9 @@ export function PrivacyPage() {
           <li>To keep the platform secure and prevent abuse, such as duplicate voting.</li>
           <li>To improve the product based on how it is used.</li>
         </ul>
-      </PageSection>
+      </FocusedSection>
 
-      <PageSection title="Who we share data with">
+      <FocusedSection id="sharing" title="Who we share data with">
         <p>We do not sell your data. We share data only with the services that help us run
           Kollects, and only as much as each one needs to do its job:</p>
         <ul className="list-disc space-y-1.5 pl-5">
@@ -54,43 +73,43 @@ export function PrivacyPage() {
         </ul>
         <p>We may also share information if the law requires it, or to protect the rights and
           safety of Kollects and our users.</p>
-      </PageSection>
+      </FocusedSection>
 
-      <PageSection title="How long we keep data">
+      <FocusedSection id="retention" title="How long we keep data">
         <p>We keep your account and content for as long as your account is active. If you
           delete a poll or form, we delete it and its responses from our active database.
           If you delete your account, we remove your personal information within a
           reasonable time, except where we must keep records to meet a legal obligation.</p>
-      </PageSection>
+      </FocusedSection>
 
-      <PageSection title="Your rights">
+      <FocusedSection id="your-rights" title="Your rights">
         <p>You can access, correct, export, or delete your account information at any time
           from your profile settings. You can also contact us at
           <a href="mailto:privacy@kollects.com" className="text-primary underline"> privacy@kollects.com</a> to
           ask us to delete your data or answer questions about how it's used.</p>
-      </PageSection>
+      </FocusedSection>
 
-      <PageSection title="Children's privacy">
+      <FocusedSection id="children" title="Children's privacy">
         <p>Kollects is not directed at children under 13, and we do not knowingly collect
           personal information from children under 13. If you believe a child has given us
           personal information, contact us and we will remove it.</p>
-      </PageSection>
+      </FocusedSection>
 
-      <PageSection title="Security">
+      <FocusedSection id="security" title="Security">
         <p>We use industry-standard measures to protect your data, including encrypted
           connections (HTTPS), hashed passwords, and secure, httpOnly authentication
           cookies. See our <a href="/security" className="text-primary underline">Security page</a> for more detail.</p>
-      </PageSection>
+      </FocusedSection>
 
-      <PageSection title="Changes to this policy">
+      <FocusedSection id="changes" title="Changes to this policy">
         <p>If we make material changes to this policy, we will update the date at the top of
           this page and, where appropriate, notify you by email.</p>
-      </PageSection>
+      </FocusedSection>
 
-      <PageSection title="Contact us">
+      <FocusedSection id="contact" title="Contact us">
         <p>Questions about this policy? Email us at
           <a href="mailto:privacy@kollects.com" className="text-primary underline"> privacy@kollects.com</a>.</p>
-      </PageSection>
-    </StaticPageLayout>
+      </FocusedSection>
+    </FocusedPageLayout>
   );
 }

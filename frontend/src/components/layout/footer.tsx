@@ -1,15 +1,6 @@
 import { Link } from "react-router-dom";
 
-const FOOTER_COLUMNS: { title: string; links: { label: string; to?: string; href?: string }[] }[] = [
-  {
-    title: "Product",
-    links: [
-      { label: "Features", href: "/#features" },
-      { label: "Templates", href: "#" },
-      { label: "Analytics", href: "#" },
-      { label: "Enterprise", href: "#" },
-    ],
-  },
+const FOOTER_COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
   {
     title: "Company",
     links: [
@@ -33,7 +24,7 @@ const FOOTER_COLUMNS: { title: string; links: { label: string; to?: string; href
 export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/10">
-      <div className="max-w-350 mx-auto px-12 py-20 grid grid-cols-2 md:grid-cols-5 gap-12">
+      <div className="max-w-350 mx-auto px-12 py-20 grid grid-cols-2 md:grid-cols-4 gap-12">
         <div className="col-span-2">
           <div className="flex items-center gap-3 mb-5">
             <img src="/logo/logo1.png" alt="Kollects Logo" className="h-8 w-auto object-contain" />
@@ -50,15 +41,9 @@ export function Footer() {
             <ul className="space-y-3">
               {col.links.map((l) => (
                 <li key={l.label}>
-                  {l.to ? (
-                    <Link to={l.to} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      {l.label}
-                    </Link>
-                  ) : (
-                    <a href={l.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      {l.label}
-                    </a>
-                  )}
+                  <Link to={l.to} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    {l.label}
+                  </Link>
                 </li>
               ))}
             </ul>
