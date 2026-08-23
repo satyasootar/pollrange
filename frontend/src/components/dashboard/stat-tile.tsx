@@ -25,25 +25,25 @@ export const StatTile = memo(
     return (
       <div
         className={cn(
-          "group border-2 border-border bg-card p-4 shadow-none transition-colors hover:border-primary/40 sm:p-5",
+          "group border border-border bg-card p-3 shadow-none transition-colors hover:border-primary/40 sm:border-2 sm:p-5",
           isCompact && "p-3 sm:p-4"
         )}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-xs">
+            <span className="block truncate text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-xs">
               {stat.label}
             </span>
-            <p className="mt-1.5 text-2xl font-bold tabular-nums sm:mt-2 sm:text-3xl">{stat.value}</p>
+            <p className="mt-1 text-lg font-bold tabular-nums sm:mt-2 sm:text-3xl">{stat.value}</p>
           </div>
           <div
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center border border-current/30 bg-current/10",
+              "flex h-7 w-7 shrink-0 items-center justify-center border border-current/30 bg-current/10 sm:h-9 sm:w-9",
               stat.color,
               isCompact && "h-7 w-7"
             )}
           >
-            <stat.icon className="h-4 w-4" />
+            <stat.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </div>
         </div>
       </div>

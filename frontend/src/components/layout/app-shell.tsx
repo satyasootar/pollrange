@@ -1,11 +1,9 @@
-import { useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   LogOut,
   User,
-  Menu,
   MoreVertical,
   Sun,
   Moon,
@@ -37,6 +35,36 @@ const navItems = [
   { to: "/dashboard", icon: BarChart3, label: "Polls" },
   { to: "/dashboard/forms", icon: FileText, label: "Forms" },
 ];
+
+const mobileTabItems = [
+  { to: "/dashboard/overview", icon: LayoutDashboard, label: "Overview", end: false },
+  { to: "/dashboard", icon: BarChart3, label: "Polls", end: true },
+  { to: "/dashboard/forms", icon: FileText, label: "Forms", end: false },
+  { to: "/dashboard/profile", icon: User, label: "Profile", end: false },
+];
+
+function MobileTabBar() {
+  return (
+    <nav className="grid shrink-0 grid-cols-4 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
+      {mobileTabItems.map(({ to, icon: Icon, label, end }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={({ isActive }) =>
+            cn(
+              "flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
+              isActive ? "text-primary" : "text-muted-foreground"
+            )
+          }
+        >
+          <Icon className="h-5 w-5" />
+          {label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
 
 function NavItem({
   to,
@@ -87,7 +115,6 @@ export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, setTheme } = useTheme();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isProfileActive = location.pathname === "/dashboard/profile";
 
   const sidebarContent = (
@@ -95,10 +122,7 @@ export function AppShell() {
       {/* Logo */}
       <div
         className="flex cursor-pointer items-center gap-2 border-b border-border px-5 py-4 h-20"
-        onClick={() => {
-          navigate("/dashboard");
-          setIsSidebarOpen(false);
-        }}
+        onClick={() => navigate("/dashboard")}
       >
         <div className="flex items-center justify-center">
           <img src="/logo/logo1.png" alt="Kollects Logo" className="h-6 w-auto object-contain" />
@@ -111,7 +135,7 @@ export function AppShell() {
       {/* Nav */}
       <nav className="flex-1 space-y-0.5 overflow-y-auto py-3">
         {navItems.map((item) => (
-          <NavItem key={item.to} {...item} onClick={() => setIsSidebarOpen(false)} />
+          <NavItem key={item.to} {...item} />
         ))}
       </nav>
 
@@ -128,10 +152,7 @@ export function AppShell() {
           <button
             type="button"
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
-            onClick={() => {
-              navigate("/dashboard/profile");
-              setIsSidebarOpen(false);
-            }}
+            onClick={() => navigate("/dashboard/profile")}
           >
             <div
               className={cn(
@@ -228,65 +249,16 @@ export function AppShell() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-dvh overflow-hidden bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border md:flex">
         {sidebarContent}
       </aside>
 
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
-            />
-            <motion.aside
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-background md:hidden"
-            >
-              {sidebarContent}
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-
       {/* Main content */}
       <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Header */}
-        <header className="flex h-16 items-center justify-between border-b border-border bg-background px-4 md:px-8 md:hidden">
-          <div className="flex items-center gap-4">
-            <div
-              className="flex cursor-pointer items-center gap-2 md:hidden "
-              onClick={() => navigate("/dashboard")}
-            >
-              <img src="/logo/logo1.png" alt="Kollects Logo" className="h-6 w-auto" />
-              <span className="font-semibold tracking-tight text-foreground uppercase text-sm">
-                Kollects
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex lg:hidden items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSidebarOpen(true)}
-              className="h-9 w-9"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </div>
-        </header>
-        
         <Outlet />
+        <MobileTabBar />
       </main>
     </div>
   );

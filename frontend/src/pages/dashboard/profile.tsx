@@ -9,10 +9,12 @@ import {
   ShieldAlert,
   Mail,
   Building2,
+  LogOut,
 } from "lucide-react"
 import { useAuthStore } from "@/store/use-auth-store"
 import { useUpdateProfile, useChangePassword } from "@/hooks/use-profile"
 import { useRequestVerification } from "@/hooks/use-auth-actions"
+import { useLogout } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,6 +27,7 @@ export function ProfilePage() {
   const updateProfile = useUpdateProfile()
   const changePassword = useChangePassword()
   const requestVerification = useRequestVerification()
+  const logout = useLogout()
 
   const [name, setName] = useState(user?.name || "")
   const [branding, setBranding] = useState({
@@ -341,6 +344,34 @@ export function ProfilePage() {
                 {changePassword.isPending ? "Updating..." : "Update Password"}
               </Button>
             </form>
+          </motion.div>
+
+          {/* Sign out — the only mobile-reachable place to do this now that the app uses a bottom tab bar instead of a sidebar drawer on phones */}
+          <motion.div
+            variants={fadeUp}
+            className="mt-8 border border-border bg-card p-6 shadow-none"
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center border border-destructive/20 bg-destructive/5 text-destructive">
+                <LogOut className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Sign out</h2>
+                <p className="text-xs text-muted-foreground">
+                  End your session on this device.
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2"
+              onClick={() => logout.mutate()}
+              disabled={logout.isPending}
+            >
+              <LogOut className="h-4 w-4" />
+              {logout.isPending ? "Signing out..." : "Sign out"}
+            </Button>
           </motion.div>
         </motion.div>
       </div>
