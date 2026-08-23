@@ -1,3 +1,4 @@
 - Wants tests added to both the backend and frontend, and requires running lint and type-checking to verify and fix any issues found. Confidence: 0.85
 - Prefers strategic commits that logically group unstaged changes into coherent commit chunks rather than committing everything as a single blob. Confidence: 0.85
 - Wants fast iteration and quick fixes; gets impatient with delays and expects the agent to apply fixes directly without being blocked in read-only/plan modes. Responds to blockers with terse one-word commands like "Implement." Confidence: 0.9
+- Prefers ambiguous scope/design decisions be resolved via concise multiple-choice questions before implementation (e.g., FAB scope, button style). Confidence: 0.7

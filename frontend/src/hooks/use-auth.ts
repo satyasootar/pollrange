@@ -16,7 +16,7 @@ export function useLogin() {
       setUser(res.data.data.user);
       qc.invalidateQueries({ queryKey: ["me"] });
       const params = new URLSearchParams(window.location.search);
-      navigate(params.get("redirect") || "/dashboard", { replace: true });
+      navigate(params.get("redirect") || "/dashboard/overview", { replace: true });
     },
     onError: (err) => toast.error(getApiErrorMessage(err)),
   });

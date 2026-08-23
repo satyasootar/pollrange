@@ -22,7 +22,7 @@ export function AuthSuccessPage() {
           setUser(response.data.data);
           
           const redirect = searchParams.get("state");
-          navigate(redirect || "/dashboard", { replace: true });
+          navigate(redirect || "/dashboard/overview", { replace: true });
         } catch (error) {
           console.error("Failed to sync auth state:", error);
           navigate("/auth/login", { replace: true });

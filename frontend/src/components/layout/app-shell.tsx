@@ -45,7 +45,7 @@ const mobileTabItems = [
 
 function MobileTabBar() {
   return (
-    <nav className="grid shrink-0 grid-cols-4 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav className="grid h-16 shrink-0 grid-cols-4 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
       {mobileTabItems.map(({ to, icon: Icon, label, end }) => (
         <NavLink
           key={to}

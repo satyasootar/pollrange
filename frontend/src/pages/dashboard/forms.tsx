@@ -52,10 +52,19 @@ export function FormsPage() {
           <h1 className="text-xl font-semibold tracking-tight">Forms</h1>
           <p className="text-sm text-muted-foreground">Build forms and quizzes</p>
         </div>
-        <Button onClick={() => navigate("/forms/create")} className="w-full gap-2 sm:w-auto">
+        <Button onClick={() => navigate("/forms/create")} className="hidden w-full gap-2 sm:inline-flex sm:w-auto">
           <Plus className="h-4 w-4" /> Create Form
         </Button>
       </div>
+
+      {/* Mobile create form shortcut */}
+      <Button
+        onClick={() => navigate("/forms/create")}
+        aria-label="Create form"
+        className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex h-14 w-14 items-center justify-center rounded-none p-0 md:hidden"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-6 md:px-8">
         <StatsRow stats={stats} className="mb-8" />

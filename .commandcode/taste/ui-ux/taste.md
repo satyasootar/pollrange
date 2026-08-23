@@ -1,2 +1,6 @@
-- Wants consistent UI components (e.g., navbar, header) reused across different pages (e.g., history page should match the dashboard page's navbar) rather than page-specific variations. Confidence: 0.7
+- Wants new UI elements modeled after established in-app patterns (e.g., "just like the AI floating button we added") for consistency, and wants consistent UI components (e.g., navbar, header) reused across different pages rather than page-specific variations. Expects a design change made to one page/section to be propagated to similar ones (e.g., "same design for form section" after the polls-page FAB change). Confidence: 0.85
 - Prefers status badges on the right side of card components rather than the left/opt side, keeping title text on the left and actions/badges on the right. Confidence: 0.8
+- Prefers mobile-only actions as a floating action button (FAB) anchored to the bottom-right corner, rather than keeping them in the top navbar. Confidence: 0.7
+- Prefers square-shaped (sharp-cornered, rounded-none) buttons for action/floating elements. Confidence: 0.7
+- Prefers the desktop layout left unchanged; adds mobile-specific conditional UI (e.g., `md:hidden`) instead of rearranging shared components for responsive behavior. Confidence: 0.7
+- Prefers icon and text labels side by side (row layout) rather than stacked vertically, even inside compact square buttons. Confidence: 0.7

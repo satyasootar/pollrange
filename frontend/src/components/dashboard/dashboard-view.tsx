@@ -90,12 +90,23 @@ export function DashboardView({
           </div>
           <Button
             onClick={onCreatePoll}
-            className="w-full gap-2 sm:w-auto"
+            className={cn("w-full gap-2 sm:w-auto", !isCompact && "hidden sm:inline-flex")}
           >
             <Plus className="h-4 w-4" />
             Create Poll
           </Button>
         </div>
+      )}
+
+      {/* Mobile create poll shortcut */}
+      {!isCompact && (
+        <Button
+          onClick={onCreatePoll}
+          aria-label="Create poll"
+          className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex h-14 w-14 items-center justify-center rounded-none p-0 md:hidden"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
       )}
 
       <div className={cn("flex-1 overflow-y-auto px-4 py-6 md:px-8 custom-scrollbar", isCompact && "py-4 px-6")}>

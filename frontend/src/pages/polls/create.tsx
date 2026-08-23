@@ -22,7 +22,7 @@ export function CreatePollPage() {
     <div className="relative flex flex-1 overflow-hidden">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-8 md:h-20">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-4 md:h-20 md:px-8 md:py-0">
           <h1 className="text-xl font-semibold tracking-tight">Create Poll</h1>
           {step !== 4 && (
             <div className="flex items-center gap-0">
