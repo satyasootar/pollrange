@@ -41,7 +41,6 @@ const ChartTooltip = ({ active, payload, label }: TooltipProps) => {
 export function ResponsesAreaChart({ data, groupBy, onGroupByChange }: Props) {
   const formatted = data.map((d) => ({ ...d, label: formatTimelineLabel(d.date, groupBy) }));
   const total = data.reduce((s, d) => s + d.polls + d.forms, 0);
-  const tickInterval = Math.max(0, Math.ceil(formatted.length / 8) - 1);
 
   return (
     <div className="border border-border bg-card p-6">
@@ -87,7 +86,7 @@ export function ResponsesAreaChart({ data, groupBy, onGroupByChange }: Props) {
             tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
             tickLine={false}
             axisLine={false}
-            interval={tickInterval}
+            interval="preserveStartEnd"
             minTickGap={24}
           />
           <YAxis

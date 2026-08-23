@@ -1,5 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { usePollBuilderStore } from "@/store/use-poll-builder-store";
 import { StepSettings } from "@/components/poll-builder/step-settings";
 import { StepQuestions } from "@/components/poll-builder/step-questions";
@@ -17,13 +19,19 @@ const STEPS = [
 
 export function CreatePollPage() {
   const { step } = usePollBuilderStore();
+  const navigate = useNavigate();
 
   return (
     <div className="relative flex flex-1 overflow-hidden">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top bar */}
         <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-4 md:h-20 md:px-8 md:py-0">
-          <h1 className="text-xl font-semibold tracking-tight">Create Poll</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0 md:hidden">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-xl font-semibold tracking-tight">Create Poll</h1>
+          </div>
           {step !== 4 && (
             <div className="flex items-center gap-0">
               {STEPS.map((s, i) => (

@@ -47,12 +47,12 @@ export function FormsPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:h-20 md:px-8 md:py-0">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Forms</h1>
-          <p className="text-sm text-muted-foreground">Build forms and quizzes</p>
+      <div className="flex h-20 shrink-0 items-center justify-between border-b border-border px-4 md:px-8">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold tracking-tight">Forms</h1>
+          <p className="truncate text-sm text-muted-foreground">Build forms and quizzes</p>
         </div>
-        <Button onClick={() => navigate("/forms/create")} className="hidden w-full gap-2 sm:inline-flex sm:w-auto">
+        <Button onClick={() => navigate("/forms/create")} className="hidden shrink-0 gap-2 sm:inline-flex">
           <Plus className="h-4 w-4" /> Create Form
         </Button>
       </div>

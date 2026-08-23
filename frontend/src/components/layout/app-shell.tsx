@@ -37,31 +37,41 @@ const navItems = [
 ];
 
 const mobileTabItems = [
-  { to: "/dashboard/overview", icon: LayoutDashboard, label: "Overview", end: false },
-  { to: "/dashboard", icon: BarChart3, label: "Polls", end: true },
-  { to: "/dashboard/forms", icon: FileText, label: "Forms", end: false },
-  { to: "/dashboard/profile", icon: User, label: "Profile", end: false },
+  { to: "/dashboard/overview", icon: LayoutDashboard, label: "Overview" },
+  { to: "/dashboard", icon: BarChart3, label: "Polls" },
+  { to: "/dashboard/forms", icon: FileText, label: "Forms" },
+  { to: "/dashboard/profile", icon: User, label: "Profile" },
 ];
 
+// "Polls"/"Forms" own top-level builder & analytics routes (/polls/*, /forms/*)
+// outside of /dashboard, so plain NavLink prefix matching can't tell those tabs
+// apart from a same-path-prefix sibling like /dashboard/forms.
+function isNavItemActive(pathname: string, to: string): boolean {
+  if (to === "/dashboard") return pathname === "/dashboard" || pathname.startsWith("/polls");
+  if (to === "/dashboard/forms") return pathname.startsWith("/dashboard/forms") || pathname.startsWith("/forms");
+  return pathname.startsWith(to);
+}
+
 function MobileTabBar() {
+  const { pathname } = useLocation();
   return (
     <nav className="grid h-16 shrink-0 grid-cols-4 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
-      {mobileTabItems.map(({ to, icon: Icon, label, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className={({ isActive }) =>
-            cn(
+      {mobileTabItems.map(({ to, icon: Icon, label }) => {
+        const isActive = isNavItemActive(pathname, to);
+        return (
+          <NavLink
+            key={to}
+            to={to}
+            className={cn(
               "flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
               isActive ? "text-primary" : "text-muted-foreground"
-            )
-          }
-        >
-          <Icon className="h-5 w-5" />
-          {label}
-        </NavLink>
-      ))}
+            )}
+          >
+            <Icon className="h-5 w-5" />
+            {label}
+          </NavLink>
+        );
+      })}
     </nav>
   );
 }
@@ -70,40 +80,36 @@ function NavItem({
   to,
   icon: Icon,
   label,
+  pathname,
   onClick,
 }: {
   to: string;
   icon: React.ElementType;
   label: string;
+  pathname: string;
   onClick?: () => void;
 }) {
+  const isActive = isNavItemActive(pathname, to);
   return (
     <NavLink
       to={to}
-      end
       onClick={onClick}
-      className={({ isActive }) =>
-        cn(
-          "group flex items-center gap-3 rounded-none border border-transparent px-4 py-2.5 text-sm font-medium transition-all duration-200",
-          isActive
-            ? "border-border bg-primary/10 text-primary"
-            : "text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
-        )
-      }
+      className={cn(
+        "group flex items-center gap-3 rounded-none border border-transparent px-4 py-2.5 text-sm font-medium transition-all duration-200",
+        isActive
+          ? "border-border bg-primary/10 text-primary"
+          : "text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
+      )}
     >
-      {({ isActive }) => (
-        <>
-          <Icon className="h-4 w-4 shrink-0" />
-          <span className="flex-1">{label}</span>
-          {isActive && (
-            <motion.div
-              layoutId="nav-indicator"
-              className="h-4 w-0.5 bg-primary"
-              initial={false}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-            />
-          )}
-        </>
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="flex-1">{label}</span>
+      {isActive && (
+        <motion.div
+          layoutId="nav-indicator"
+          className="h-4 w-0.5 bg-primary"
+          initial={false}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        />
       )}
     </NavLink>
   );
@@ -135,7 +141,7 @@ export function AppShell() {
       {/* Nav */}
       <nav className="flex-1 space-y-0.5 overflow-y-auto py-3">
         {navItems.map((item) => (
-          <NavItem key={item.to} {...item} />
+          <NavItem key={item.to} {...item} pathname={location.pathname} />
         ))}
       </nav>
 

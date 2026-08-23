@@ -1,6 +1,8 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
 import { StepFormSettings } from "@/components/form-builder/step-form-settings";
 import { StepFormQuestions } from "@/components/form-builder/step-form-questions";
@@ -18,6 +20,7 @@ const STEPS = [
 
 export function CreateFormPage() {
   const { step, successData, reset } = useFormBuilderStore();
+  const navigate = useNavigate();
 
   // Start a fresh builder whenever the create page mounts.
   useEffect(() => {
@@ -38,7 +41,12 @@ export function CreateFormPage() {
     <div className="relative flex flex-1 overflow-hidden">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-4 md:h-20 md:px-8 md:py-0">
-        <h1 className="text-xl font-semibold tracking-tight">Create Form</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0 md:hidden">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-xl font-semibold tracking-tight">Create Form</h1>
+        </div>
         <div className="flex items-center gap-0">
           {STEPS.map((s, i) => (
             <div key={s.num} className="flex items-center">

@@ -77,20 +77,20 @@ export function DashboardView({
       {/* Top bar */}
       {!hideTopBar && (
         <div className={cn(
-          "flex shrink-0 flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-0",
-          isCompact ? "h-20 flex-row items-center py-0 px-8" : "md:h-20"
+          "flex h-20 shrink-0 items-center justify-between border-b border-border px-4 md:px-8",
+          isCompact && "px-8"
         )}>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold tracking-tight">
               Welcome back, {user?.name?.split(" ")[0] || "User"}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="truncate text-sm text-muted-foreground">
               Manage your polls and view analytics
             </p>
           </div>
           <Button
             onClick={onCreatePoll}
-            className={cn("w-full gap-2 sm:w-auto", !isCompact && "hidden sm:inline-flex")}
+            className={cn("shrink-0 gap-2", !isCompact && "hidden sm:inline-flex")}
           >
             <Plus className="h-4 w-4" />
             Create Poll

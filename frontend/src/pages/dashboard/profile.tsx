@@ -64,12 +64,12 @@ export function ProfilePage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex shrink-0 flex-col gap-4 border-b border-border px-4 py-4 md:h-20 md:flex-row md:items-center md:justify-between md:px-8 md:py-0">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">
+      <div className="flex h-20 shrink-0 items-center justify-between border-b border-border px-4 md:px-8">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold tracking-tight">
             Account Settings
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="truncate text-sm text-muted-foreground">
             Manage your profile information and security preferences.
           </p>
         </div>
