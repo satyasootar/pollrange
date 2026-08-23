@@ -1,4 +1,34 @@
-import { BarChart3 } from "lucide-react";
+import { Link } from "react-router-dom";
+
+const FOOTER_COLUMNS: { title: string; links: { label: string; to?: string; href?: string }[] }[] = [
+  {
+    title: "Product",
+    links: [
+      { label: "Features", href: "/#features" },
+      { label: "Templates", href: "#" },
+      { label: "Analytics", href: "#" },
+      { label: "Enterprise", href: "#" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "About", to: "/about" },
+      { label: "Blog", to: "/blog" },
+      { label: "Careers", to: "/careers" },
+      { label: "Press", to: "/press" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy", to: "/privacy" },
+      { label: "Terms", to: "/terms" },
+      { label: "Security", to: "/security" },
+      { label: "DMCA", to: "/dmca" },
+    ],
+  },
+];
 
 export function Footer() {
   return (
@@ -6,9 +36,7 @@ export function Footer() {
       <div className="max-w-350 mx-auto px-12 py-20 grid grid-cols-2 md:grid-cols-5 gap-12">
         <div className="col-span-2">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-8 h-8 bg-foreground text-background flex items-center justify-center">
-              <BarChart3 className="w-4 h-4" />
-            </div>
+            <img src="/logo/logo1.png" alt="Kollects Logo" className="h-8 w-auto object-contain" />
             <span className="text-lg font-black uppercase tracking-tighter">Kollects</span>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
@@ -16,28 +44,21 @@ export function Footer() {
           </p>
         </div>
 
-        {[
-          {
-            title: "Product",
-            links: ["Features", "Templates", "Analytics", "Enterprise"],
-          },
-          {
-            title: "Company",
-            links: ["About", "Blog", "Careers", "Press"],
-          },
-          {
-            title: "Legal",
-            links: ["Privacy", "Terms", "Security", "DMCA"],
-          },
-        ].map((col) => (
+        {FOOTER_COLUMNS.map((col) => (
           <div key={col.title}>
             <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground mb-5">{col.title}</h4>
             <ul className="space-y-3">
               {col.links.map((l) => (
-                <li key={l}>
-                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {l}
-                  </a>
+                <li key={l.label}>
+                  {l.to ? (
+                    <Link to={l.to} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      {l.label}
+                    </Link>
+                  ) : (
+                    <a href={l.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      {l.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

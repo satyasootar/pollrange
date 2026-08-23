@@ -339,7 +339,7 @@ export interface PollFilters {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Forms feature (Google-Forms-style) — separate from Polls
+// Forms feature — separate from Polls
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export type FormQuestionType =

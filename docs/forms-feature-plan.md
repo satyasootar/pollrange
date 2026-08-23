@@ -1,6 +1,6 @@
 # Forms Feature — Implementation Plan
 
-Google-Forms-style form builder for **kollects**, living alongside the existing Polls
+A rich form builder for **kollects**, living alongside the existing Polls
 feature. This plan mirrors the proven Poll/Response architecture rather than inventing
 new patterns.
 
@@ -18,7 +18,7 @@ new patterns.
 | **Delivery** | phased (6 phases) |
 
 **Three defaults applied (flip if you disagree):**
-1. **Editing after responses:** *allow editing anytime* (Google-Forms behavior), with a UI
+1. **Editing after responses:** *allow editing anytime*, with a UI
    warning that deleting a question orphans its existing answers. (Polls lock edits once
    `totalResponses > 0`; Forms deliberately do not.)
 2. **Dashboard:** a separate **"Forms"** sidebar item at `/dashboard/forms`; the current

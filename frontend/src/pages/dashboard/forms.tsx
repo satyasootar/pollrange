@@ -50,7 +50,7 @@ export function FormsPage() {
       <div className="flex shrink-0 flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:h-20 md:px-8 md:py-0">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Forms</h1>
-          <p className="text-sm text-muted-foreground">Build Google-Forms-style forms and quizzes</p>
+          <p className="text-sm text-muted-foreground">Build forms and quizzes</p>
         </div>
         <Button onClick={() => navigate("/forms/create")} className="w-full gap-2 sm:w-auto">
           <Plus className="h-4 w-4" /> Create Form

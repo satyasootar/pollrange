@@ -32,6 +32,15 @@ import { PublishedResultsPage } from "@/pages/public/results";
 import { PublicFormPage } from "@/pages/public/form";
 import { NotFoundPage } from "@/pages/not-found";
 
+import { AboutPage } from "@/pages/company/about";
+import { BlogPage } from "@/pages/company/blog";
+import { CareersPage } from "@/pages/company/careers";
+import { PressPage } from "@/pages/company/press";
+import { PrivacyPage } from "@/pages/legal/privacy";
+import { TermsPage } from "@/pages/legal/terms";
+import { SecurityPage } from "@/pages/legal/security";
+import { DmcaPage } from "@/pages/legal/dmca";
+
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -39,6 +48,14 @@ export function App() {
         <Routes>
           {/* Public marketing */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/press" element={<PressPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/security" element={<SecurityPage />} />
+          <Route path="/dmca" element={<DmcaPage />} />
 
           {/* Auth — redirect if already logged in */}
           <Route

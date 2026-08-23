@@ -122,8 +122,8 @@ export async function listFormsByCreator(
 }
 
 /**
- * Updates a form. Unlike polls, editing is allowed anytime (Google-Forms behavior),
- * even after responses exist — the client warns that removing a question orphans answers.
+ * Updates a form. Unlike polls, editing is allowed anytime, even after responses
+ * exist — the client warns that removing a question orphans answers.
  */
 export async function updateForm(userId: string, formId: string, updateData: IUpdateForm) {
   if (updateData.sections) {
