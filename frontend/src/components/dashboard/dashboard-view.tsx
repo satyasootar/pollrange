@@ -156,7 +156,7 @@ export function DashboardView({
                 variant="outline"
                 size="icon"
                 aria-label="Filter polls by status"
-                className="relative border-border shadow-none hover:shadow-none focus-visible:border-primary"
+                className="relative size-12 border-border shadow-none hover:shadow-none focus-visible:border-primary"
               >
                 <Filter className="h-4 w-4" />
                 {status !== "all" && (
