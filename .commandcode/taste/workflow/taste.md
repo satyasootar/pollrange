@@ -2,3 +2,4 @@
 - Prefers strategic commits that logically group unstaged changes into coherent commit chunks rather than committing everything as a single blob. Confidence: 0.85
 - Wants fast iteration and quick fixes; gets impatient with delays and expects the agent to apply fixes directly without being blocked in read-only/plan modes. Responds to blockers with terse one-word commands like "Implement." Confidence: 0.9
 - Prefers ambiguous scope/design decisions be resolved via concise multiple-choice questions before implementation (e.g., FAB scope, button style). Confidence: 0.7
+- Reports visual UI bugs by sending screenshots with terse descriptions (e.g., "not same fix it"), expecting the agent to locate the inconsistency in code and fix it directly. Confidence: 0.75

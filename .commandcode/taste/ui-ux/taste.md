@@ -4,3 +4,5 @@
 - Prefers square-shaped (sharp-cornered, rounded-none) buttons for action/floating elements. Confidence: 0.7
 - Prefers the desktop layout left unchanged; adds mobile-specific conditional UI (e.g., `md:hidden`) instead of rearranging shared components for responsive behavior. Confidence: 0.7
 - Prefers icon and text labels side by side (row layout) rather than stacked vertically, even inside compact square buttons. Confidence: 0.7
+- Expects adjacent controls in the same toolbar/row (e.g., search input and filter button) to render at identical size/height, and treats any visual mismatch between them as a bug to fix in both the polls and forms sections. Confidence: 0.8
+- Prefers card action controls (e.g., the 3-dot overflow menu) always visible rather than hidden until hover; treats hover-gated visibility as a bug. Confidence: 0.8

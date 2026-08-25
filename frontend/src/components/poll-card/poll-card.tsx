@@ -112,7 +112,7 @@ export function PollCard({ poll, isCompact = false, onSelect }: PollCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                className="h-8 w-8 shrink-0"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
