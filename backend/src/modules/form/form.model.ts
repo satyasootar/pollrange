@@ -7,6 +7,7 @@ const optionSchema = new Schema({
   order: { type: Number, required: true },
   imageUrl: String,
   responseCount: { type: Number, default: 0 },
+  amount: { type: Number, min: 0, max: 1000000 },
 });
 
 const questionSchema = new Schema({
@@ -17,6 +18,13 @@ const questionSchema = new Schema({
   imageUrl: String,
   isRequired: { type: Boolean, default: false },
   options: [optionSchema],
+  payment: {
+    enabled: { type: Boolean, default: false },
+    upiId: String,
+    messageTemplate: String,
+    minSelections: { type: Number, min: 0 },
+    maxSelections: { type: Number, min: 1 },
+  },
   // option _id -> section _id | "submit"
   optionNavigation: { type: Schema.Types.Mixed },
   scaleMin: Number,

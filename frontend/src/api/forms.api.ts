@@ -19,8 +19,9 @@ function toQuestionPayload(q: BuilderFormQuestion, order: number) {
     isRequired: q.isRequired,
   };
   if (q.options.length) {
-    payload.options = q.options.map((o, oi) => ({ _id: o.id, text: o.text, order: oi }));
+    payload.options = q.options.map((o, oi) => ({ _id: o.id, text: o.text, order: oi, amount: o.amount }));
   }
+  if (q.payment?.enabled) payload.payment = q.payment;
   if (q.optionNavigation) payload.optionNavigation = q.optionNavigation;
   if (q.scaleMin !== undefined) payload.scaleMin = q.scaleMin;
   if (q.scaleMax !== undefined) payload.scaleMax = q.scaleMax;

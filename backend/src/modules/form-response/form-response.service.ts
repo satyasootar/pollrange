@@ -5,6 +5,7 @@ import { emitFormAnalyticsUpdate } from "../../socket/index.js";
 import { GRADABLE_TYPES } from "../form/form.validation.js";
 import type { ISubmitFormResponse, ISubmitAnswer } from "./form-response.validation.js";
 import mongoose from "mongoose";
+import { calculatePayment } from "../form/payment.util.js";
 
 /** Flattens every question across all sections into one list. */
 function allQuestions(form: any): any[] {
@@ -84,7 +85,7 @@ function gradeAnswer(q: any, a: ISubmitAnswer): { isCorrect: boolean; pointsEarn
 export async function submitResponse(
   formId: string,
   data: ISubmitFormResponse,
-  meta: { respondentId?: string; ipHash: string; userAgent: string }
+  meta: { respondentId?: string; userName?: string; ipHash: string; userAgent: string }
 ) {
   const form = await Form.findOne({ _id: formId, isDeleted: false, status: "active" });
   if (!form) throw new ApiError(404, "Form not found or not active");
@@ -146,7 +147,28 @@ export async function submitResponse(
     return base;
   });
 
-  let response;
+  const paymentQuestionAnswer = data.answers.find((a) => {
+    const q = questionsById.get(a.questionId);
+    return q?.payment?.enabled && !a.skipped;
+  });
+  const paymentQuestion = paymentQuestionAnswer ? questionsById.get(paymentQuestionAnswer.questionId) : undefined;
+  if (paymentQuestionAnswer && paymentQuestion?.payment) {
+    const count = paymentQuestionAnswer.selectedOptionIds?.length ?? 0;
+    const uniqueOptionIds = new Set(paymentQuestionAnswer.selectedOptionIds ?? []);
+    if (uniqueOptionIds.size !== count) throw new ApiError(400, "Duplicate payment options are not allowed");
+    const { minSelections, maxSelections } = paymentQuestion.payment;
+    if (minSelections !== undefined && count < minSelections) throw new ApiError(400, "Select more paid options");
+    if (maxSelections !== undefined && count > maxSelections) throw new ApiError(400, "Select fewer paid options");
+    const unknown = (paymentQuestionAnswer.selectedOptionIds ?? []).some(
+      (id) => !(paymentQuestion.options ?? []).some((option: any) => String(option._id) === id)
+    );
+    if (unknown) throw new ApiError(400, "Invalid payment option selection");
+  }
+
+  const paymentSnapshot = paymentQuestionAnswer && paymentQuestion
+    ? calculatePayment(paymentQuestion, paymentQuestionAnswer.selectedOptionIds ?? [], "pending", meta.userName)
+    : undefined;
+  let response: any;
   try {
     response = await FormResponse.create({
       formId,
@@ -156,6 +178,7 @@ export async function submitResponse(
       ipHash: meta.ipHash,
       userAgent: meta.userAgent,
       answers,
+      ...(paymentSnapshot ? { payment: paymentSnapshot } : {}),
       isComplete: data.isComplete,
       submittedAt: new Date(),
       ...(form.isQuiz ? { score, totalPoints } : {}),
@@ -163,6 +186,11 @@ export async function submitResponse(
   } catch (err: any) {
     if (err?.code === 11000) throw new ApiError(403, "You have already submitted a response to this form");
     throw err;
+  }
+
+  if (paymentQuestionAnswer && paymentQuestion?.payment) {
+    const payment = calculatePayment(paymentQuestion, paymentQuestionAnswer.selectedOptionIds ?? [], response._id.toString(), meta.userName);
+    await FormResponse.updateOne({ _id: response._id }, { $set: { payment } });
   }
 
   // Atomic denormalized counters.

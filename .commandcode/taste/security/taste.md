@@ -1,1 +1,0 @@
-- Expects access and refresh tokens to be stored in HTTP-only cookies for safe, secure token management rather than client-side storage (e.g., localStorage). Concerned about being logged out when tokens are not properly persisted via cookies. Confidence: 0.75

@@ -102,7 +102,7 @@ interface FormBuilderState {
   // options
   addOption: (sectionId: string, questionId: string) => void;
   removeOption: (sectionId: string, questionId: string, optionId: string) => void;
-  updateOption: (sectionId: string, questionId: string, optionId: string, text: string) => void;
+  updateOption: (sectionId: string, questionId: string, optionId: string, text: string, amount?: number) => void;
   reset: () => void;
 }
 
@@ -260,11 +260,11 @@ export const useFormBuilderStore = create<FormBuilderState>()((set) => ({
       })),
     })),
 
-  updateOption: (sectionId, questionId, optionId, text) =>
+  updateOption: (sectionId, questionId, optionId, text, amount) =>
     set((s) => ({
       form: patchQuestion(s.form, sectionId, questionId, (q) => ({
         ...q,
-        options: q.options.map((o) => (o.id === optionId ? { ...o, text } : o)),
+        options: q.options.map((o) => (o.id === optionId ? { ...o, text, ...(amount === undefined ? {} : { amount }) } : o)),
       })),
     })),
 

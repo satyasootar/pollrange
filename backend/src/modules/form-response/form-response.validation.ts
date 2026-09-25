@@ -29,6 +29,16 @@ const formAnswerZodSchema = z.object({
   skipped: z.boolean().default(false),
 });
 
+const paymentSnapshotSchema = z.object({
+  selectedOptionIds: z.array(z.string()),
+  selectedOptions: z.array(z.string()),
+  selectedCount: z.number(),
+  totalAmount: z.number(),
+  message: z.string(),
+  upiId: z.string(),
+  status: z.enum(["pending", "paid", "failed"]),
+}).optional();
+
 export const formResponseZodSchema = z.object({
   formId: z.custom<mongoose.Types.ObjectId>(),
   respondentId: z.custom<mongoose.Types.ObjectId>().optional(),
@@ -37,6 +47,7 @@ export const formResponseZodSchema = z.object({
   ipHash: z.string().optional(),
   userAgent: z.string().optional(),
   answers: z.array(formAnswerZodSchema),
+  payment: paymentSnapshotSchema,
   score: z.number().optional(),
   totalPoints: z.number().optional(),
   isComplete: z.boolean(),

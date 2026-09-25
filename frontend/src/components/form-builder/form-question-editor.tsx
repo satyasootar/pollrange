@@ -150,6 +150,17 @@ export function FormQuestionEditor({
                   onChange={(e) => updateOption(sectionId, q.id, opt.id, e.target.value)}
                   className="h-8 text-sm"
                 />
+                {q.payment?.enabled && (
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={opt.amount ?? 0}
+                    aria-label={`${opt.text || `Option ${oi + 1}`} amount`}
+                    onChange={(e) => updateOption(sectionId, q.id, opt.id, opt.text, Math.max(0, Number(e.target.value)))}
+                    className="h-8 w-24 text-sm"
+                  />
+                )}
                 {isQuiz && isGradable && (
                   <button
                     type="button"
@@ -181,6 +192,62 @@ export function FormQuestionEditor({
             >
               <Plus className="h-3.5 w-3.5" /> Add option
             </button>
+            {q.type !== "dropdown" && (
+              <div className="space-y-3 border-t border-border pt-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Label className="text-sm">Enable UPI payment</Label>
+                    <p className="text-xs text-muted-foreground">Price each option and collect a payment intent.</p>
+                  </div>
+                  <Switch
+                    checked={q.payment?.enabled ?? false}
+                    onCheckedChange={(enabled) =>
+                      updateQuestion(sectionId, q.id, {
+                        payment: {
+                          enabled,
+                          upiId: q.payment?.upiId ?? "",
+                          messageTemplate: q.payment?.messageTemplate ?? "Payment for {selected_options} - Total INR {total_amount}",
+                          minSelections: q.payment?.minSelections,
+                          maxSelections: q.payment?.maxSelections,
+                        },
+                      })
+                    }
+                  />
+                </div>
+                {q.payment?.enabled && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Input
+                      value={q.payment.upiId}
+                      placeholder="UPI ID / VPA"
+                      onChange={(e) => updateQuestion(sectionId, q.id, { payment: { ...q.payment!, upiId: e.target.value } })}
+                    />
+                    <Input
+                      value={q.payment.messageTemplate}
+                      placeholder="Payment message template"
+                      onChange={(e) => updateQuestion(sectionId, q.id, { payment: { ...q.payment!, messageTemplate: e.target.value } })}
+                    />
+                    {q.type === "checkboxes" && (
+                      <>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="Minimum selections"
+                          value={q.payment.minSelections ?? ""}
+                          onChange={(e) => updateQuestion(sectionId, q.id, { payment: { ...q.payment!, minSelections: e.target.value ? Number(e.target.value) : undefined } })}
+                        />
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="Maximum selections"
+                          value={q.payment.maxSelections ?? ""}
+                          onChange={(e) => updateQuestion(sectionId, q.id, { payment: { ...q.payment!, maxSelections: e.target.value ? Number(e.target.value) : undefined } })}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

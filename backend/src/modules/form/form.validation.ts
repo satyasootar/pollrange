@@ -40,6 +40,19 @@ const optionZodSchema = z.object({
   order: z.number(),
   imageUrl: z.string().optional(),
   responseCount: z.number().default(0),
+  amount: z.number().min(0).max(1000000).optional(),
+});
+
+const paymentConfigZodSchema = z.object({
+  enabled: z.boolean(),
+  upiId: z.string().trim().min(3).max(100),
+  messageTemplate: z.string().max(200).default("Payment for {selected_options} - Total INR {total_amount}"),
+  minSelections: z.number().int().min(0).optional(),
+  maxSelections: z.number().int().min(1).optional(),
+}).superRefine((payment, ctx) => {
+  if (payment.minSelections !== undefined && payment.maxSelections !== undefined && payment.minSelections > payment.maxSelections) {
+    ctx.addIssue({ code: "custom", message: "minSelections cannot exceed maxSelections", path: ["minSelections"] });
+  }
 });
 
 const validationRuleZodSchema = z.object({
@@ -71,6 +84,7 @@ const formQuestionZodSchema = z.object({
   isRequired: z.boolean().default(false),
   // choice / dropdown
   options: z.array(optionZodSchema).optional(),
+  payment: paymentConfigZodSchema.optional(),
   optionNavigation: z.record(z.string(), z.string()).optional(),
   // scale / rating
   scaleMin: z.number().optional(),
@@ -147,6 +161,7 @@ const createOptionSchema = z.object({
   text: z.string().min(1),
   order: z.number(),
   imageUrl: z.string().optional(),
+  amount: z.number().min(0).max(1000000).optional(),
 });
 
 /**
@@ -164,6 +179,7 @@ const createQuestionSchema = z
     imageUrl: z.string().optional(),
     isRequired: z.boolean().default(false),
     options: z.array(createOptionSchema).optional(),
+    payment: paymentConfigZodSchema.optional(),
     // maps an option key -> target section key | "submit"
     optionNavigation: z.record(z.string(), z.string()).optional(),
     scaleMin: z.number().optional(),

@@ -283,6 +283,7 @@ export function PublicFormPage() {
                 <QuestionRenderer
                   formId={form.formId}
                   question={q}
+                  userName={user?.name}
                   value={answers[q._id] ?? {}}
                   onChange={(patch) =>
                     setAnswers((prev) => {

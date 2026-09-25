@@ -362,6 +362,15 @@ export interface FormOption {
   order: number;
   imageUrl?: string;
   responseCount?: number;
+  amount?: number;
+}
+
+export interface PaymentConfig {
+  enabled: boolean;
+  upiId: string;
+  messageTemplate: string;
+  minSelections?: number;
+  maxSelections?: number;
 }
 
 export interface ValidationRule {
@@ -397,6 +406,7 @@ export interface FormQuestion {
   imageUrl?: string;
   isRequired: boolean;
   options?: FormOption[];
+  payment?: PaymentConfig;
   optionNavigation?: Record<string, string>;
   scaleMin?: number;
   scaleMax?: number;
@@ -558,6 +568,7 @@ export interface IndividualFormResponse {
 export interface BuilderFormOption {
   id: string;
   text: string;
+  amount?: number;
 }
 
 /** Grid rows/columns in the builder carry a stable id so React keys survive edits. */
@@ -573,6 +584,7 @@ export interface BuilderFormQuestion {
   description?: string;
   isRequired: boolean;
   options: BuilderFormOption[];
+  payment?: PaymentConfig;
   optionNavigation?: Record<string, string>;
   scaleMin?: number;
   scaleMax?: number;

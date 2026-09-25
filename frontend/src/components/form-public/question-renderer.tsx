@@ -1,10 +1,12 @@
-import { Star, Upload, Loader2, X, FileText } from "lucide-react";
+import { Star, Upload, Loader2, X, FileText, Smartphone } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formPublicApi } from "@/api/form-public.api";
 import { getApiErrorMessage, newObjectId } from "@/lib/utils";
 import { toast } from "sonner";
 import type { FormQuestion, FormFileValue, FormGridValue } from "@/types";
+import { buildUpiUri, calculatePayment } from "@/lib/upi-payment";
 
 /** A file the respondent picked that is uploading in the background (or failed). */
 export interface FilePreview {
@@ -34,11 +36,12 @@ interface Props {
   question: FormQuestion;
   value: AnswerDraft;
   onChange: AnswerChange;
+  userName?: string;
   /** Preview mode (Review step): render inputs but disable the live file upload. */
   preview?: boolean;
 }
 
-export function QuestionRenderer({ formId, question: q, value, onChange, preview }: Props) {
+export function QuestionRenderer({ formId, question: q, value, onChange, preview, userName = "" }: Props) {
   const toggleOption = (optionId: string, multi: boolean) => {
     const current = value.selectedOptionIds ?? [];
     const next = multi
@@ -62,6 +65,9 @@ export function QuestionRenderer({ formId, question: q, value, onChange, preview
 
   const gridSelected = (row: string, col: string) =>
     value.gridValues?.find((g) => g.row === row)?.columns.includes(col) ?? false;
+
+  const payment = calculatePayment(q, value.selectedOptionIds ?? [], "pending", userName);
+  const paymentUri = payment && buildUpiUri(q.payment?.upiId ?? "", payment.totalAmount, payment.message);
 
   // Show a preview immediately, then upload each file in the background. The submit
   // button (in the parent) stays disabled until every "uploading" preview clears.
@@ -153,6 +159,33 @@ export function QuestionRenderer({ formId, question: q, value, onChange, preview
               </button>
             );
           })}
+          {payment && (
+            <div className="mt-4 border border-primary/30 bg-primary/5 p-4">
+              <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="space-y-1 text-sm">
+                  <p className="font-semibold">Payment summary</p>
+                  <p>Selected: {payment.selectedOptions.map((option) => option.text).join(", ") || "None"}</p>
+                  <p>Activities: {payment.selectedCount}</p>
+                  <p className="text-lg font-bold">Total: INR {payment.totalAmount.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">{payment.message}</p>
+                </div>
+                {paymentUri ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <QRCodeSVG value={paymentUri} size={160} includeMargin aria-label="UPI payment QR code" />
+                    <a
+                      href={paymentUri}
+                      className="inline-flex min-h-10 items-center justify-center gap-2 border border-primary bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:hidden"
+                    >
+                      <Smartphone className="h-4 w-4" aria-hidden="true" />
+                      Open in UPI app
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Select a paid option and ensure the creator configured a UPI ID.</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
