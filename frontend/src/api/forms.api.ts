@@ -43,6 +43,7 @@ export function toFormPayload(form: FormBuilderForm) {
   return {
     title: form.title,
     description: form.description || undefined,
+    slug: form.slug.trim() || undefined,
     coverImageUrl: form.coverImageUrl || undefined,
     isQuiz: form.isQuiz,
     responseMode: form.responseMode,
@@ -84,6 +85,11 @@ export const formsApi = {
 
   regenerateToken: (formId: string) =>
     api.post<{ data: { shareToken: string } }>(`/forms/${formId}/regenerate-token`),
+
+  checkSlug: (slug: string, formId?: string) =>
+    api.get<{ data: { slug: string; available: boolean } }>("/forms/slug-availability", {
+      params: { slug, ...(formId ? { formId } : {}) },
+    }),
 
   uploadImage: (file: File) => {
     const fd = new FormData();

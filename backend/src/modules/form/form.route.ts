@@ -9,6 +9,7 @@ router.use(verifyJWT);
 
 router.post("/", FormController.createForm);
 router.get("/", FormController.getMyForms);
+router.get("/slug-availability", FormController.checkSlugAvailability);
 router.get("/:formId", FormController.getFormDetail);
 router.patch("/:formId", FormController.updateForm);
 router.delete("/:formId", FormController.deleteForm);

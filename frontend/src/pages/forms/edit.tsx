@@ -67,7 +67,7 @@ export function EditFormPage() {
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div key={step} variants={slideInRight} initial="hidden" animate="visible" exit="exit">
-            {step === 1 && <StepFormSettings />}
+            {step === 1 && <StepFormSettings formId={formId} />}
             {step === 2 && <StepFormQuestions />}
             {step === 3 && <StepFormReviewEdit formId={formId!} hasResponses={form.totalResponses > 0} />}
           </motion.div>

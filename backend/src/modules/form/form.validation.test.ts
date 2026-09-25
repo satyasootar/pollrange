@@ -21,6 +21,16 @@ describe("createFormSchema", () => {
     expect(r.success).toBe(true);
   });
 
+  it("accepts a URL-safe custom slug", () => {
+    const r = createFormSchema.safeParse({ ...form([{ ...baseQuestion, type: "short_answer" }]), slug: "event_signup-2026" });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects an unsafe custom slug", () => {
+    const r = createFormSchema.safeParse({ ...form([{ ...baseQuestion, type: "short_answer" }]), slug: "event signup" });
+    expect(r.success).toBe(false);
+  });
+
   it("requires options on choice types", () => {
     const r = createFormSchema.safeParse(form([{ ...baseQuestion, type: "multiple_choice" }]));
     expect(r.success).toBe(false);

@@ -228,6 +228,13 @@ const createSectionSchema = z.object({
 export const createFormSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
+  slug: z
+    .string()
+    .trim()
+    .regex(/^[a-zA-Z0-9_-]+$/, "Slug may contain only letters, numbers, hyphens, and underscores")
+    .min(3)
+    .max(80)
+    .optional(),
   coverImageUrl: z.string().optional(),
   isQuiz: z.boolean().optional(),
   responseMode: z.enum(RESPONSE_MODES),

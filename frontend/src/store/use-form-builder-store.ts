@@ -39,7 +39,7 @@ function typeDefaults(type: FormQuestionType): Partial<BuilderFormQuestion> {
   }
 }
 
-export function makeQuestion(type: FormQuestionType = "multiple_choice"): BuilderFormQuestion {
+export function makeQuestion(type: FormQuestionType = "short_answer"): BuilderFormQuestion {
   return {
     id: newObjectId(),
     type,
@@ -68,6 +68,7 @@ function defaultForm(): FormBuilderForm {
   return {
     title: "",
     description: "",
+    slug: "",
     isQuiz: false,
     expiresAt: "",
     responseMode: "anonymous",
@@ -168,7 +169,7 @@ export const useFormBuilderStore = create<FormBuilderState>()((set) => ({
       return { form: { ...s.form, sections } };
     }),
 
-  addQuestion: (sectionId, type = "multiple_choice") =>
+  addQuestion: (sectionId, type = "short_answer") =>
     set((s) => ({
       form: {
         ...s.form,

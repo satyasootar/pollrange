@@ -51,6 +51,7 @@ export function formEntityToBuilder(form: Form): FormBuilderForm {
   return {
     title: form.title,
     description: form.description ?? "",
+    slug: form.shareToken,
     coverImageUrl: form.coverImageUrl,
     isQuiz: form.isQuiz,
     expiresAt: form.expiresAt ? form.expiresAt.slice(0, 16) : "",

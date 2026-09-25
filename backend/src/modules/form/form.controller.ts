@@ -24,6 +24,16 @@ export async function getMyForms(req: Request, res: Response) {
   return res.status(200).json(new ApiResponse(200, result, "Forms fetched successfully"));
 }
 
+export async function checkSlugAvailability(req: Request, res: Response) {
+  const user = (req as any).user;
+  const slug = String(req.query.slug ?? "").trim();
+  if (!/^[a-zA-Z0-9_-]{3,80}$/.test(slug)) {
+    throw new ApiError(400, "Slug must be 3-80 characters using only letters, numbers, hyphens, or underscores");
+  }
+  const result = await FormService.checkSlugAvailability(user._id.toString(), slug, req.query.formId as string | undefined);
+  return res.status(200).json(new ApiResponse(200, result, "Slug availability checked"));
+}
+
 export async function getFormDetail(req: Request, res: Response) {
   const user = (req as any).user;
   const { formId } = req.params;

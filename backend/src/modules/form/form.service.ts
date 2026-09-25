@@ -74,9 +74,13 @@ function validateFormStructure(sections: ICreateSection[], isQuiz: boolean) {
 
 export async function createForm(userId: string, formData: ICreateForm) {
   validateFormStructure(formData.sections, formData.isQuiz ?? false);
-  const shareToken = crypto.randomUUID();
+  const { slug, ...persistedFormData } = formData;
+  const shareToken = slug || crypto.randomUUID();
+  if (slug && (await Form.exists({ shareToken }))) {
+    throw new ApiError(409, "That form slug is already in use. Choose another slug.");
+  }
   return await Form.create({
-    ...formData,
+    ...persistedFormData,
     creatorId: userId,
     shareToken,
     status: "active",
@@ -129,13 +133,27 @@ export async function updateForm(userId: string, formId: string, updateData: IUp
   if (updateData.sections) {
     validateFormStructure(updateData.sections, updateData.isQuiz ?? false);
   }
+  const { slug, ...persistedUpdateData } = updateData;
+  if (slug !== undefined) {
+    const existing = await Form.findOne({ shareToken: slug, _id: { $ne: formId }, isDeleted: false }).select("_id");
+    if (existing) throw new ApiError(409, "That form slug is already in use. Choose another slug.");
+  }
   const form = await Form.findOneAndUpdate(
     { _id: formId, creatorId: userId, isDeleted: false },
-    { $set: updateData },
+    { $set: { ...persistedUpdateData, ...(slug !== undefined ? { shareToken: slug } : {}) } },
     { new: true }
   );
   if (!form) throw new ApiError(404, "Form not found or unauthorized");
   return form;
+}
+
+export async function checkSlugAvailability(userId: string, slug: string, formId?: string) {
+  const existing = await Form.exists({
+    shareToken: slug,
+    isDeleted: false,
+    ...(formId ? { _id: { $ne: formId } } : {}),
+  });
+  return { slug, available: !existing };
 }
 
 export async function deleteForm(userId: string, formId: string) {

@@ -11,6 +11,8 @@ import { getApiErrorMessage } from "@/lib/utils";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import type { FormSettings } from "@/types";
 
+type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
+
 const SETTING_TOGGLES: { key: keyof FormSettings; label: string; hint: string }[] = [
   { key: "collectEmail", label: "Collect email addresses", hint: "Ask respondents for their email" },
   { key: "limitOneResponse", label: "Limit to one response", hint: "Prevent duplicate submissions" },
@@ -18,17 +20,44 @@ const SETTING_TOGGLES: { key: keyof FormSettings; label: string; hint: string }[
   { key: "shuffleQuestions", label: "Shuffle question order", hint: "Randomize per respondent" },
 ];
 
-export function StepFormSettings() {
+export function StepFormSettings({ formId }: { formId?: string }) {
   const { form, updateMeta, updateSettings, nextStep } = useFormBuilderStore();
   const [uploading, setUploading] = useState(false);
+  const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
   // Lazy state init keeps the impure Date.now() call out of render.
   const [minDatetime] = useState(() => new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16));
 
-  const handleNext = () => {
+  const checkSlug = async () => {
+    const slug = form.slug.trim();
+    if (!slug) {
+      setSlugStatus("idle");
+      return true;
+    }
+    if (!/^[a-zA-Z0-9_-]{3,80}$/.test(slug)) {
+      setSlugStatus("invalid");
+      toast.error("Slug must be 3-80 characters using only letters, numbers, hyphens, or underscores.");
+      return false;
+    }
+    setSlugStatus("checking");
+    try {
+      const result = await formsApi.checkSlug(slug, formId);
+      const available = result.data.data.available;
+      setSlugStatus(available ? "available" : "taken");
+      if (!available) toast.error("That slug is already in use. Choose another one.");
+      return available;
+    } catch (err) {
+      setSlugStatus("idle");
+      toast.error(getApiErrorMessage(err));
+      return false;
+    }
+  };
+
+  const handleNext = async () => {
     if (form.title.trim().length < 1) {
       toast.error("Give your form a title.");
       return;
     }
+    if (!(await checkSlug())) return;
     nextStep();
   };
 
@@ -118,6 +147,30 @@ export function StepFormSettings() {
           rows={3}
           onChange={(e) => updateMeta({ description: e.target.value })}
         />
+      </div>
+
+      {/* Optional public URL slug */}
+      <div className="space-y-1.5">
+        <Label htmlFor="slug">Custom form slug (optional)</Label>
+        <Input
+          id="slug"
+          value={form.slug}
+          placeholder="Leave blank for a random slug"
+          maxLength={80}
+          onChange={(e) => {
+            updateMeta({ slug: e.target.value });
+            setSlugStatus("idle");
+          }}
+          onBlur={() => void checkSlug()}
+          aria-invalid={slugStatus === "taken" || slugStatus === "invalid"}
+        />
+        <p className={`text-xs ${slugStatus === "taken" || slugStatus === "invalid" ? "text-destructive" : "text-muted-foreground"}`}>
+          {slugStatus === "checking" && "Checking availability…"}
+          {slugStatus === "available" && "This slug is available."}
+          {slugStatus === "taken" && "This slug is already in use."}
+          {slugStatus === "invalid" && "Use 3-80 letters, numbers, hyphens, or underscores."}
+          {slugStatus === "idle" && "The public link will use this slug. Leave blank to generate one automatically."}
+        </p>
       </div>
 
       {/* Quiz toggle */}

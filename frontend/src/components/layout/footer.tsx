@@ -54,7 +54,7 @@ export function Footer() {
       <div className="border-t border-border">
         <div className="max-w-350 mx-auto px-12 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            © 2025 Kollects. All Rights Reserved.
+            © 2026 Kollects. All Rights Reserved.
           </p>
           <div className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground uppercase">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />

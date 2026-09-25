@@ -118,7 +118,7 @@ export function FocusedPageLayout({ icon: Icon, eyebrow, title, subtitle, summar
 
       <div className="border-t border-border">
         <div className="mx-auto flex max-w-350 items-center justify-between px-6 py-6 md:px-12">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">© 2025 Kollects</p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">© 2026 Kollects</p>
           <Link
             to="/"
             className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"

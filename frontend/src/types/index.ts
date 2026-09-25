@@ -609,6 +609,7 @@ export interface BuilderFormSection {
 export interface FormBuilderForm {
   title: string;
   description: string;
+  slug: string;
   coverImageUrl?: string;
   isQuiz: boolean;
   expiresAt: string;
