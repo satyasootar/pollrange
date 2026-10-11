@@ -134,4 +134,23 @@ describe("useFormBuilderStore", () => {
     expect(makeQuestion("dropdown").options.length).toBe(1);
     expect(makeQuestion("checkbox_grid").rows?.[0]?.label).toBe("Row 1");
   });
+
+  it("drops the payment config when the question type changes", () => {
+    const sid = firstSection().id;
+    const qid = firstQuestion().id;
+    store().changeQuestionType(sid, qid, "checkboxes");
+    store().updateQuestion(sid, qid, { payment: { enabled: true, upiId: "host@okaxis", messageTemplate: "x" } });
+    store().changeQuestionType(sid, qid, "short_answer");
+    expect(firstQuestion().payment).toBeUndefined();
+  });
+
+  it("keeps an option's price when only its text changes", () => {
+    const sid = firstSection().id;
+    store().changeQuestionType(sid, firstQuestion().id, "checkboxes");
+    const q = firstQuestion();
+    const opt = q.options[0]!;
+    store().updateOption(sid, q.id, opt.id, opt.text, 150);
+    store().updateOption(sid, q.id, opt.id, "Renamed");
+    expect(firstQuestion().options[0]).toMatchObject({ text: "Renamed", amount: 150 });
+  });
 });

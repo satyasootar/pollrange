@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePublicForm, useSubmitFormResponse } from "@/hooks/use-public-form";
 import { QuestionRenderer, type AnswerDraft } from "@/components/form-public/question-renderer";
+import { PaymentDue } from "@/components/form-public/payment-due";
+import { selectionError } from "@/lib/upi-payment";
 import { fadeUp, stagger, pageTransition } from "@/lib/animations";
 import { getOrCreateSessionToken, getApiErrorMessage, shuffle, timeUntilExpiry } from "@/lib/utils";
 import { useAuthStore } from "@/store/use-auth-store";
@@ -123,6 +125,15 @@ export function PublicFormPage() {
   if (form.alreadyResponded)
     return <FormStateScreen icon="check" title="Already responded" message="You've already submitted a response to this form." />;
 
+  if (submitted && result?.payment) {
+    return (
+      <PaymentDue
+        payment={result.payment}
+        payeeName={form.title}
+        confirmationMessage={form.settings.confirmationMessage || "Your response has been recorded."}
+      />
+    );
+  }
   if (submitted) {
     return (
       <FormStateScreen
@@ -160,6 +171,11 @@ export function PublicFormPage() {
       const d = answers[q._id];
       if (q.isRequired && !draftHasValue(d)) {
         toast.error(`Please answer: "${q.title}"`);
+        return false;
+      }
+      const pickError = selectionError(q, d?.selectedOptionIds?.length ?? 0);
+      if (pickError) {
+        toast.error(pickError);
         return false;
       }
       if (q.validation?.kind && d?.textValue) {
@@ -283,7 +299,6 @@ export function PublicFormPage() {
                 <QuestionRenderer
                   formId={form.formId}
                   question={q}
-                  userName={user?.name}
                   value={answers[q._id] ?? {}}
                   onChange={(patch) =>
                     setAnswers((prev) => {

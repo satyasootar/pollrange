@@ -141,4 +141,52 @@ describe("QuestionRenderer", () => {
     expect(val().fileUrls ?? []).toEqual([]);
     expect(screen.queryByText("file.png")).not.toBeInTheDocument();
   });
+
+  describe("UPI payment", () => {
+    const paid = (o: Partial<FormQuestion> = {}) =>
+      q({
+        type: "checkboxes",
+        options: [
+          { _id: "a", text: "Coding", order: 0, amount: 100 },
+          { _id: "b", text: "AI", order: 1, amount: 250.5 },
+          { _id: "c", text: "Networking", order: 2 },
+        ],
+        payment: { enabled: true, upiId: "host@okaxis", messageTemplate: "Ref {form_response_id}" },
+        ...o,
+      });
+
+    it("shows a price on every option, with Free for unpriced ones", () => {
+      render(<Harness question={paid()} />);
+      expect(screen.getByText("₹100")).toBeInTheDocument();
+      expect(screen.getByText("₹250.50")).toBeInTheDocument();
+      expect(screen.getByText("Free")).toBeInTheDocument();
+    });
+
+    it("updates a running total as options are picked, without showing a QR before submit", async () => {
+      render(<Harness question={paid()} />);
+      expect(screen.queryByText(/total/i)).not.toBeInTheDocument();
+      await userEvent.click(screen.getByText("Coding"));
+      await userEvent.click(screen.getByText("AI"));
+      expect(screen.getByText("₹350.50", { selector: "span.text-primary" })).toBeInTheDocument();
+      expect(screen.getByText(/pay by upi after you submit/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/qr code/i)).not.toBeInTheDocument();
+    });
+
+    it("says no payment is needed when only free options are picked", async () => {
+      render(<Harness question={paid()} />);
+      await userEvent.click(screen.getByText("Networking"));
+      expect(screen.getByText(/no payment needed/i)).toBeInTheDocument();
+    });
+
+    it("shows the selection-limit hint on checkboxes", () => {
+      render(<Harness question={paid({ payment: { enabled: true, upiId: "host@okaxis", messageTemplate: "x", minSelections: 1, maxSelections: 2 } })} />);
+      expect(screen.getByText("Choose 1–2")).toBeInTheDocument();
+    });
+
+    it("shows no prices when payment is off", () => {
+      render(<Harness question={paid({ payment: undefined })} />);
+      expect(screen.queryByText("₹100")).not.toBeInTheDocument();
+      expect(screen.queryByText("Free")).not.toBeInTheDocument();
+    });
+  });
 });

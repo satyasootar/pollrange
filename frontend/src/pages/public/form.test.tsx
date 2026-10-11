@@ -95,4 +95,78 @@ describe("PublicFormPage", () => {
     expect(await screen.findByText(/thank you/i)).toBeInTheDocument();
     expect(testState.submittedForm!.answers[0].fileUrls![0].url).toBe("https://cdn.test/a.png");
   });
+
+  describe("UPI payment flow", () => {
+    const paidForm = (payment: Record<string, unknown> = {}) =>
+      makePublicForm({
+        title: "Tech Fest",
+        sections: [
+          makeSection([
+            makeFormQuestion({
+              _id: "q-pay",
+              type: "checkboxes",
+              title: "Workshops",
+              isRequired: true,
+              options: [
+                { _id: "o1", text: "Coding", order: 0, amount: 100 },
+                { _id: "o2", text: "AI", order: 1, amount: 250 },
+                { _id: "o3", text: "Networking", order: 2 },
+              ],
+              payment: { enabled: true, upiId: "host@okaxis", messageTemplate: "Ref {form_response_id}", ...payment },
+            }),
+          ]),
+        ],
+      });
+
+    const serverPays = (payment: unknown) =>
+      server.use(
+        http.post(`${API}/form-responses/:formId`, async ({ request }) => {
+          testState.submittedForm = (await request.json()) as typeof testState.submittedForm;
+          return HttpResponse.json({ statusCode: 200, success: true, message: "ok", data: { _id: "resp1", isComplete: true, payment } });
+        })
+      );
+
+    it("shows a live total, submits, then shows the pay screen with the server's amount and a QR", async () => {
+      testState.publicForm = paidForm();
+      serverPays({ totalAmount: 350, selectedOptions: ["Coding", "AI"], message: "Ref resp1", upiId: "host@okaxis" });
+      renderPage();
+
+      await userEvent.click(await screen.findByText("Coding"));
+      await userEvent.click(screen.getByText("AI"));
+      expect(screen.getByText(/pay by upi after you submit/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/qr code/i)).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole("button", { name: /submit/i }));
+
+      expect(await screen.findByText(/complete your payment/i)).toBeInTheDocument();
+      expect(screen.getByText("₹350")).toBeInTheDocument();
+      expect(screen.getByLabelText(/qr code/i)).toBeInTheDocument();
+      const payLink = screen.getByRole("link", { name: /pay with upi app/i });
+      const params = new URLSearchParams(payLink.getAttribute("href")!.split("?")[1]);
+      expect(params.get("pa")).toBe("host@okaxis");
+      expect(params.get("am")).toBe("350.00");
+      expect(params.get("tn")).toBe("Ref resp1");
+      expect(params.get("pn")).toBe("Tech Fest");
+      expect(testState.submittedForm!.answers[0].selectedOptionIds).toEqual(["o1", "o2"]);
+    });
+
+    it("skips the pay screen when the server says nothing is due", async () => {
+      testState.publicForm = paidForm();
+      serverPays(undefined);
+      renderPage();
+      await userEvent.click(await screen.findByText("Networking"));
+      await userEvent.click(screen.getByRole("button", { name: /submit/i }));
+      expect(await screen.findByText(/thank you/i)).toBeInTheDocument();
+      expect(screen.queryByText(/complete your payment/i)).not.toBeInTheDocument();
+    });
+
+    it("blocks submit client-side when picks break the min/max limit", async () => {
+      testState.publicForm = paidForm({ minSelections: 2 });
+      renderPage();
+      await userEvent.click(await screen.findByText("Coding"));
+      await userEvent.click(screen.getByRole("button", { name: /submit/i }));
+      await waitFor(() => expect(screen.queryByText(/complete your payment/i)).not.toBeInTheDocument());
+      expect(testState.submittedForm).toBeNull();
+    });
+  });
 });

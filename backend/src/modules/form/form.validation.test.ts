@@ -109,3 +109,30 @@ describe("reopenFormSchema", () => {
     expect(reopenFormSchema.safeParse({ expiresAt: "whenever" }).success).toBe(false);
   });
 });
+
+describe("payment config", () => {
+  const paidQuestion = (payment: Record<string, unknown>) =>
+    form([{ ...baseQuestion, type: "checkboxes", options: [{ text: "A", order: 0, amount: 100 }], payment }]);
+
+  it("accepts a valid UPI ID and fills the default note template", () => {
+    const r = createFormSchema.safeParse(paidQuestion({ enabled: true, upiId: "host@okaxis" }));
+    expect(r.success).toBe(true);
+    expect((r as any).data.sections[0].questions[0].payment.messageTemplate).toBe("Ref {form_response_id} - {selected_options}");
+  });
+
+  it("rejects a malformed UPI ID", () => {
+    expect(createFormSchema.safeParse(paidQuestion({ enabled: true, upiId: "not-a-upi" })).success).toBe(false);
+  });
+
+  it("rejects minSelections greater than maxSelections", () => {
+    const r = createFormSchema.safeParse(paidQuestion({ enabled: true, upiId: "host@okaxis", minSelections: 3, maxSelections: 1 }));
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects a negative option amount", () => {
+    const r = createFormSchema.safeParse(
+      form([{ ...baseQuestion, type: "checkboxes", options: [{ text: "A", order: 0, amount: -5 }], payment: { enabled: true, upiId: "host@okaxis" } }])
+    );
+    expect(r.success).toBe(false);
+  });
+});

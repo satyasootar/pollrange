@@ -1,11 +1,161 @@
-import { Plus, Trash2, X, Copy, GripVertical } from "lucide-react";
+import { Plus, Trash2, X, Copy, GripVertical, IndianRupee, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
 import { QUESTION_TYPE_META, CHOICE_TYPES, GRID_TYPES, GRADABLE_TYPES } from "./question-types";
 import { newObjectId } from "@/lib/utils";
-import type { BuilderFormQuestion, FormQuestionType, AnswerKey, GridItem } from "@/types";
+import { DEFAULT_PAYMENT_MESSAGE, PAYMENT_TOKENS, UPI_ID_REGEX, formatInr, renderPaymentMessage } from "@/lib/upi-payment";
+import type { BuilderFormQuestion, FormQuestionType, AnswerKey, GridItem, PaymentConfig } from "@/types";
+
+/** Matches the backend's option.amount cap. */
+const MAX_AMOUNT = 1_000_000;
+
+/** UPI collection settings for a choice question: toggle, payee UPI ID, note template, selection limits. */
+function PaymentSettings({ question: q, onChange }: { question: BuilderFormQuestion; onChange: (payment: PaymentConfig) => void }) {
+  const p = q.payment;
+  const enabled = p?.enabled ?? false;
+  const set = (patch: Partial<PaymentConfig>) =>
+    onChange({ enabled, upiId: "", messageTemplate: DEFAULT_PAYMENT_MESSAGE, ...p, ...patch });
+
+  const upiId = p?.upiId.trim() ?? "";
+  const upiValid = UPI_ID_REGEX.test(upiId);
+  const priced = q.options.filter((o) => (o.amount ?? 0) > 0);
+  const sample = priced.slice(0, 2);
+  const preview = renderPaymentMessage(
+    { messageTemplate: p?.messageTemplate ?? DEFAULT_PAYMENT_MESSAGE },
+    {
+      form_response_id: "671a2b3c4d5e6f7a8b9c0d1e",
+      selected_options: sample.map((o) => o.text || "Option").join(", ") || "Option 1",
+      total_amount: sample.reduce((s, o) => s + (o.amount ?? 0), 0),
+      number_of_selected_options: sample.length || 1,
+      user_name: "Asha",
+    }
+  ).slice(0, 80);
+  const numOrUndef = (v: string) => (v === "" ? undefined : Math.max(0, Math.floor(Number(v))));
+
+  return (
+    <div className={`border-t border-border pt-3 ${enabled ? "space-y-4" : ""}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center border ${enabled ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+            <IndianRupee className="h-4 w-4" />
+          </span>
+          <div>
+            <Label htmlFor={`pay-${q.id}`} className="cursor-pointer text-sm">Collect payment via UPI</Label>
+            <p className="text-xs text-muted-foreground">
+              {enabled
+                ? "Set a price on each option. Leave blank for free options."
+                : "Charge per option. Respondents scan a QR to pay after submitting."}
+            </p>
+          </div>
+        </div>
+        <Switch id={`pay-${q.id}`} checked={enabled} onCheckedChange={(on) => set({ enabled: on })} />
+      </div>
+
+      {enabled && (
+        <div className="space-y-4 border border-border bg-muted/30 p-4">
+          <div className="space-y-1.5">
+            <Label htmlFor={`upi-${q.id}`} className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Pay to (your UPI ID)
+            </Label>
+            <Input
+              id={`upi-${q.id}`}
+              value={p?.upiId ?? ""}
+              placeholder="yourname@okaxis"
+              autoComplete="off"
+              spellCheck={false}
+              aria-invalid={!!upiId && !upiValid}
+              onChange={(e) => set({ upiId: e.target.value })}
+              className="h-9 text-sm"
+            />
+            {upiId && !upiValid ? (
+              <p className="text-xs text-destructive">That doesn't look like a UPI ID. It should look like name@bank.</p>
+            ) : upiValid ? (
+              <p className="flex items-center gap-1 text-xs text-emerald-600">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Payments go to {upiId}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Find it in GPay, PhonePe or Paytm under your profile.</p>
+            )}
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            {priced.length === 0 ? (
+              <span className="text-amber-600">No option has a price yet. Add one above.</span>
+            ) : (
+              <>
+                {priced.length} of {q.options.length} options priced ·{" "}
+                {formatInr(Math.min(...priced.map((o) => o.amount!)))}
+                {priced.length > 1 && ` – ${formatInr(Math.max(...priced.map((o) => o.amount!)))}`}
+              </>
+            )}
+          </p>
+
+          <details className="group text-xs">
+            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+              Payment note{q.type === "checkboxes" ? " & selection limits" : ""}
+            </summary>
+            <div className="mt-3 space-y-3">
+              <div className="space-y-1.5">
+                <Input
+                  value={p?.messageTemplate ?? DEFAULT_PAYMENT_MESSAGE}
+                  maxLength={200}
+                  aria-label="Payment note template"
+                  onChange={(e) => set({ messageTemplate: e.target.value })}
+                  className="h-8 text-sm"
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {PAYMENT_TOKENS.map(({ token, label }) => (
+                    <button
+                      key={token}
+                      type="button"
+                      onClick={() => set({ messageTemplate: `${(p?.messageTemplate ?? "").trimEnd()} ${token}`.trim() })}
+                      className="border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground hover:border-primary hover:text-primary"
+                    >
+                      + {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-muted-foreground">
+                  Shown in their UPI app: <span className="font-mono text-foreground">{preview || "—"}</span>
+                </p>
+              </div>
+              {q.type === "checkboxes" && (
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor={`min-${q.id}`} className="text-xs">Min picks</Label>
+                    <Input
+                      id={`min-${q.id}`}
+                      type="number"
+                      min={0}
+                      placeholder="Any"
+                      value={p?.minSelections ?? ""}
+                      onChange={(e) => set({ minSelections: numOrUndef(e.target.value) })}
+                      className="h-8 w-24 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`max-${q.id}`} className="text-xs">Max picks</Label>
+                    <Input
+                      id={`max-${q.id}`}
+                      type="number"
+                      min={1}
+                      placeholder="Any"
+                      value={p?.maxSelections ?? ""}
+                      onChange={(e) => set({ maxSelections: numOrUndef(e.target.value) || undefined })}
+                      className="h-8 w-24 text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </details>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Editor for grid rows/columns — keyed by stable id so caret/focus survive edits. */
 function GridListEditor({
@@ -151,15 +301,23 @@ export function FormQuestionEditor({
                   className="h-8 text-sm"
                 />
                 {q.payment?.enabled && (
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={opt.amount ?? 0}
-                    aria-label={`${opt.text || `Option ${oi + 1}`} amount`}
-                    onChange={(e) => updateOption(sectionId, q.id, opt.id, opt.text, Math.max(0, Number(e.target.value)))}
-                    className="h-8 w-24 text-sm"
-                  />
+                  <div className="relative w-28 shrink-0">
+                    <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      max={MAX_AMOUNT}
+                      step="0.01"
+                      placeholder="Free"
+                      value={opt.amount || ""}
+                      aria-label={`Price for ${opt.text || `Option ${oi + 1}`}`}
+                      onChange={(e) =>
+                        updateOption(sectionId, q.id, opt.id, opt.text, Math.min(MAX_AMOUNT, Math.max(0, Number(e.target.value) || 0)))
+                      }
+                      className="h-8 pl-6 text-sm tabular-nums"
+                    />
+                  </div>
                 )}
                 {isQuiz && isGradable && (
                   <button
@@ -193,60 +351,7 @@ export function FormQuestionEditor({
               <Plus className="h-3.5 w-3.5" /> Add option
             </button>
             {q.type !== "dropdown" && (
-              <div className="space-y-3 border-t border-border pt-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <Label className="text-sm">Enable UPI payment</Label>
-                    <p className="text-xs text-muted-foreground">Price each option and collect a payment intent.</p>
-                  </div>
-                  <Switch
-                    checked={q.payment?.enabled ?? false}
-                    onCheckedChange={(enabled) =>
-                      updateQuestion(sectionId, q.id, {
-                        payment: {
-                          enabled,
-                          upiId: q.payment?.upiId ?? "",
-                          messageTemplate: q.payment?.messageTemplate ?? "Payment for {selected_options} - Total INR {total_amount}",
-                          minSelections: q.payment?.minSelections,
-                          maxSelections: q.payment?.maxSelections,
-                        },
-                      })
-                    }
-                  />
-                </div>
-                {q.payment?.enabled && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Input
-                      value={q.payment.upiId}
-                      placeholder="UPI ID / VPA"
-                      onChange={(e) => updateQuestion(sectionId, q.id, { payment: { ...q.payment!, upiId: e.target.value } })}
-                    />
-                    <Input
-                      value={q.payment.messageTemplate}
-                      placeholder="Payment message template"
-                      onChange={(e) => updateQuestion(sectionId, q.id, { payment: { ...q.payment!, messageTemplate: e.target.value } })}
-                    />
-                    {q.type === "checkboxes" && (
-                      <>
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="Minimum selections"
-                          value={q.payment.minSelections ?? ""}
-                          onChange={(e) => updateQuestion(sectionId, q.id, { payment: { ...q.payment!, minSelections: e.target.value ? Number(e.target.value) : undefined } })}
-                        />
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="Maximum selections"
-                          value={q.payment.maxSelections ?? ""}
-                          onChange={(e) => updateQuestion(sectionId, q.id, { payment: { ...q.payment!, maxSelections: e.target.value ? Number(e.target.value) : undefined } })}
-                        />
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              <PaymentSettings question={q} onChange={(payment) => updateQuestion(sectionId, q.id, { payment })} />
             )}
           </div>
         )}

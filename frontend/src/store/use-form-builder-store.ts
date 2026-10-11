@@ -232,6 +232,7 @@ export const useFormBuilderStore = create<FormBuilderState>()((set) => ({
         fileConfig: undefined,
         validation: undefined,
         optionNavigation: undefined,
+        payment: undefined,
         ...typeDefaults(type),
       })),
     })),

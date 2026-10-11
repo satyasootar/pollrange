@@ -12,6 +12,12 @@ export interface PaymentConfig {
   maxSelections?: number;
 }
 
+/** handle@provider, e.g. name@okaxis or 9876543210@ybl. */
+export const UPI_ID_REGEX = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9]{1,63}$/;
+
+/** Ref first so it survives UPI apps truncating long notes; lets creators match payments to responses. */
+export const DEFAULT_PAYMENT_MESSAGE = "Ref {form_response_id} - {selected_options}";
+
 export function renderPaymentMessage(template: string, values: Record<string, string | number>) {
   return template.replace(
     /\{(number_of_selected_options|total_amount|selected_options|form_response_id|user_name)\}/g,
@@ -30,7 +36,8 @@ export function calculatePayment(
   const selectedOptions = (question.options ?? [])
     .filter((option) => selectedOptionIds.includes(String(option._id)))
     .map((option) => ({ id: String(option._id), text: option.text, amount: option.amount ?? 0 }));
-  const totalAmount = selectedOptions.reduce((sum, option) => sum + option.amount, 0);
+  // Round to paise so float sums (0.1 + 0.2) never leak into the stored amount.
+  const totalAmount = Math.round(selectedOptions.reduce((sum, option) => sum + option.amount, 0) * 100) / 100;
   return {
     selectedOptionIds: selectedOptions.map((option) => option.id),
     selectedOptions: selectedOptions.map((option) => option.text),

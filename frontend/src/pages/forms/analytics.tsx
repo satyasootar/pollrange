@@ -12,6 +12,7 @@ import { useFormSocket } from "@/hooks/use-form-socket";
 import { formAnalyticsApi } from "@/api/form-analytics.api";
 import { buildFormShareUrl, copyToClipboard, formatDatetime, downloadBlob, cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { formatInr } from "@/lib/upi-payment";
 import type { Form, FormQuestion, IndividualFormResponse, FormAnswerPayload, TimelineGranularity } from "@/types";
 
 /** Renders a single answer value in human-readable form. */
@@ -76,8 +77,18 @@ function IndividualResponses({ formId, form }: { formId: string; form: Form }) {
                   {r.score ?? 0} / {r.totalPoints}
                 </p>
               )}
+              {r.payment && (
+                <p className="text-sm font-semibold tabular-nums text-primary" title="Amount due via UPI">
+                  {formatInr(r.payment.totalAmount)} due
+                </p>
+              )}
             </div>
           </div>
+          {r.payment && (
+            <p className="mb-3 border border-border bg-muted/30 px-3 py-2 font-mono text-xs text-muted-foreground" title="UPI note to match against your bank statement">
+              {r.payment.message}
+            </p>
+          )}
           <div className="space-y-3">
             {r.answers.map((a, i) => (
               <div key={i}>

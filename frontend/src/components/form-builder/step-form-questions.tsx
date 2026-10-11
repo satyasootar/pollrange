@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
 import { FormQuestionEditor } from "./form-question-editor";
 import { CHOICE_TYPES } from "./question-types";
+import { paymentSetupError } from "@/lib/upi-payment";
 import type { BuilderFormQuestion, BuilderFormSection } from "@/types";
 import { toast } from "sonner";
 
@@ -169,6 +170,17 @@ export function StepFormQuestions() {
     );
     if (hasEmpty) {
       toast.error("Fill in every question title and option before continuing.");
+      return;
+    }
+    const paymentQuestions = allQuestions.filter((q) => q.payment?.enabled);
+    // Backend bills only the first payment question; keep it to one so totals never silently drop.
+    if (paymentQuestions.length > 1) {
+      toast.error("Only one question per form can collect payment. Turn it off on the others.");
+      return;
+    }
+    const paymentError = paymentQuestions.map(paymentSetupError).find(Boolean);
+    if (paymentError) {
+      toast.error(paymentError);
       return;
     }
     nextStep();

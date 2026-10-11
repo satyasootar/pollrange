@@ -157,20 +157,23 @@ export async function submitResponse(
     const uniqueOptionIds = new Set(paymentQuestionAnswer.selectedOptionIds ?? []);
     if (uniqueOptionIds.size !== count) throw new ApiError(400, "Duplicate payment options are not allowed");
     const { minSelections, maxSelections } = paymentQuestion.payment;
-    if (minSelections !== undefined && count < minSelections) throw new ApiError(400, "Select more paid options");
-    if (maxSelections !== undefined && count > maxSelections) throw new ApiError(400, "Select fewer paid options");
+    if (minSelections != null && count < minSelections) throw new ApiError(400, `Select at least ${minSelections} option(s) for "${paymentQuestion.title}"`);
+    if (maxSelections != null && count > maxSelections) throw new ApiError(400, `Select at most ${maxSelections} option(s) for "${paymentQuestion.title}"`);
     const unknown = (paymentQuestionAnswer.selectedOptionIds ?? []).some(
       (id) => !(paymentQuestion.options ?? []).some((option: any) => String(option._id) === id)
     );
     if (unknown) throw new ApiError(400, "Invalid payment option selection");
   }
 
+  // Pre-generate the id so the payment note can reference it in a single write.
+  const responseId = new mongoose.Types.ObjectId();
   const paymentSnapshot = paymentQuestionAnswer && paymentQuestion
-    ? calculatePayment(paymentQuestion, paymentQuestionAnswer.selectedOptionIds ?? [], "pending", meta.userName)
-    : undefined;
+    ? calculatePayment(paymentQuestion, paymentQuestionAnswer.selectedOptionIds ?? [], responseId.toString(), meta.userName)
+    : null;
   let response: any;
   try {
     response = await FormResponse.create({
+      _id: responseId,
       formId,
       respondentId: meta.respondentId,
       sessionToken: data.sessionToken,
@@ -186,11 +189,6 @@ export async function submitResponse(
   } catch (err: any) {
     if (err?.code === 11000) throw new ApiError(403, "You have already submitted a response to this form");
     throw err;
-  }
-
-  if (paymentQuestionAnswer && paymentQuestion?.payment) {
-    const payment = calculatePayment(paymentQuestion, paymentQuestionAnswer.selectedOptionIds ?? [], response._id.toString(), meta.userName);
-    await FormResponse.updateOne({ _id: response._id }, { $set: { payment } });
   }
 
   // Atomic denormalized counters.
@@ -218,6 +216,11 @@ export async function submitResponse(
   if (form.isQuiz && form.settings?.releaseScoreImmediately) {
     result.score = score;
     result.totalPoints = totalPoints;
+  }
+  // Server-computed amount is the source of truth for the post-submit pay screen.
+  if (paymentSnapshot && paymentSnapshot.totalAmount > 0) {
+    const { totalAmount, selectedOptions, message, upiId } = paymentSnapshot;
+    result.payment = { totalAmount, selectedOptions, message, upiId };
   }
   return result;
 }

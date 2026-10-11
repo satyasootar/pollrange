@@ -1,6 +1,7 @@
 import { z } from "zod";
 import mongoose from "mongoose";
 import { optionalExpiresAtSchema } from "../../utils/zod-helpers.js";
+import { DEFAULT_PAYMENT_MESSAGE, UPI_ID_REGEX } from "./payment.util.js";
 
 // ─── Shared enums (single source of truth) ──────────────────────────────────────
 export const QUESTION_TYPES = [
@@ -45,8 +46,8 @@ const optionZodSchema = z.object({
 
 const paymentConfigZodSchema = z.object({
   enabled: z.boolean(),
-  upiId: z.string().trim().min(3).max(100),
-  messageTemplate: z.string().max(200).default("Payment for {selected_options} - Total INR {total_amount}"),
+  upiId: z.string().trim().regex(UPI_ID_REGEX, "Enter a valid UPI ID (e.g. name@okaxis)"),
+  messageTemplate: z.string().max(200).default(DEFAULT_PAYMENT_MESSAGE),
   minSelections: z.number().int().min(0).optional(),
   maxSelections: z.number().int().min(1).optional(),
 }).superRefine((payment, ctx) => {

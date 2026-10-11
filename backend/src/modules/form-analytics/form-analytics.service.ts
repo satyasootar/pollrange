@@ -155,6 +155,7 @@ export async function getIndividualResponses(formId: string, page = 1, limit = 2
     isComplete: r.isComplete,
     score: r.score,
     totalPoints: r.totalPoints,
+    payment: r.payment?.totalAmount ? r.payment : undefined,
     answers: r.answers,
   }));
 
@@ -184,6 +185,8 @@ export async function exportCsv(formId: string): Promise<string> {
   const esc = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const header = ["Submitted At", "Respondent", "Email", ...questions.map((q: any) => q.title)];
   if (form.isQuiz) header.push("Score");
+  const hasPayment = questions.some((q: any) => q.payment?.enabled);
+  if (hasPayment) header.push("Amount Due (INR)", "Payment Note");
 
   const optionText = (q: any, id: string) => (q.options ?? []).find((o: any) => o._id.toString() === id)?.text ?? id;
   const cell = (q: any, a: any): string => {
@@ -205,6 +208,7 @@ export async function exportCsv(formId: string): Promise<string> {
       ...questions.map((q: any) => cell(q, answersById.get(q._id.toString()))),
     ];
     if (form.isQuiz) row.push(`${r.score ?? 0}/${r.totalPoints ?? 0}`);
+    if (hasPayment) row.push(r.payment?.totalAmount ? r.payment.totalAmount.toFixed(2) : "", r.payment?.message ?? "");
     rows.push(row.map(esc).join(","));
   }
   return rows.join("\n");

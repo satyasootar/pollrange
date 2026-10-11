@@ -514,11 +514,20 @@ export interface SubmitFormResponsePayload {
   isComplete: boolean;
 }
 
+/** Server-computed amount due; present only when the respondent picked priced options. */
+export interface SubmitPaymentDue {
+  totalAmount: number;
+  selectedOptions: string[];
+  message: string;
+  upiId: string;
+}
+
 export interface SubmitFormResult {
   _id: string;
   isComplete: boolean;
   score?: number;
   totalPoints?: number;
+  payment?: SubmitPaymentDue;
 }
 
 // ─── Form analytics ─────────────────────────────────────────────────────────────
@@ -561,6 +570,7 @@ export interface IndividualFormResponse {
   isComplete: boolean;
   score?: number;
   totalPoints?: number;
+  payment?: SubmitPaymentDue & { status: "pending" | "paid" | "failed" };
   answers: (FormAnswerPayload & { questionTitleSnapshot?: string; isCorrect?: boolean; pointsEarned?: number })[];
 }
 
