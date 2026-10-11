@@ -15,6 +15,7 @@ import cloudinary, { isCloudinaryConfigured } from "../../config/cloudinary.js";
 import config from "../../config/config.js";
 import { effectivePlan, PLAN_IDS, type PlanId } from "../../config/plans.js";
 import { AdminAudit } from "./admin-audit.model.js";
+import { PlanRequest } from "../billing/plan-request.model.js";
 import { z } from "zod";
 
 const DAY = 86_400_000;
@@ -91,7 +92,11 @@ export async function getOverview(groupBy: Granularity) {
   };
   const [topPolls, topForms] = await Promise.all([topContent(Poll, "poll"), topContent(Form, "form")]);
 
-  const [plusUsers, proUsers] = await Promise.all([User.countDocuments(planFilter("plus")), User.countDocuments(planFilter("pro"))]);
+  const [plusUsers, proUsers, pendingUpgrades] = await Promise.all([
+    User.countDocuments(planFilter("plus")),
+    User.countDocuments(planFilter("pro")),
+    PlanRequest.countDocuments({ status: "pending" }),
+  ]);
   const usage = await User.aggregate([{ $group: { _id: "$onboarding.usage", count: { $sum: 1 } } }, { $sort: { count: -1 } }]);
 
   return {
@@ -105,6 +110,7 @@ export async function getOverview(groupBy: Granularity) {
     topCreators,
     topContent: [...topPolls, ...topForms].sort((a, b) => b.responses - a.responses).slice(0, 8),
     plans: { free: users - plusUsers - proUsers, plus: plusUsers, pro: proUsers },
+    pendingUpgrades,
     audience: usage.map((u) => ({ usage: (u._id as string | null) ?? "unknown", count: u.count as number })),
   };
 }

@@ -4,6 +4,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { parseGranularity } from "../../utils/timeline.js";
 import * as Cleanup from "./admin.cleanup.js";
 import { PLAN_IDS } from "../../config/plans.js";
+import * as PlanRequests from "../billing/plan-request.service.js";
 
 const ok = (res: Response, data: unknown) => res.status(200).json(new ApiResponse(200, data, "ok"));
 
@@ -51,4 +52,18 @@ export async function getAudit(_req: Request, res: Response) {
 export async function setUserPlan(req: Request, res: Response) {
   const input = AdminService.setPlanSchema.parse(req.body);
   return ok(res, await AdminService.setUserPlan(String(req.params.userId), input, (req as any).user));
+}
+
+export async function listPlanRequests(req: Request, res: Response) {
+  return ok(res, await PlanRequests.listRequests(typeof req.query.status === "string" ? req.query.status : undefined));
+}
+
+export async function approvePlanRequest(req: Request, res: Response) {
+  const input = PlanRequests.approveSchema.parse(req.body ?? {});
+  return ok(res, await PlanRequests.approveRequest(String(req.params.requestId), input, (req as any).user));
+}
+
+export async function rejectPlanRequest(req: Request, res: Response) {
+  const input = PlanRequests.rejectSchema.parse(req.body ?? {});
+  return ok(res, await PlanRequests.rejectRequest(String(req.params.requestId), input, (req as any).user));
 }

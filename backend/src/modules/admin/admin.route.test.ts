@@ -9,6 +9,13 @@ vi.mock("../../config/config.js", () => ({
   default: { JWT_SECRET: "test-secret", ADMIN_EMAILS: ["satya.sootar06@gmail.com"], ENVIRONMENT: "test" },
 }));
 vi.mock("../user/user.model.js", () => ({ User: { findById: vi.fn() } }));
+vi.mock("../billing/plan-request.service.js", () => ({
+  listRequests: vi.fn(async () => []),
+  approveSchema: { parse: (b: unknown) => b },
+  rejectSchema: { parse: (b: unknown) => b },
+  approveRequest: vi.fn(async () => ({})),
+  rejectRequest: vi.fn(async () => ({})),
+}));
 vi.mock("./admin.service.js", () => ({
   getOverview: vi.fn(async () => ({ totals: { users: 3 } })),
   listUsers: vi.fn(async () => ({ items: [], pagination: {} })),
@@ -90,6 +97,17 @@ describe("admin routes", () => {
     expect(AdminService.setUserPlan).not.toHaveBeenCalled();
     expect((await patch("admin")).status).toBe(200);
     expect(m(AdminService.setUserPlan).mock.calls[0]!.slice(0, 2)).toEqual(["u42", { plan: "plus" }]);
+  });
+
+  it("regular users can't list or decide upgrade requests", async () => {
+    expect((await get("/plan-requests", "regular")).status).toBe(404);
+    const res = await fetch(`${base}/plan-requests/r1/approve`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${jwt.sign({ _id: "regular" }, "test-secret")}`, "Content-Type": "application/json" },
+      body: "{}",
+    });
+    expect(res.status).toBe(404);
+    expect((await get("/plan-requests", "admin")).status).toBe(200);
   });
 
   it("refuses the admin email until it is verified", async () => {
