@@ -6,6 +6,7 @@ import rootRouter from "../routes/index.js"
 import { errorHandler } from "../middlewares/error.middleware.js"
 import passport from "../config/passport.js"
 import config from "../config/config.js"
+import { metricsMiddleware } from "../utils/metrics.js"
 
 export function createServerApplication(): Application {
     const app = express()
@@ -17,6 +18,7 @@ export function createServerApplication(): Application {
         credentials: true
     }))
     
+    app.use(metricsMiddleware)
     app.use(express.json())
     app.use(express.urlencoded({ extended: true }))
     app.use(cookieParser())

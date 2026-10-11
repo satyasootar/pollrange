@@ -23,6 +23,9 @@ export const errorHandler = (
     error = new ApiError(statusCode, message, [], err.stack);
   }
 
+  // Picked up by metricsMiddleware so per-endpoint stats show what failed.
+  res.locals.errorMessage = error.message;
+
   const response = {
     success: false,
     statusCode: error.statusCode,
