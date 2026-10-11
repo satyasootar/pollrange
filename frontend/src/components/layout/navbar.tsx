@@ -19,6 +19,7 @@ export function Navbar() {
           <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
           <a href="#how" className="text-muted-foreground hover:text-foreground transition-colors">How It Works</a>
           <a href="#stats" className="text-muted-foreground hover:text-foreground transition-colors">Stats</a>
+          <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
           {user ? (
             <div className="flex items-center gap-4">
               <span className="text-muted-foreground lowercase">{user.name.split(" ")[0]}</span>

@@ -5,6 +5,7 @@ import { Features } from "@/components/landing/features";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Stats } from "@/components/landing/stats";
 import { CTA } from "@/components/landing/cta";
+import { Pricing } from "@/components/landing/pricing";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function LandingPage() {
@@ -16,6 +17,7 @@ export function LandingPage() {
         <Features />
         <HowItWorks />
         <Stats />
+        <Pricing />
         <CTA />
       </main>
       <Footer />
