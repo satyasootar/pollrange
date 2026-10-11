@@ -10,6 +10,7 @@ import { StepFormReview } from "@/components/form-builder/step-form-review";
 import { StepFormSuccess } from "@/components/form-builder/step-form-success";
 import { BuilderChatDock } from "@/components/ai/builder-chat-dock";
 import { slideInRight } from "@/lib/animations";
+import { config } from "@/config/config";
 import { applyFormActions, formBuilderState } from "@/lib/ai-builder-actions";
 
 const STEPS = [
@@ -86,7 +87,9 @@ export function CreateFormPage() {
       </div>
 
       {/* AI assistant — floating, closed by default */}
-      <BuilderChatDock surface="form-builder" getBuilderState={formBuilderState} onActions={applyFormActions} />
+      {config.aiEnabled && (
+        <BuilderChatDock surface="form-builder" getBuilderState={formBuilderState} onActions={applyFormActions} />
+      )}
     </div>
   );
 }

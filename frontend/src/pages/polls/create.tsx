@@ -9,6 +9,7 @@ import { StepReview } from "@/components/poll-builder/step-review";
 import { StepSuccess } from "@/components/poll-builder/step-success";
 import { BuilderChatDock } from "@/components/ai/builder-chat-dock";
 import { slideInRight } from "@/lib/animations";
+import { config } from "@/config/config";
 import { applyPollActions, pollBuilderState } from "@/lib/ai-builder-actions";
 
 const STEPS = [
@@ -75,7 +76,7 @@ export function CreatePollPage() {
       </div>
 
       {/* AI assistant — floating, closed by default; only after Settings (step 1) is done */}
-      {step > 1 && step !== 4 && (
+      {config.aiEnabled && step > 1 && step !== 4 && (
         <BuilderChatDock surface="poll-builder" getBuilderState={pollBuilderState} onActions={applyPollActions} />
       )}
     </div>

@@ -9,6 +9,7 @@ import { StatusChart } from "@/components/dashboard/status-chart";
 import { TopList } from "@/components/dashboard/top-list";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { config } from "@/config/config";
 import type { TimelineGranularity } from "@/types";
 
 export function OverviewPage() {
@@ -34,21 +35,25 @@ export function OverviewPage() {
           </h1>
           <p className="text-sm text-muted-foreground">Analytics across all your polls and forms</p>
         </div>
-        <Button onClick={() => navigate("/dashboard/chat")} className="hidden gap-2 md:inline-flex">
-          <Sparkles className="h-4 w-4" />
-          Draft with AI
-        </Button>
+        {config.aiEnabled && (
+          <Button onClick={() => navigate("/dashboard/chat")} className="hidden gap-2 md:inline-flex">
+            <Sparkles className="h-4 w-4" />
+            Draft with AI
+          </Button>
+        )}
       </div>
 
       {/* Mobile AI shortcut */}
-      <Button
-        onClick={() => navigate("/dashboard/chat")}
-        aria-label="Draft with AI"
-        className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex h-14 w-14 items-center justify-center gap-1 rounded-none p-0 md:hidden"
-      >
-        <Sparkles className="h-4 w-4" />
-        <span className="text-xs font-bold uppercase tracking-wide">AI</span>
-      </Button>
+      {config.aiEnabled && (
+        <Button
+          onClick={() => navigate("/dashboard/chat")}
+          aria-label="Draft with AI"
+          className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex h-14 w-14 items-center justify-center gap-1 rounded-none p-0 md:hidden"
+        >
+          <Sparkles className="h-4 w-4" />
+          <span className="text-xs font-bold uppercase tracking-wide">AI</span>
+        </Button>
+      )}
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-6 md:px-8">
         {/* Stats row */}

@@ -15,6 +15,8 @@ export const config = {
   socketUrl: baseUrl.socketUrl,
   appUrl: baseUrl.appUrl,
   siteDomain: import.meta.env.VITE_SITE_DOMAIN || "kollects.com",
+  // Opt-in: hide all AI UI unless the backend has MISTRAL_API_KEY configured.
+  aiEnabled: import.meta.env.VITE_ENABLE_AI === "true",
 } as const;
 
 // Optional: Validate required config on startup

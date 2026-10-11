@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { queryClient } from "@/lib/query-client";
+import { config } from "@/config/config";
 
 import { LandingPage } from "@/pages/landing";
 import { LoginPage } from "@/pages/auth/login";
@@ -92,7 +93,7 @@ export function App() {
             <Route path="/dashboard" element={<AppShell />}>
               <Route index element={<DashboardPage />} />
               <Route path="overview" element={<OverviewPage />} />
-              <Route path="chat" element={<ChatPage />} />
+              {config.aiEnabled && <Route path="chat" element={<ChatPage />} />}
               <Route path="forms" element={<FormsPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
