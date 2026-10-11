@@ -6,7 +6,8 @@ import config from "../../config/config.js";
  * / MISTRAL_MODEL for any other OpenAI-compatible provider — no other code changes.
  */
 export const aiClient = new OpenAI({
-  apiKey: config.MISTRAL_API_KEY,
+  // SDK throws at construction without a key; placeholder lets the server boot. Calls are gated by isAiConfigured().
+  apiKey: config.MISTRAL_API_KEY || "not-configured",
   baseURL: config.MISTRAL_BASE_URL,
 });
 
