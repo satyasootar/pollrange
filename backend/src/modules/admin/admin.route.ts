@@ -11,6 +11,7 @@ router.use(verifyJWT, requireAdmin);
 router.get("/overview", AdminController.getOverview);
 router.get("/users", AdminController.listUsers);
 router.get("/users/:userId", AdminController.getUser);
+router.patch("/users/:userId/plan", AdminController.setUserPlan);
 router.get("/traffic", AdminController.getTraffic);
 router.get("/system", AdminController.getSystem);
 router.get("/storage", AdminController.getStorage);

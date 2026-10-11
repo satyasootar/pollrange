@@ -5,6 +5,9 @@ import { ApiError } from "../../utils/ApiError.js";
 import { submitFormResponseSchema } from "./form-response.validation.js";
 import { uploadBufferToCloudinary } from "../../config/cloudinary.js";
 import crypto from "crypto";
+import mongoose from "mongoose";
+import { Form } from "../form/form.model.js";
+import { consume, refund } from "../billing/billing.service.js";
 
 export async function submitResponse(req: Request, res: Response) {
   const { formId } = req.params;
@@ -28,7 +31,19 @@ export async function submitResponse(req: Request, res: Response) {
 export async function uploadResponseFile(req: Request, res: Response) {
   const file = (req as any).file;
   if (!file) throw new ApiError(400, "No file provided");
-  const url = await uploadBufferToCloudinary(file.buffer, "kollects/form-uploads", file.mimetype);
+  // Uploads must target a live form; its owner's plan pays for the storage.
+  const form = mongoose.isValidObjectId(req.params.formId)
+    ? await Form.findOne({ _id: req.params.formId, isDeleted: false, status: "active" }).select("creatorId")
+    : null;
+  if (!form) throw new ApiError(404, "Form not found or not accepting responses");
+  await consume(form.creatorId, "uploads", "respondent");
+  let url: string;
+  try {
+    url = await uploadBufferToCloudinary(file.buffer, "kollects/form-uploads", file.mimetype);
+  } catch (err) {
+    await refund(form.creatorId, "uploads");
+    throw err;
+  }
   return res.status(200).json(
     new ApiResponse(200, { url, name: file.originalname, size: file.size, mimeType: file.mimetype }, "File uploaded")
   );

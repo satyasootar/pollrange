@@ -12,6 +12,8 @@ import formAnalyticsRouter from "../modules/form-analytics/form-analytics.route.
 import dashboardRouter from "../modules/dashboard/dashboard.route.js";
 import aiRouter from "../modules/ai/ai.route.js";
 import adminRouter from "../modules/admin/admin.route.js";
+import billingRouter from "../modules/billing/billing.route.js";
+import { getPlans } from "../modules/billing/billing.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const rootRouter = Router();
@@ -34,5 +36,7 @@ rootRouter.use("/form-analytics", formAnalyticsRouter);
 rootRouter.use("/dashboard", dashboardRouter);
 rootRouter.use("/ai", aiRouter);
 rootRouter.use("/admin", adminRouter);
+rootRouter.use("/billing", billingRouter);
+rootRouter.get("/plans", getPlans);
 
 export default rootRouter;

@@ -5,6 +5,7 @@ import crypto from "crypto";
 import type { ICreateForm, IUpdateForm, ICreateSection } from "./form.validation.js";
 import { GRADABLE_TYPES } from "./form.validation.js";
 import { emitFormStatusChange } from "../../socket/index.js";
+import { assertFeature, assertLiveCapacity, hasFeature } from "../billing/billing.service.js";
 
 /**
  * Validates branching + quiz integrity before persisting. Throws ApiError(400) on
@@ -75,6 +76,8 @@ function validateFormStructure(sections: ICreateSection[], isQuiz: boolean) {
 export async function createForm(userId: string, formData: ICreateForm) {
   validateFormStructure(formData.sections, formData.isQuiz ?? false);
   const { slug, ...persistedFormData } = formData;
+  if (slug) await assertFeature(userId, "customSlug");
+  await assertLiveCapacity(userId); // new forms go live immediately
   const shareToken = slug || crypto.randomUUID();
   if (slug && (await Form.exists({ shareToken }))) {
     throw new ApiError(409, "That form slug is already in use. Choose another slug.");
@@ -135,6 +138,9 @@ export async function updateForm(userId: string, formId: string, updateData: IUp
   }
   const { slug, ...persistedUpdateData } = updateData;
   if (slug !== undefined) {
+    // Only a *changed* link needs the plan feature; editors resend the current one on every save.
+    const current = await Form.findOne({ _id: formId, creatorId: userId }).select("shareToken").lean();
+    if (current && current.shareToken !== slug) await assertFeature(userId, "customSlug");
     const existing = await Form.findOne({ shareToken: slug, _id: { $ne: formId }, isDeleted: false }).select("_id");
     if (existing) throw new ApiError(409, "That form slug is already in use. Choose another slug.");
   }
@@ -169,6 +175,7 @@ export async function deleteForm(userId: string, formId: string) {
 export async function duplicateForm(userId: string, formId: string) {
   const original = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false });
   if (!original) throw new ApiError(404, "Form not found or unauthorized");
+  await assertLiveCapacity(userId); // the copy is created live
 
   const copy = original.toObject() as any;
   delete copy._id;
@@ -232,6 +239,7 @@ export async function getPublicForm(
 
   const sanitized = sanitizeForTaking(form);
   sanitized.alreadyResponded = alreadyResponded;
+  sanitized.showPoweredBy = !(await hasFeature(form.creatorId, "branding"));
   return sanitized;
 }
 
@@ -282,6 +290,7 @@ export async function reopenForm(userId: string, formId: string, expiresAt?: Dat
   const form = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false });
   if (!form) throw new ApiError(404, "Form not found or unauthorized");
   if (form.status !== "closed") throw new ApiError(400, "Only closed forms can be reopened");
+  await assertLiveCapacity(userId);
 
   form.status = "active";
   form.closedAt = undefined;

@@ -19,6 +19,7 @@ import type {
     ResetPasswordInput, 
     VerifyEmailInput 
 } from "./auth.validation.js";
+import { assertFeature } from "../billing/billing.service.js";
 
 /**
  * Generates Access and Refresh tokens for a user and creates a new session in the database.
@@ -260,6 +261,10 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
     if (input.avatarUrl) user.avatarUrl = input.avatarUrl;
     
     if (input.branding) {
+        // The profile form resends branding on every save; only an actual change needs the plan.
+        const cur: Record<string, string | undefined> = (user.branding as any) ?? {};
+        const changed = Object.entries(input.branding).some(([k, v]) => v !== undefined && (v || "") !== (cur[k] || (k === "qrColor" ? "#000000" : "")));
+        if (changed) await assertFeature(userId, "branding");
         user.branding = {
             ...user.branding,
             ...input.branding

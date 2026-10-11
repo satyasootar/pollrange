@@ -33,12 +33,18 @@ export const userZodSchema = z.object({
     qrColor: z.string().optional(),
   }).optional(),
 
+  plan: z.object({
+    id: z.enum(["free", "plus", "pro"]).default("free"),
+    expiresAt: z.date().optional(),
+    assignedBy: z.any().optional(),
+    assignedAt: z.date().optional(),
+  }).optional(),
   hasCompletedOnboarding: z.boolean().default(false),
   onboarding: z.object({
     usage: z.enum(["company", "education", "public_sector", "non_profit", "student", "other"]).optional(),
     usageDetail: z.string().optional(),
     intent: z.enum(["explore", "create_polls", "other"]).optional(),
-    plan: z.enum(["free", "basic", "pro"]).optional(),
+    plan: z.enum(["free", "basic", "plus", "pro"]).optional(),
     firstAction: z.enum(["word_cloud", "polls", "quiz", "open_ended"]).optional(),
   }).optional(),
 });
@@ -58,7 +64,7 @@ export const completeOnboardingZodSchema = z.object({
   usage: z.enum(["company", "education", "public_sector", "non_profit", "student", "other"]),
   usageDetail: z.string().min(1).optional(),
   intent: z.enum(["explore", "create_polls", "other"]),
-  plan: z.enum(["free", "basic", "pro"]),
+  plan: z.enum(["free", "basic", "plus", "pro"]),
   firstAction: z.enum(["word_cloud", "polls", "quiz", "open_ended"]),
 });
 

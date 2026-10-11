@@ -62,6 +62,14 @@ const userSchema = new Schema<IUser>(
       qrColor: { type: String, default: "#000000" },
     },
 
+    // Entitlement (what they can use). onboarding.plan below is only their stated preference.
+    plan: {
+      id: { type: String, enum: ["free", "plus", "pro"], default: "free" },
+      expiresAt: Date,
+      assignedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      assignedAt: Date,
+    },
+
     hasCompletedOnboarding: {
       type: Boolean,
       default: false,
@@ -79,7 +87,7 @@ const userSchema = new Schema<IUser>(
       },
       plan: {
         type: String,
-        enum: ["free", "basic", "pro"],
+        enum: ["free", "basic", "plus", "pro"],
       },
       firstAction: {
         type: String,

@@ -16,6 +16,8 @@ vi.mock("./admin.service.js", () => ({
   getTraffic: vi.fn(() => ({ totalRequests: 0 })),
   getSystemHealth: vi.fn(async () => ({ status: "healthy" })),
   getStorage: vi.fn(async () => ({})),
+  setPlanSchema: { parse: (b: unknown) => b },
+  setUserPlan: vi.fn(async () => ({ plan: "plus", expiresAt: null })),
 }));
 
 import { User } from "../user/user.model.js";
@@ -30,6 +32,7 @@ const users: Record<string, object> = {
   regular: { _id: "regular", email: "someone@else.com", isEmailVerified: true, isActive: true },
 };
 
+const m = (fn: unknown) => fn as ReturnType<typeof vi.fn>;
 let server: Server;
 let base: string;
 
@@ -74,6 +77,19 @@ describe("admin routes", () => {
       body: JSON.stringify({ from: "2000-01-01", to: "2100-01-01", expectedForms: 1, confirm: "DELETE" }),
     });
     expect(res.status).toBe(404);
+  });
+
+  it("only the admin can change a user's plan", async () => {
+    const patch = (as: string) =>
+      fetch(`${base}/users/u42/plan`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${jwt.sign({ _id: as }, "test-secret")}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "plus" }),
+      });
+    expect((await patch("regular")).status).toBe(404);
+    expect(AdminService.setUserPlan).not.toHaveBeenCalled();
+    expect((await patch("admin")).status).toBe(200);
+    expect(m(AdminService.setUserPlan).mock.calls[0]!.slice(0, 2)).toEqual(["u42", { plan: "plus" }]);
   });
 
   it("refuses the admin email until it is verified", async () => {

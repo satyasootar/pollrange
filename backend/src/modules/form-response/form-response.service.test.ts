@@ -5,10 +5,12 @@ import mongoose from "mongoose";
 vi.mock("../form/form.model.js", () => ({ Form: { findOne: vi.fn(), updateOne: vi.fn(), findById: vi.fn() } }));
 vi.mock("./form-response.model.js", () => ({ FormResponse: { findOne: vi.fn(), create: vi.fn(), updateOne: vi.fn() } }));
 vi.mock("../../socket/index.js", () => ({ emitFormAnalyticsUpdate: vi.fn() }));
+vi.mock("../billing/billing.service.js", () => ({ consume: vi.fn(), refund: vi.fn() }));
 
 import { Form } from "../form/form.model.js";
 import { FormResponse } from "./form-response.model.js";
 import { submitResponse } from "./form-response.service.js";
+import { consume, refund } from "../billing/billing.service.js";
 
 const m = (fn: unknown) => fn as ReturnType<typeof vi.fn>;
 const oid = () => new mongoose.Types.ObjectId().toString();
@@ -19,6 +21,7 @@ const [coding, ai, free] = [oid(), oid(), oid()];
 function paidForm(payment: Record<string, unknown> = {}) {
   return {
     _id: oid(),
+    creatorId: "creator1",
     status: "active",
     responseMode: "anonymous",
     settings: {},
@@ -93,5 +96,24 @@ describe("submitResponse payment", () => {
     m(Form.findOne).mockResolvedValue(paidForm());
     await expect(submitResponse("f1", answer([coding, coding]) as any, meta)).rejects.toThrow(/Duplicate/);
     await expect(submitResponse("f1", answer([oid()]) as any, meta)).rejects.toThrow(/Invalid payment/);
+  });
+
+  it("charges the creator's response quota once, after validation, and refunds a failed insert", async () => {
+    m(Form.findOne).mockResolvedValue(paidForm());
+    await submitResponse("f1", answer([coding]) as any, meta);
+    expect(consume).toHaveBeenCalledWith("creator1", "responses", "respondent");
+    expect(refund).not.toHaveBeenCalled();
+
+    vi.clearAllMocks();
+    m(FormResponse.findOne).mockResolvedValue(null);
+    m(FormResponse.create).mockRejectedValue(Object.assign(new Error("dup"), { code: 11000 }));
+    await expect(submitResponse("f1", answer([coding]) as any, meta)).rejects.toThrow(/already submitted/);
+    expect(refund).toHaveBeenCalledWith("creator1", "responses");
+  });
+
+  it("does not charge quota for submissions rejected by validation", async () => {
+    m(Form.findOne).mockResolvedValue(paidForm({ minSelections: 2 }));
+    await expect(submitResponse("f1", answer([coding]) as any, meta)).rejects.toThrow();
+    expect(consume).not.toHaveBeenCalled();
   });
 });

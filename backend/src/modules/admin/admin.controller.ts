@@ -3,6 +3,7 @@ import * as AdminService from "./admin.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { parseGranularity } from "../../utils/timeline.js";
 import * as Cleanup from "./admin.cleanup.js";
+import { PLAN_IDS } from "../../config/plans.js";
 
 const ok = (res: Response, data: unknown) => res.status(200).json(new ApiResponse(200, data, "ok"));
 
@@ -14,7 +15,8 @@ export async function listUsers(req: Request, res: Response) {
   const page = Math.max(1, Number(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
   const search = typeof req.query.search === "string" ? req.query.search.slice(0, 100) : undefined;
-  return ok(res, await AdminService.listUsers({ page, limit, ...(search ? { search } : {}) }));
+  const plan = PLAN_IDS.find((p) => p === req.query.plan);
+  return ok(res, await AdminService.listUsers({ page, limit, ...(search ? { search } : {}), ...(plan ? { plan } : {}) }));
 }
 
 export async function getUser(req: Request, res: Response) {
@@ -44,4 +46,9 @@ export async function executeFormCleanup(req: Request, res: Response) {
 
 export async function getAudit(_req: Request, res: Response) {
   return ok(res, await Cleanup.recentAudit());
+}
+
+export async function setUserPlan(req: Request, res: Response) {
+  const input = AdminService.setPlanSchema.parse(req.body);
+  return ok(res, await AdminService.setUserPlan(String(req.params.userId), input, (req as any).user));
 }

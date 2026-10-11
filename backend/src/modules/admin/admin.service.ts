@@ -13,6 +13,9 @@ import { getSocketStats } from "../../socket/index.js";
 import { expiryJobStatus } from "../../jobs/expiry.job.js";
 import cloudinary, { isCloudinaryConfigured } from "../../config/cloudinary.js";
 import config from "../../config/config.js";
+import { effectivePlan, PLAN_IDS, type PlanId } from "../../config/plans.js";
+import { AdminAudit } from "./admin-audit.model.js";
+import { z } from "zod";
 
 const DAY = 86_400_000;
 const ACTIVE = ["active", "published"] as ("active" | "published")[];
@@ -88,6 +91,7 @@ export async function getOverview(groupBy: Granularity) {
   };
   const [topPolls, topForms] = await Promise.all([topContent(Poll, "poll"), topContent(Form, "form")]);
 
+  const [plusUsers, proUsers] = await Promise.all([User.countDocuments(planFilter("plus")), User.countDocuments(planFilter("pro"))]);
   const usage = await User.aggregate([{ $group: { _id: "$onboarding.usage", count: { $sum: 1 } } }, { $sort: { count: -1 } }]);
 
   return {
@@ -100,20 +104,29 @@ export async function getOverview(groupBy: Granularity) {
     timeline,
     topCreators,
     topContent: [...topPolls, ...topForms].sort((a, b) => b.responses - a.responses).slice(0, 8),
+    plans: { free: users - plusUsers - proUsers, plus: plusUsers, pro: proUsers },
     audience: usage.map((u) => ({ usage: (u._id as string | null) ?? "unknown", count: u.count as number })),
   };
 }
 
 // ─── Users ──────────────────────────────────────────────────────────────────────
 
-const USER_FIELDS = "name email avatarUrl isEmailVerified isActive role googleId hasCompletedOnboarding onboarding createdAt";
+const USER_FIELDS = "name email avatarUrl isEmailVerified isActive role googleId hasCompletedOnboarding onboarding createdAt plan";
 
-export async function listUsers(opts: { search?: string; page: number; limit: number }) {
+/** Mongo filter for users whose *effective* plan is `plan` (expired paid plans count as free). */
+export function planFilter(plan: PlanId, now = new Date()): Record<string, any> {
+  const unexpired = { $or: [{ "plan.expiresAt": null }, { "plan.expiresAt": { $gt: now } }] };
+  if (plan === "free") return { $nor: [{ "plan.id": { $in: ["plus", "pro"] }, ...unexpired }] };
+  return { "plan.id": plan, ...unexpired };
+}
+
+export async function listUsers(opts: { search?: string; page: number; limit: number; plan?: PlanId }) {
   const clauses: Record<string, unknown>[] = [];
   if (opts.search?.trim()) {
     const rx = { $regex: escapeRegex(opts.search.trim()), $options: "i" };
     clauses.push({ $or: [{ name: rx }, { email: rx }] });
   }
+  if (opts.plan) clauses.push(planFilter(opts.plan));
   const filter = clauses.length ? { $and: clauses } : {};
   const [total, users] = await Promise.all([
     User.countDocuments(filter),
@@ -147,6 +160,8 @@ export async function listUsers(opts: { search?: string; page: number; limit: nu
         isActive: u.isActive,
         provider: u.googleId ? "google" : "password",
         createdAt: u.createdAt,
+        plan: effectivePlan(u),
+        planExpiresAt: u.plan?.expiresAt ?? null,
         lastSeenAt: lm.get(id) ?? null,
         polls: pm.get(id)?.n ?? 0,
         forms: fm.get(id)?.n ?? 0,
@@ -191,6 +206,9 @@ export async function getUserDetail(userId: string) {
       hasCompletedOnboarding: user.hasCompletedOnboarding,
       onboarding: user.onboarding ?? null,
       createdAt: user.createdAt,
+      plan: effectivePlan(user),
+      assignedPlan: user.plan?.id ?? "free",
+      planExpiresAt: user.plan?.expiresAt ?? null,
     },
     polls: polls.map(item),
     forms: forms.map(item),
@@ -338,4 +356,34 @@ export async function getStorage() {
     uploads: { files: uploads?.files ?? 0, bytes: uploads?.bytes ?? 0 },
     cloudinary: await cloudinaryUsage(),
   };
+}
+
+// ─── Plans ──────────────────────────────────────────────────────────────────────
+
+export const setPlanSchema = z.object({
+  plan: z.enum(PLAN_IDS),
+  // null/omitted = no expiry. Must be in the future when set.
+  expiresAt: z.coerce.date().nullable().optional(),
+}).refine((v) => !v.expiresAt || v.expiresAt > new Date(), { message: "Expiry must be in the future", path: ["expiresAt"] });
+
+export async function setUserPlan(userId: string, input: z.infer<typeof setPlanSchema>, admin: { _id: mongoose.Types.ObjectId; email: string }) {
+  if (!mongoose.isValidObjectId(userId)) throw new ApiError(404, "User not found");
+  const user: any = await User.findById(userId).select("email plan").lean();
+  if (!user) throw new ApiError(404, "User not found");
+  const before = { plan: user.plan?.id ?? "free", expiresAt: user.plan?.expiresAt ?? null };
+  const plan = {
+    id: input.plan,
+    ...(input.plan !== "free" && input.expiresAt ? { expiresAt: input.expiresAt } : {}),
+    assignedBy: admin._id,
+    assignedAt: new Date(),
+  };
+  await User.updateOne({ _id: userId }, { $set: { plan } });
+  await AdminAudit.create({
+    adminId: admin._id,
+    adminEmail: admin.email,
+    action: "user.plan",
+    params: { userId, email: user.email, plan: input.plan, expiresAt: plan.expiresAt ?? null },
+    result: { before },
+  });
+  return { plan: input.plan, expiresAt: plan.expiresAt ?? null };
 }

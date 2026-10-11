@@ -3,6 +3,7 @@ import { Poll } from "../poll/poll.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { emitAnalyticsUpdate } from "../../socket/index.js";
 import mongoose from "mongoose";
+import { consume, refund } from "../billing/billing.service.js";
 
 /**
  * Processes a poll response submission.
@@ -64,6 +65,8 @@ export async function submitResponse(
     // Create the response document.
     // The unique indexes on {pollId, sessionToken} / {pollId, respondentId} are the
     // race-safe backstop for the check above, so translate their duplicate-key error.
+    // Plan quota (after validation/dedup so rejected submits don't count); refunded if the insert fails.
+    await consume(poll.creatorId, "responses", "respondent");
     let response;
     try {
         response = await ResponseModel.create({
@@ -75,6 +78,7 @@ export async function submitResponse(
             submittedAt: new Date(),
         });
     } catch (err: any) {
+        await refund(poll.creatorId, "responses");
         if (err?.code === 11000) {
             throw new ApiError(403, "You have already submitted a response to this poll");
         }

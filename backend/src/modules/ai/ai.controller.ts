@@ -5,6 +5,7 @@ import { Conversation } from "./conversation.model.js";
 import { isAiConfigured } from "./ai.client.js";
 import { runChat, type ChatMsg } from "./ai.service.js";
 import type { Surface } from "./ai.tools.js";
+import { consume } from "../billing/billing.service.js";
 
 const SURFACES: Surface[] = ["dashboard", "poll-builder", "form-builder"];
 
@@ -26,6 +27,8 @@ export async function chat(req: Request, res: Response) {
   const { surface, conversationId, message, messages, builderState } = req.body ?? {};
 
   if (!SURFACES.includes(surface)) throw new ApiError(400, "Invalid surface");
+  // ponytail: counted up front, not refunded if the LLM call fails; add a refund if that proves common.
+  await consume(user._id, "aiMessages");
   const builderSummary = summarizeBuilder(builderState);
 
   // ─── Builder surfaces: stateless, client sends full history ──────────────────

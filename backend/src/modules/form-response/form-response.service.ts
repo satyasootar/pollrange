@@ -6,6 +6,7 @@ import { GRADABLE_TYPES } from "../form/form.validation.js";
 import type { ISubmitFormResponse, ISubmitAnswer } from "./form-response.validation.js";
 import mongoose from "mongoose";
 import { calculatePayment } from "../form/payment.util.js";
+import { consume, refund } from "../billing/billing.service.js";
 
 /** Flattens every question across all sections into one list. */
 function allQuestions(form: any): any[] {
@@ -170,6 +171,7 @@ export async function submitResponse(
   const paymentSnapshot = paymentQuestionAnswer && paymentQuestion
     ? calculatePayment(paymentQuestion, paymentQuestionAnswer.selectedOptionIds ?? [], responseId.toString(), meta.userName)
     : null;
+  await consume(form.creatorId, "responses", "respondent");
   let response: any;
   try {
     response = await FormResponse.create({
@@ -187,6 +189,7 @@ export async function submitResponse(
       ...(form.isQuiz ? { score, totalPoints } : {}),
     });
   } catch (err: any) {
+    await refund(form.creatorId, "responses");
     if (err?.code === 11000) throw new ApiError(403, "You have already submitted a response to this form");
     throw err;
   }
