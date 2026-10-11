@@ -100,6 +100,14 @@ export function initializeSocket(server: HttpServer) {
   return io;
 }
 
+/** Live connection + room counts for the admin system page. */
+export function getSocketStats() {
+  if (!io) return { connected: 0, rooms: 0 };
+  // Every socket has a private room named after its id; only count real poll/form rooms.
+  const rooms = [...io.sockets.adapter.rooms.keys()].filter((r) => r.startsWith("poll_") || r.startsWith("form_")).length;
+  return { connected: io.engine.clientsCount, rooms };
+}
+
 /**
  * Returns the initialized Socket.io instance.
  * Throws an error if initializeSocket has not been called.

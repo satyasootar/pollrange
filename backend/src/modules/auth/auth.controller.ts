@@ -10,6 +10,7 @@ import {
 } from "./auth.validation.js";
 import { updateProfileZodSchema, completeOnboardingZodSchema } from "../user/user.validation.js";
 import config from "../../config/config.js";
+import { isAdminUser } from "../../middlewares/admin.middleware.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 
@@ -76,7 +77,7 @@ export async function refreshAccessToken(req: Request, res: Response) {
  */
 export async function getCurrentUser(req: Request, res: Response) {
     const user = (req as any).user;
-    return res.status(200).json(new ApiResponse(200, user, "Current user fetched successfully"));
+    return res.status(200).json(new ApiResponse(200, { ...user.toJSON(), isAdmin: isAdminUser(user) }, "Current user fetched successfully"));
 }
 
 /**

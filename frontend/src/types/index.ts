@@ -40,6 +40,8 @@ export interface User {
   hasCompletedOnboarding: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Only present on /auth/me; computed server-side from the ADMIN_EMAILS allowlist. */
+  isAdmin?: boolean;
 }
 
 // ─── Onboarding ────────────────────────────────────────────────────────────────
@@ -633,4 +635,153 @@ export interface FormFilters {
   limit?: number;
   status?: PollStatus | "all";
   search?: string;
+}
+
+// ─── Admin ──────────────────────────────────────────────────────────────────────
+export interface AdminOverview {
+  totals: {
+    users: number; verified: number; googleUsers: number; newUsers7: number; newUsers30: number; activeSessions: number;
+    polls: number; forms: number; activePolls: number; activeForms: number;
+    responses: number; pollResponses: number; formResponses: number; responses7: number;
+  };
+  timeline: { date: string; signups: number; polls: number; forms: number }[];
+  topCreators: { id: string; name: string; email: string; polls: number; forms: number; responses: number }[];
+  topContent: { id: string; kind: "poll" | "form"; title: string; status: string; responses: number; creator: string }[];
+  audience: { usage: string; count: number }[];
+}
+
+export interface AdminUserRow {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  isEmailVerified: boolean;
+  isActive: boolean;
+  provider: "google" | "password";
+  createdAt: string;
+  lastSeenAt: string | null;
+  polls: number;
+  forms: number;
+  responses: number;
+}
+
+export interface AdminUsersPage {
+  items: AdminUserRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface AdminContentItem {
+  id: string;
+  title: string;
+  status: string;
+  responses: number;
+  shareToken: string;
+  createdAt: string;
+  isDeleted: boolean;
+  isQuiz?: boolean;
+}
+
+export interface AdminUserDetail {
+  user: Omit<AdminUserRow, "lastSeenAt" | "polls" | "forms" | "responses"> & {
+    hasCompletedOnboarding: boolean;
+    onboarding: Record<string, string> | null;
+  };
+  polls: AdminContentItem[];
+  forms: AdminContentItem[];
+  sessions: { userAgent: string; ipAddress: string; createdAt: string; lastUsedAt: string; active: boolean }[];
+}
+
+export interface AdminTrafficPoint { t: string; requests: number; errors: number; clientErrors: number; avgMs: number }
+
+export interface AdminEndpoint {
+  route: string; // "GET /api/forms/:formId"
+  count: number;
+  clientErrors: number;
+  errors: number;
+  errorRate: number; // % of calls that returned 5xx
+  avgMs: number;
+  p50: number;
+  p95: number;
+  p99: number;
+  maxMs: number;
+  lastAt: string;
+  lastError: { at: string; status: number; message: string } | null;
+}
+
+export interface AdminTraffic {
+  since: string;
+  totalRequests: number;
+  requestsPerMinute: number;
+  statusClasses: Record<"2xx" | "3xx" | "4xx" | "5xx", number>;
+  latencyMs: { p50: number; p95: number; p99: number };
+  lastHour: AdminTrafficPoint[];
+  last24h: AdminTrafficPoint[];
+  endpoints: AdminEndpoint[];
+  recentErrors: { at: string; method: string; path: string; status: number; message: string }[];
+}
+
+export interface AdminSystem {
+  status: "healthy" | "degraded";
+  checks: { name: string; ok: boolean; detail: string }[];
+  process: {
+    uptimeSec: number; node: string; platform: string; environment: string; pid: number;
+    memory: { rss: number; heapUsed: number; heapTotal: number; external: number };
+    cpuPercent: number;
+    eventLoopDelayMs: { mean: number; p99: number; max: number };
+  };
+  host: { cores: number; loadAvg: number[]; totalMem: number; freeMem: number };
+  database: { state: string; pingMs: number | null; name: string; host: string };
+  sockets: { connected: number; rooms: number };
+  jobs: { expiry: { lastRunAt: string | null; lastError: string | null; totalClosed: number } };
+  integrations: { name: string; configured: boolean }[];
+}
+
+export interface AdminStorage {
+  database: { dataSize?: number; storageSize?: number; indexSize?: number; objects?: number; collections?: number; error?: string };
+  collections: { name: string; count: number; size: number | null; storageSize: number | null; indexSize: number | null }[];
+  uploads: { files: number; bytes: number };
+  cloudinary:
+    | { configured: false }
+    | { configured: true; error: string }
+    | {
+        configured: true; plan: string | null; storageBytes: number; bandwidthBytes: number; resources: number;
+        creditsUsed: number | null; creditsLimit: number | null; creditsPercent: number | null;
+      };
+}
+
+export type FormStatus = "draft" | "active" | "closed" | "published";
+
+export interface FormCleanupFilter {
+  from: string; // ISO
+  to: string; // ISO
+  statuses?: FormStatus[];
+  onlyTrashed: boolean;
+}
+
+export interface FormCleanupPreview {
+  forms: number;
+  byStatus: Record<string, number>;
+  trashed: number;
+  live: number;
+  responses: number;
+  files: { count: number; bytes: number };
+  images: number;
+  assets: { toDelete: number; keptShared: number; external: number };
+  sample: { id: string; title: string; status: string; isDeleted: boolean; createdAt: string; responses: number; creator: string }[];
+}
+
+export interface FormCleanupResult {
+  formsDeleted: number;
+  responsesDeleted: number;
+  assets: { deleted: number; notFound: number; failed: number; attempted: number; keptShared: number };
+  bytesFreed: number;
+}
+
+export interface AdminAuditEntry {
+  id: string;
+  adminEmail: string;
+  action: string;
+  params: { from: string; to: string; statuses: string[]; onlyTrashed: boolean };
+  result: FormCleanupResult;
+  at: string;
 }

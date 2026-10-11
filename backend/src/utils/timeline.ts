@@ -146,3 +146,20 @@ export async function aggregateTimelineForIds(
   ]);
   return rows.map((r: any) => ({ date: r._id as string, count: r.count as number }));
 }
+
+/** Same bucketing with an arbitrary match + date field (e.g. users by createdAt, platform-wide). */
+export async function aggregateTimelineWhere(
+  model: Model<any>,
+  match: Record<string, unknown>,
+  groupBy: Granularity,
+  dateField = "submittedAt"
+): Promise<{ date: string; count: number }[]> {
+  const since = new Date();
+  since.setDate(since.getDate() - WINDOW_DAYS[groupBy]);
+  const rows = await model.aggregate([
+    { $match: { ...match, [dateField]: { $gte: since } } },
+    { $group: { _id: { $dateToString: { format: FORMAT[groupBy], date: `$${dateField}` } }, count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]);
+  return rows.map((r: any) => ({ date: r._id as string, count: r.count as number }));
+}

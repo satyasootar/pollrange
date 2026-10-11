@@ -11,10 +11,12 @@ import {
   ShieldAlert,
   FileText,
   BarChart3,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useLogout } from "@/hooks/use-auth";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import {
@@ -43,6 +45,8 @@ const mobileTabItems = [
   { to: "/dashboard/profile", icon: User, label: "Profile" },
 ];
 
+const adminItem = { to: "/admin", icon: ShieldCheck, label: "Admin" };
+
 // "Polls"/"Forms" own top-level builder & analytics routes (/polls/*, /forms/*)
 // outside of /dashboard, so plain NavLink prefix matching can't tell those tabs
 // apart from a same-path-prefix sibling like /dashboard/forms.
@@ -54,9 +58,10 @@ function isNavItemActive(pathname: string, to: string): boolean {
 
 function MobileTabBar() {
   const { pathname } = useLocation();
+  const items = useIsAdmin() ? [...mobileTabItems, adminItem] : mobileTabItems;
   return (
-    <nav className="grid h-16 shrink-0 grid-cols-4 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
-      {mobileTabItems.map(({ to, icon: Icon, label }) => {
+    <nav className={cn("grid h-16 shrink-0 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden", items.length === 5 ? "grid-cols-5" : "grid-cols-4")}>
+      {items.map(({ to, icon: Icon, label }) => {
         const isActive = isNavItemActive(pathname, to);
         return (
           <NavLink
@@ -122,6 +127,7 @@ export function AppShell() {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const isProfileActive = location.pathname === "/dashboard/profile";
+  const isAdmin = useIsAdmin();
 
   const sidebarContent = (
     <>
@@ -140,7 +146,7 @@ export function AppShell() {
 
       {/* Nav */}
       <nav className="flex-1 space-y-0.5 overflow-y-auto py-3">
-        {navItems.map((item) => (
+        {(isAdmin ? [...navItems, adminItem] : navItems).map((item) => (
           <NavItem key={item.to} {...item} pathname={location.pathname} />
         ))}
       </nav>

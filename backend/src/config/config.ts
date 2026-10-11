@@ -29,6 +29,7 @@ interface Config {
     MISTRAL_API_KEY: string;
     MISTRAL_BASE_URL: string;
     MISTRAL_MODEL: string;
+    ADMIN_EMAILS: string[];
 }
 
 const PORT = process.env.PORT || 8080;
@@ -63,6 +64,11 @@ const config: Config = {
     MISTRAL_API_KEY: process.env.MISTRAL_API_KEY || "",
     MISTRAL_BASE_URL: process.env.MISTRAL_BASE_URL || "https://api.mistral.ai/v1",
     MISTRAL_MODEL: process.env.MISTRAL_MODEL || "mistral-small-latest",
+    // Comma-separated. Only these (verified) accounts can reach /api/admin.
+    ADMIN_EMAILS: (process.env.ADMIN_EMAILS || "satya.sootar06@gmail.com")
+        .split(",")
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean),
 };
 
 export default config;

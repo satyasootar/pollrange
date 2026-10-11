@@ -27,6 +27,8 @@ import { AnalyticsPage } from "@/pages/polls/analytics";
 import { CreateFormPage } from "@/pages/forms/create";
 import { EditFormPage } from "@/pages/forms/edit";
 import { FormAnalyticsPage } from "@/pages/forms/analytics";
+import { AdminPage, AdminRoute } from "@/pages/admin";
+import { AdminUserPage } from "@/pages/admin/user";
 
 import { PublicPollPage } from "@/pages/public/poll";
 import { PublishedResultsPage } from "@/pages/public/results";
@@ -104,6 +106,10 @@ export function App() {
               <Route path="/forms/create" element={<CreateFormPage />} />
               <Route path="/forms/:formId/edit" element={<EditFormPage />} />
               <Route path="/forms/:formId/analytics" element={<FormAnalyticsPage />} />
+              <Route element={<AdminRoute />}>
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin/users/:userId" element={<AdminUserPage />} />
+              </Route>
             </Route>
           </Route>
 
