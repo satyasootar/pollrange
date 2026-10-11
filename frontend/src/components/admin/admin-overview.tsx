@@ -129,7 +129,13 @@ export function AdminOverviewTab() {
               <span className="text-right tabular-nums">{a.count}</span>
             </div>
           ))}
-          <p className="pt-2 text-xs text-muted-foreground">
+          <p className="flex flex-wrap items-center gap-2 pt-2 text-xs text-muted-foreground">
+            Plans:
+            <Pill tone="muted">free {formatNumber(data.plans.free)}</Pill>
+            <Pill tone="good">plus {formatNumber(data.plans.plus)}</Pill>
+            <Pill tone="good">pro {formatNumber(data.plans.pro)}</Pill>
+          </p>
+          <p className="pt-1 text-xs text-muted-foreground">
             {t.googleUsers} via Google · {t.users - t.googleUsers} via email/password · {t.newUsers30} joined in the last 30 days
           </p>
         </div>

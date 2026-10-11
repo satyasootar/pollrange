@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { useAdminUsers } from "@/hooks/use-admin";
 import { formatDate, timeAgo } from "@/lib/utils";
 import { Pill } from "./admin-ui";
+import type { PlanId } from "@/types";
 import { formatNumber } from "@/lib/admin-format";
 
 export function AdminUsersTab() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [plan, setPlan] = useState<PlanId | undefined>();
   const deferred = useDeferredValue(search.trim());
-  const { data, isLoading, isFetching } = useAdminUsers(page, deferred);
+  const { data, isLoading, isFetching } = useAdminUsers(page, deferred, plan);
 
   return (
     <div className="space-y-4">
@@ -31,7 +33,25 @@ export function AdminUsersTab() {
             className="pl-9"
           />
         </div>
-        {data && <p className="text-xs text-muted-foreground">{formatNumber(data.pagination.total)} users</p>}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center border border-border" role="group" aria-label="Filter by plan">
+            {([undefined, "free", "plus", "pro"] as const).map((p) => (
+              <button
+                key={p ?? "all"}
+                type="button"
+                aria-pressed={plan === p}
+                onClick={() => {
+                  setPlan(p);
+                  setPage(1);
+                }}
+                className={`px-2.5 py-1 text-xs capitalize ${plan === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                {p ?? "All"}
+              </button>
+            ))}
+          </div>
+          {data && <p className="text-xs text-muted-foreground">{formatNumber(data.pagination.total)} users</p>}
+        </div>
       </div>
 
       <div className={`overflow-x-auto border border-border bg-card transition-opacity ${isFetching && !isLoading ? "opacity-60" : ""}`}>
@@ -39,6 +59,7 @@ export function AdminUsersTab() {
           <thead className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="p-3 font-semibold">User</th>
+              <th className="p-3 font-semibold">Plan</th>
               <th className="p-3 font-semibold">Sign-in</th>
               <th className="p-3 text-right font-semibold">Polls</th>
               <th className="p-3 text-right font-semibold">Forms</th>
@@ -50,7 +71,7 @@ export function AdminUsersTab() {
           <tbody>
             {isLoading
               ? Array.from({ length: 6 }, (_, i) => (
-                  <tr key={i} className="border-t border-border"><td colSpan={7} className="p-3"><div className="shimmer h-8" /></td></tr>
+                  <tr key={i} className="border-t border-border"><td colSpan={8} className="p-3"><div className="shimmer h-8" /></td></tr>
                 ))
               : data?.items.map((u) => (
                   <tr
@@ -73,6 +94,9 @@ export function AdminUsersTab() {
                       </div>
                     </td>
                     <td className="p-3">
+                      <Pill tone={u.plan === "free" ? "muted" : "good"}>{u.plan}</Pill>
+                    </td>
+                    <td className="p-3">
                       <span className="flex flex-wrap gap-1">
                         <Pill tone={u.provider === "google" ? "primary" : "muted"}>{u.provider}</Pill>
                         {!u.isEmailVerified && <Pill tone="warn">unverified</Pill>}
@@ -86,7 +110,7 @@ export function AdminUsersTab() {
                   </tr>
                 ))}
             {data?.items.length === 0 && (
-              <tr><td colSpan={7} className="p-10 text-center text-sm text-muted-foreground">No users match “{deferred}”.</td></tr>
+              <tr><td colSpan={8} className="p-10 text-center text-sm text-muted-foreground">No users match “{deferred}”.</td></tr>
             )}
           </tbody>
         </table>

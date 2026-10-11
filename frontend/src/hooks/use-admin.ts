@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { adminApi } from "@/api/admin.api";
-import type { FormCleanupFilter, TimelineGranularity, User } from "@/types";
+import type { FormCleanupFilter, PlanId, TimelineGranularity, User } from "@/types";
 
 /** Reads the server-computed flag from the ["me"] query ProtectedRoute already loaded. */
 export function useIsAdmin() {
@@ -13,10 +13,10 @@ const LIVE = 10_000;
 export const useAdminOverview = (groupBy: TimelineGranularity) =>
   useQuery({ queryKey: ["admin", "overview", groupBy], queryFn: () => adminApi.overview(groupBy), select: (r) => r.data.data, placeholderData: keepPreviousData });
 
-export const useAdminUsers = (page: number, search: string) =>
+export const useAdminUsers = (page: number, search: string, plan?: PlanId) =>
   useQuery({
-    queryKey: ["admin", "users", page, search],
-    queryFn: () => adminApi.users({ page, ...(search ? { search } : {}) }),
+    queryKey: ["admin", "users", page, search, plan],
+    queryFn: () => adminApi.users({ page, ...(search ? { search } : {}), ...(plan ? { plan } : {}) }),
     select: (r) => r.data.data,
     placeholderData: keepPreviousData,
   });
@@ -45,6 +45,28 @@ export function useFormCleanup() {
     mutationFn: (body: FormCleanupFilter & { expectedForms: number }) =>
       adminApi.executeFormCleanup({ ...body, confirm: "DELETE" }).then((r) => r.data.data),
     // Totals, storage, user lists and the audit log all change after a cleanup.
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
+  });
+}
+
+export function useSetUserPlan(userId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { plan: PlanId; expiresAt: string | null }) => adminApi.setUserPlan(userId, body).then((r) => r.data.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
+  });
+}
+
+export const useAdminPlanRequests = () =>
+  useQuery({ queryKey: ["admin", "plan-requests"], queryFn: adminApi.planRequests, select: (r) => r.data.data, refetchInterval: 30_000 });
+
+export function useDecidePlanRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; approve: true; expiresAt?: string | null } | { id: string; approve: false; reason?: string }) =>
+      v.approve
+        ? adminApi.approvePlanRequest(v.id, v.expiresAt === undefined ? {} : { expiresAt: v.expiresAt })
+        : adminApi.rejectPlanRequest(v.id, v.reason ? { reason: v.reason } : {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
   });
 }

@@ -47,7 +47,7 @@ export interface User {
 // ─── Onboarding ────────────────────────────────────────────────────────────────
 export type OnboardingUsage = "company" | "education" | "public_sector" | "non_profit" | "student" | "other";
 export type OnboardingIntent = "explore" | "create_polls" | "other";
-export type OnboardingPlan = "free" | "basic" | "pro";
+export type OnboardingPlan = "free" | "basic" | "plus" | "pro";
 export type OnboardingFirstAction = "word_cloud" | "polls" | "quiz" | "open_ended";
 
 export interface CompleteOnboardingPayload {
@@ -129,6 +129,8 @@ export interface PublicPoll {
   requiresAuth: boolean;
   isResultsPublic?: boolean;
   alreadyResponded: boolean;
+  /** True when the creator's plan doesn't include branding. */
+  showPoweredBy?: boolean;
   settings: Pick<
     PollSettings,
     "showProgressBar" | "randomizeQuestions" | "randomizeOptions"
@@ -480,6 +482,7 @@ export interface PublicForm {
   expiresAt?: string;
   totalResponses: number;
   alreadyResponded: boolean;
+  showPoweredBy?: boolean;
   settings: FormSettings;
   sections: FormSection[];
 }
@@ -647,11 +650,15 @@ export interface AdminOverview {
   timeline: { date: string; signups: number; polls: number; forms: number }[];
   topCreators: { id: string; name: string; email: string; polls: number; forms: number; responses: number }[];
   topContent: { id: string; kind: "poll" | "form"; title: string; status: string; responses: number; creator: string }[];
+  plans: Record<PlanId, number>;
+  pendingUpgrades: number;
   audience: { usage: string; count: number }[];
 }
 
 export interface AdminUserRow {
   id: string;
+  plan: PlanId;
+  planExpiresAt: string | null;
   name: string;
   email: string;
   avatarUrl?: string;
@@ -683,6 +690,7 @@ export interface AdminContentItem {
 
 export interface AdminUserDetail {
   user: Omit<AdminUserRow, "lastSeenAt" | "polls" | "forms" | "responses"> & {
+    assignedPlan: PlanId;
     hasCompletedOnboarding: boolean;
     onboarding: Record<string, string> | null;
   };
@@ -785,3 +793,48 @@ export interface AdminAuditEntry {
   result: FormCleanupResult;
   at: string;
 }
+
+// ─── Plans & billing ────────────────────────────────────────────────────────────
+export type PlanId = "free" | "plus" | "pro";
+export type PlanMetric = "responses" | "uploads" | "aiMessages" | "liveItems";
+export type PlanFeature = "customSlug" | "branding";
+
+export interface PlanCatalogEntry {
+  id: PlanId;
+  label: string;
+  tagline: string;
+  priceMonthly: number; // INR
+  priceYearly: number; // INR
+  limits: Record<PlanMetric, number | null>; // null = unlimited
+  features: Record<PlanFeature, boolean>;
+  support: string;
+}
+
+export interface PlanState {
+  plan: PlanId;
+  label: string;
+  assignedPlan: PlanId;
+  expiresAt: string | null;
+  period: string; // "YYYY-MM"
+  features: Record<PlanFeature, boolean>;
+  grace: number;
+  usage: Record<PlanMetric, { used: number; limit: number | null }>;
+}
+
+export type BillingPeriod = "monthly" | "yearly";
+
+export interface PlanRequest {
+  id: string;
+  plan: Exclude<PlanId, "free">;
+  period: BillingPeriod;
+  note: string | null;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  adminNote: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+export interface AdminPlanRequest extends PlanRequest {
+  user: { id: string; name: string; email: string; plan: PlanId } | null;
+}
+

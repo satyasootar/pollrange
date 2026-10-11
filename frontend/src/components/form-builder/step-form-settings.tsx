@@ -6,9 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
 import { formsApi } from "@/api/forms.api";
+import { toastApiError } from "@/lib/utils";
 import { toast } from "sonner";
-import { getApiErrorMessage } from "@/lib/utils";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { ImagePlus, Loader2, X, Lock } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useCanUse } from "@/hooks/use-plan";
 import type { FormSettings } from "@/types";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
@@ -24,6 +26,7 @@ export function StepFormSettings({ formId }: { formId?: string }) {
   const { form, updateMeta, updateSettings, nextStep } = useFormBuilderStore();
   const [uploading, setUploading] = useState(false);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
+  const canSlug = useCanUse("customSlug");
   // Lazy state init keeps the impure Date.now() call out of render.
   const [minDatetime] = useState(() => new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16));
 
@@ -47,7 +50,7 @@ export function StepFormSettings({ formId }: { formId?: string }) {
       return available;
     } catch (err) {
       setSlugStatus("idle");
-      toast.error(getApiErrorMessage(err));
+      toastApiError(err);
       return false;
     }
   };
@@ -68,7 +71,7 @@ export function StepFormSettings({ formId }: { formId?: string }) {
       updateMeta({ coverImageUrl: res.data.data.url });
       toast.success("Cover image uploaded.");
     } catch (err) {
-      toast.error(getApiErrorMessage(err));
+      toastApiError(err);
     } finally {
       setUploading(false);
     }
@@ -151,12 +154,20 @@ export function StepFormSettings({ formId }: { formId?: string }) {
 
       {/* Optional public URL slug */}
       <div className="space-y-1.5">
-        <Label htmlFor="slug">Custom form slug (optional)</Label>
+        <Label htmlFor="slug" className="flex items-center gap-2">
+          Custom form slug (optional)
+          {!canSlug && (
+            <span className="inline-flex items-center gap-1 border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+              <Lock className="h-3 w-3" /> Plus
+            </span>
+          )}
+        </Label>
         <Input
           id="slug"
           value={form.slug}
-          placeholder="Leave blank for a random slug"
+          placeholder={canSlug ? "Leave blank for a random slug" : "A random link is generated for you"}
           maxLength={80}
+          disabled={!canSlug}
           onChange={(e) => {
             updateMeta({ slug: e.target.value });
             setSlugStatus("idle");
@@ -169,7 +180,15 @@ export function StepFormSettings({ formId }: { formId?: string }) {
           {slugStatus === "available" && "This slug is available."}
           {slugStatus === "taken" && "This slug is already in use."}
           {slugStatus === "invalid" && "Use 3-80 letters, numbers, hyphens, or underscores."}
-          {slugStatus === "idle" && "The public link will use this slug. Leave blank to generate one automatically."}
+          {slugStatus === "idle" &&
+            (canSlug ? (
+              "The public link will use this slug. Leave blank to generate one automatically."
+            ) : (
+              <>
+                Custom links are part of Plus and Pro.{" "}
+                <Link to="/dashboard/billing" className="font-medium text-primary underline-offset-2 hover:underline">See plans</Link>
+              </>
+            ))}
         </p>
       </div>
 

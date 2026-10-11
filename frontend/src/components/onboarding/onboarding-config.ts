@@ -1,4 +1,4 @@
-import type { OnboardingUsage, OnboardingIntent, OnboardingPlan, OnboardingFirstAction } from "@/types";
+import type { OnboardingUsage, OnboardingIntent, OnboardingFirstAction } from "@/types";
 
 export const USAGE_OPTIONS: { value: OnboardingUsage; label: string }[] = [
   { value: "company", label: "Company" },
@@ -43,52 +43,6 @@ export const INTENT_OPTIONS: { value: OnboardingIntent; label: string }[] = [
   { value: "explore", label: "I want to explore Kollects" },
   { value: "create_polls", label: "I am here to create polls" },
   { value: "other", label: "I am here for other reasons" },
-];
-
-export const PLAN_OPTIONS: {
-  value: OnboardingPlan;
-  label: string;
-  price: string;
-  period: string;
-  blurb: string;
-  features: string[];
-  badge?: string;
-}[] = [
-  {
-    value: "free",
-    label: "Free",
-    price: "$0",
-    period: "forever",
-    blurb: "Get started with the basics.",
-    features: ["Up to 3 active polls", "100 responses / month", "Basic analytics"],
-  },
-  {
-    value: "basic",
-    label: "Basic",
-    price: "$9",
-    period: "/ month",
-    blurb: "More polls, more responses.",
-    features: [
-      "Unlimited polls",
-      "1,000 responses / month",
-      "Export responses",
-      "Custom branding",
-    ],
-    badge: "Most popular",
-  },
-  {
-    value: "pro",
-    label: "Pro",
-    price: "$29",
-    period: "/ month",
-    blurb: "Full power for teams and orgs.",
-    features: [
-      "Unlimited responses",
-      "Advanced analytics",
-      "Priority support",
-      "Team seats",
-    ],
-  },
 ];
 
 export const FIRST_ACTION_OPTIONS: { value: OnboardingFirstAction; label: string }[] = [

@@ -9,10 +9,11 @@ import { QuestionRenderer, type AnswerDraft } from "@/components/form-public/que
 import { PaymentDue } from "@/components/form-public/payment-due";
 import { selectionError } from "@/lib/upi-payment";
 import { fadeUp, stagger, pageTransition } from "@/lib/animations";
-import { getOrCreateSessionToken, getApiErrorMessage, shuffle, timeUntilExpiry } from "@/lib/utils";
+import { getOrCreateSessionToken, shuffle, timeUntilExpiry, toastApiError } from "@/lib/utils";
+import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
 import { AuthGateDialog } from "@/components/auth/auth-gate-dialog";
-import { toast } from "sonner";
+import { PoweredBy } from "@/components/billing/powered-by";
 import type { FormQuestion, FormSection, FormAnswerPayload, SubmitFormResult } from "@/types";
 
 type AnswerMap = Record<string, AnswerDraft>;
@@ -102,7 +103,7 @@ export function PublicFormPage() {
             setResult(res.data.data);
             setSubmitted(true);
           },
-          onError: (err) => toast.error(getApiErrorMessage(err)),
+          onError: (err) => toastApiError(err),
         }
       );
     } catch {
@@ -211,7 +212,7 @@ export function PublicFormPage() {
           setResult(res.data.data);
           setSubmitted(true);
         },
-        onError: (err) => toast.error(getApiErrorMessage(err)),
+        onError: (err) => toastApiError(err),
       }
     );
   };
@@ -334,6 +335,7 @@ export function PublicFormPage() {
             {anyUploading ? "Uploading files…" : submit.isPending ? "Submitting…" : isLastStep ? "Submit" : "Next →"}
           </Button>
         </motion.div>
+        <PoweredBy show={form.showPoweredBy} />
       </div>
 
       <AuthGateDialog

@@ -1,3 +1,4 @@
+import { UsageBanner } from "@/components/billing/usage-banner";
 import {
   Plus,
   BarChart3,
@@ -110,6 +111,7 @@ export function DashboardView({
       )}
 
       <div className={cn("flex-1 overflow-y-auto px-4 py-6 md:px-8 custom-scrollbar", isCompact && "py-4 px-6")}>
+        <UsageBanner />
         {/* Verification Alert */}
         {user && !user.isEmailVerified && requestVerification && (
           <div className={cn("mb-6", isCompact && "mb-4")}>

@@ -10,7 +10,10 @@ import {
   Mail,
   Building2,
   LogOut,
+  CreditCard,
 } from "lucide-react"
+import { Link } from "react-router-dom"
+import { useCanUse } from "@/hooks/use-plan"
 import { useAuthStore } from "@/store/use-auth-store"
 import { useUpdateProfile, useChangePassword } from "@/hooks/use-profile"
 import { useRequestVerification } from "@/hooks/use-auth-actions"
@@ -28,6 +31,7 @@ export function ProfilePage() {
   const changePassword = useChangePassword()
   const requestVerification = useRequestVerification()
   const logout = useLogout()
+  const canBrand = useCanUse("branding")
 
   const [name, setName] = useState(user?.name || "")
   const [branding, setBranding] = useState({
@@ -179,6 +183,20 @@ export function ProfilePage() {
             </form>
           </motion.div>
 
+          {/* Plan shortcut (the only way to reach billing on mobile) */}
+          <Link
+            to="/dashboard/billing"
+            className="mb-8 flex items-center gap-3 border border-border bg-card p-4 hover:border-primary/40"
+          >
+            <div className="flex h-10 w-10 items-center justify-center border border-primary/20 bg-primary/5 text-primary">
+              <CreditCard className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold">Plan & usage</p>
+              <p className="text-xs text-muted-foreground">See your limits and upgrade options</p>
+            </div>
+          </Link>
+
           {/* Branding Section */}
           <motion.div
             variants={fadeUp}
@@ -197,6 +215,14 @@ export function ProfilePage() {
             </div>
 
             <form onSubmit={handleUpdateProfile} className="space-y-4">
+              {!canBrand && (
+                <p className="flex items-center gap-2 border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+                  <Lock className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  Custom branding is part of Plus and Pro.
+                  <Link to="/dashboard/billing" className="font-medium text-primary underline-offset-2 hover:underline">See plans</Link>
+                </p>
+              )}
+              <fieldset disabled={!canBrand} className="space-y-4 disabled:opacity-60">
               <div className="space-y-2">
                 <Label htmlFor="companyName">Company Name</Label>
                 <Input
@@ -247,6 +273,7 @@ export function ProfilePage() {
                   />
                 </div>
               </div>
+              </fieldset>
 
               <Button
                 type="submit"

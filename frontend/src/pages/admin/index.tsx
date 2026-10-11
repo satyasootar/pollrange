@@ -1,13 +1,14 @@
 import { Navigate, Outlet, useSearchParams } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useIsAdmin } from "@/hooks/use-admin";
+import { useAdminPlanRequests, useIsAdmin } from "@/hooks/use-admin";
 import { AdminOverviewTab } from "@/components/admin/admin-overview";
 import { AdminUsersTab } from "@/components/admin/admin-users";
 import { AdminTrafficTab } from "@/components/admin/admin-traffic";
 import { AdminSystemTab } from "@/components/admin/admin-system";
 import { AdminApisTab } from "@/components/admin/admin-apis";
 import { AdminCleanupTab } from "@/components/admin/admin-cleanup";
+import { AdminUpgradesTab } from "@/components/admin/admin-upgrades";
 
 /** Client-side gate for UX only; every /api/admin call is enforced server-side. */
 export function AdminRoute() {
@@ -17,6 +18,7 @@ export function AdminRoute() {
 const TABS = [
   { value: "overview", label: "Overview", el: <AdminOverviewTab /> },
   { value: "users", label: "Users", el: <AdminUsersTab /> },
+  { value: "upgrades", label: "Upgrades", el: <AdminUpgradesTab /> },
   { value: "traffic", label: "Traffic", el: <AdminTrafficTab /> },
   { value: "apis", label: "APIs", el: <AdminApisTab /> },
   { value: "system", label: "System & storage", el: <AdminSystemTab /> },
@@ -26,6 +28,7 @@ const TABS = [
 export function AdminPage() {
   const [params, setParams] = useSearchParams();
   const tab = TABS.find((t) => t.value === params.get("tab"))?.value ?? "overview";
+  const pendingUpgrades = useAdminPlanRequests().data?.filter((r) => r.status === "pending").length ?? 0;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -45,6 +48,11 @@ export function AdminPage() {
             {TABS.map((t) => (
               <TabsTrigger key={t.value} value={t.value}>
                 {t.label}
+                {t.value === "upgrades" && pendingUpgrades > 0 && (
+                  <span className="ml-1.5 bg-primary px-1.5 text-[10px] font-bold text-primary-foreground" aria-label={`${pendingUpgrades} pending`}>
+                    {pendingUpgrades}
+                  </span>
+                )}
               </TabsTrigger>
             ))}
           </TabsList>

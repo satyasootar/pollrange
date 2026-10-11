@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
@@ -9,7 +9,7 @@ import { makeQueryClient } from "@/test/utils";
 import { AdminPage, AdminRoute } from "./index";
 import { AdminUserPage } from "./user";
 import { endpointHealth, formatBytes, formatUptime, toCleanupFilter } from "@/lib/admin-format";
-import type { FormCleanupPreview, AdminOverview, AdminSystem, AdminStorage, AdminTraffic, AdminUserDetail, AdminUsersPage } from "@/types";
+import type { AdminPlanRequest, FormCleanupPreview, AdminOverview, AdminSystem, AdminStorage, AdminTraffic, AdminUserDetail, AdminUsersPage } from "@/types";
 
 const API = "http://localhost:3030/api";
 const ok = (data: unknown) => HttpResponse.json({ statusCode: 200, success: true, message: "ok", data });
@@ -23,19 +23,21 @@ const overview: AdminOverview = {
   timeline: [{ date: "2026-10-10", signups: 3, polls: 10, forms: 4 }],
   topCreators: [{ id: "u1", name: "Asha Rao", email: "asha@x.dev", polls: 3, forms: 2, responses: 900 }],
   topContent: [{ id: "f1", kind: "form", title: "Tech Fest Signup", status: "active", responses: 500, creator: "Asha Rao" }],
+  plans: { free: 1200, plus: 30, pro: 4 },
+  pendingUpgrades: 1,
   audience: [{ usage: "education", count: 40 }],
 };
 
 const usersPage: AdminUsersPage = {
   items: [
-    { id: "u1", name: "Asha Rao", email: "asha@x.dev", isEmailVerified: true, isActive: true, provider: "google", createdAt: "2026-01-01T00:00:00Z", lastSeenAt: null, polls: 3, forms: 2, responses: 900 },
-    { id: "u2", name: "Ben K", email: "ben@x.dev", isEmailVerified: false, isActive: true, provider: "password", createdAt: "2026-02-01T00:00:00Z", lastSeenAt: null, polls: 0, forms: 1, responses: 4 },
+    { id: "u1", plan: "plus", planExpiresAt: null, name: "Asha Rao", email: "asha@x.dev", isEmailVerified: true, isActive: true, provider: "google", createdAt: "2026-01-01T00:00:00Z", lastSeenAt: null, polls: 3, forms: 2, responses: 900 },
+    { id: "u2", plan: "free", planExpiresAt: null, name: "Ben K", email: "ben@x.dev", isEmailVerified: false, isActive: true, provider: "password", createdAt: "2026-02-01T00:00:00Z", lastSeenAt: null, polls: 0, forms: 1, responses: 4 },
   ],
   pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
 };
 
 const userDetail: AdminUserDetail = {
-  user: { id: "u1", name: "Asha Rao", email: "asha@x.dev", isEmailVerified: true, isActive: true, provider: "google", hasCompletedOnboarding: true, onboarding: { usage: "education" }, createdAt: "2026-01-01T00:00:00Z" },
+  user: { id: "u1", plan: "free", assignedPlan: "free", planExpiresAt: null, name: "Asha Rao", email: "asha@x.dev", isEmailVerified: true, isActive: true, provider: "google", hasCompletedOnboarding: true, onboarding: { usage: "education" }, createdAt: "2026-01-01T00:00:00Z" },
   forms: [
     { id: "f1", title: "Tech Fest Signup", status: "active", responses: 500, shareToken: "tech-fest", createdAt: "2026-03-01T00:00:00Z", isDeleted: false, isQuiz: false },
     { id: "f2", title: "Old survey", status: "closed", responses: 7, shareToken: "old", createdAt: "2026-02-01T00:00:00Z", isDeleted: true, isQuiz: false },
@@ -110,6 +112,11 @@ const cleanupPreview: FormCleanupPreview = {
   ],
 };
 
+const planRequests: AdminPlanRequest[] = [
+  { id: "r1", plan: "pro", period: "yearly", note: "For our school", status: "pending", adminNote: null, createdAt: "2026-10-10T00:00:00Z", decidedAt: null, user: { id: "u2", name: "Ben K", email: "ben@x.dev", plan: "free" } },
+  { id: "r0", plan: "plus", period: "monthly", note: null, status: "rejected", adminNote: "No payment", createdAt: "2026-09-01T00:00:00Z", decidedAt: "2026-09-02T00:00:00Z", user: { id: "u3", name: "Cara", email: "c@x.dev", plan: "free" } },
+];
+
 let requested: string[] = [];
 let cleanupBodies: Record<string, unknown>[] = [];
 beforeEach(() => {
@@ -125,9 +132,17 @@ beforeEach(() => {
       return ok({ formsDeleted: 2, responsesDeleted: 30, assets: { deleted: 6, notFound: 0, failed: 0, attempted: 6, keptShared: 1 }, bytesFreed: 2_000_000 });
     }),
     http.get(`${API}/admin/audit`, () => ok([])),
+    http.post(`${API}/admin/plan-requests/:id/:decision`, async ({ params, request }) => {
+      cleanupBodies.push({ requestId: params.id, decision: params.decision, ...((await request.json()) as object) });
+      return ok({});
+    }),
+    http.patch(`${API}/admin/users/:userId/plan`, async ({ params, request }) => {
+      cleanupBodies.push({ planFor: params.userId, ...((await request.json()) as object) });
+      return ok({ plan: "plus", expiresAt: null });
+    }),
     http.get(`${API}/admin/:section`, ({ params, request }) => {
       requested.push(new URL(request.url).pathname + new URL(request.url).search);
-      const map: Record<string, unknown> = { overview, users: usersPage, traffic, system, storage };
+      const map: Record<string, unknown> = { overview, users: usersPage, traffic, system, storage, "plan-requests": planRequests };
       return ok(map[params.section as string]);
     }),
     http.get(`${API}/admin/users/:userId`, ({ params }) =>
@@ -168,6 +183,60 @@ describe("Admin dashboard", () => {
     expect(screen.getByRole("link", { name: /open tech fest signup/i })).toHaveAttribute("href", expect.stringContaining("tech-fest"));
     expect(screen.queryByRole("link", { name: /open old survey/i })).not.toBeInTheDocument();
     expect(screen.getByText("Chrome on Windows")).toBeInTheDocument();
+  });
+
+  it("admin assigns a plan with an end date from the user page", async () => {
+    renderAdmin("/admin/users/u1");
+    const save = await screen.findByRole("button", { name: /save plan/i });
+    expect(save).toBeDisabled(); // nothing changed yet
+    await userEvent.click(within(screen.getByRole("group", { name: "Plan" })).getByRole("button", { name: "plus" }));
+    await userEvent.type(screen.getByLabelText(/active until/i), "2027-01-31");
+    expect(screen.getByText(/drops back to free after/i)).toBeInTheDocument();
+    await userEvent.click(save);
+    await waitFor(() => expect(cleanupBodies.some((b) => b.planFor === "u1")).toBe(true));
+    const body = cleanupBodies.find((b) => b.planFor === "u1")!;
+    expect(body.plan).toBe("plus");
+    expect(new Date(body.expiresAt as string).getTime()).toBe(new Date(2027, 0, 31, 23, 59, 59, 999).getTime());
+  });
+
+  it("upgrades tab: shows the pending count, approves with an end date, rejects with a reason", async () => {
+    renderAdmin("/admin?tab=upgrades");
+    expect(await screen.findByLabelText("1 pending")).toBeInTheDocument();
+    expect(await screen.findByText("“For our school”")).toBeInTheDocument();
+    expect(screen.getByText("“No payment”")).toBeInTheDocument(); // history
+
+    // Yearly request → end date pre-filled a year out; admin shortens it.
+    const until = screen.getByLabelText("Active until") as HTMLInputElement;
+    expect(new Date(until.value).getFullYear()).toBe(new Date().getFullYear() + 1);
+    await userEvent.clear(until);
+    await userEvent.type(until, "2027-06-30");
+    await userEvent.click(screen.getByRole("button", { name: /approve/i }));
+    await waitFor(() => expect(cleanupBodies.some((b) => b.decision === "approve")).toBe(true));
+    const approved = cleanupBodies.find((b) => b.decision === "approve")!;
+    expect(approved.requestId).toBe("r1");
+    expect(new Date(approved.expiresAt as string).getTime()).toBe(new Date(2027, 5, 30, 23, 59, 59, 999).getTime());
+
+    await userEvent.click(screen.getByRole("button", { name: /^reject$/i }));
+    await userEvent.type(screen.getByLabelText(/reason/i), "Need payment proof");
+    await userEvent.click(screen.getByRole("button", { name: /confirm reject/i }));
+    await waitFor(() => expect(cleanupBodies.some((b) => b.decision === "reject")).toBe(true));
+    expect(cleanupBodies.find((b) => b.decision === "reject")).toMatchObject({ requestId: "r1", reason: "Need payment proof" });
+  });
+
+  it("approving with 'No end date' sends null", async () => {
+    renderAdmin("/admin?tab=upgrades");
+    await screen.findByText("“For our school”");
+    await userEvent.click(screen.getByLabelText("No end date"));
+    await userEvent.click(screen.getByRole("button", { name: /approve/i }));
+    await waitFor(() => expect(cleanupBodies.find((b) => b.decision === "approve")).toMatchObject({ expiresAt: null }));
+  });
+
+  it("users tab filters by plan", async () => {
+    renderAdmin("/admin?tab=users");
+    await screen.findByText("asha@x.dev");
+    await userEvent.click(within(screen.getByRole("group", { name: "Filter by plan" })).getByRole("button", { name: "pro" }));
+    await screen.findByText("asha@x.dev");
+    expect(requested.some((r) => r.includes("plan=pro"))).toBe(true);
   });
 
   it("user page shows not-found for an unknown id", async () => {

@@ -12,11 +12,13 @@ import {
   FileText,
   BarChart3,
   ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useLogout } from "@/hooks/use-auth";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { UpgradeIntentResumer } from "@/components/billing/upgrade-intent-resumer";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import {
@@ -218,6 +220,10 @@ export function AppShell() {
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/dashboard/billing")}>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Plan & usage
+              </DropdownMenuItem>
 
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
@@ -271,6 +277,7 @@ export function AppShell() {
       <main className="flex flex-1 flex-col overflow-hidden">
         <Outlet />
         <MobileTabBar />
+        <UpgradeIntentResumer />
       </main>
     </div>
   );

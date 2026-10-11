@@ -1,15 +1,6 @@
 // Factories for backend-shaped mock data used by MSW handlers and tests.
 // Every builder takes an overrides object so tests can express edge cases tersely.
-import type {
-  PublicForm,
-  FormSection,
-  FormQuestion,
-  FormSettings,
-  PublicPoll,
-  PublicPollQuestion,
-  DashboardOverview,
-  Form,
-} from "@/types";
+import type { PublicForm, FormSection, FormQuestion, FormSettings, PublicPoll, PublicPollQuestion, DashboardOverview, Form, PlanCatalogEntry, PlanState } from "@/types";
 
 let seq = 0;
 export const oid = (prefix = "id") => `${prefix}${(++seq).toString().padStart(6, "0")}`;
@@ -135,5 +126,41 @@ export const makeDashboardOverview = (o: Partial<DashboardOverview> = {}): Dashb
     { date: "2026-08-02", polls: 0, forms: 0 },
     { date: "2026-08-03", polls: 25, forms: 10 },
   ],
+  ...o,
+});
+
+// ─── Plans ──────────────────────────────────────────────────────────────────────
+export const makePlanCatalog = (): PlanCatalogEntry[] => [
+  {
+    id: "free", label: "Free", tagline: "Everything you need.", priceMonthly: 0, priceYearly: 0,
+    limits: { responses: 1000, liveItems: 10, uploads: 100, aiMessages: 30 },
+    features: { customSlug: false, branding: false }, support: "Community",
+  },
+  {
+    id: "plus", label: "Plus", tagline: "For regular events.", priceMonthly: 299, priceYearly: 2990,
+    limits: { responses: 10000, liveItems: 50, uploads: 2000, aiMessages: 300 },
+    features: { customSlug: true, branding: true }, support: "Email",
+  },
+  {
+    id: "pro", label: "Pro", tagline: "High volume.", priceMonthly: 799, priceYearly: 7990,
+    limits: { responses: 100000, liveItems: null, uploads: 20000, aiMessages: 2000 },
+    features: { customSlug: true, branding: true }, support: "Priority email",
+  },
+];
+
+export const makePlanState = (o: Partial<PlanState> = {}): PlanState => ({
+  plan: "free",
+  label: "Free",
+  assignedPlan: "free",
+  expiresAt: null,
+  period: "2026-10",
+  features: { customSlug: false, branding: false },
+  grace: 1.2,
+  usage: {
+    responses: { used: 120, limit: 1000 },
+    liveItems: { used: 3, limit: 10 },
+    uploads: { used: 0, limit: 100 },
+    aiMessages: { used: 0, limit: 30 },
+  },
   ...o,
 });

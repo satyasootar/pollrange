@@ -20,6 +20,7 @@ import { DashboardPage } from "@/pages/dashboard";
 import { OverviewPage } from "@/pages/dashboard/overview";
 import { ChatPage } from "@/pages/dashboard/chat";
 import { ProfilePage } from "@/pages/dashboard/profile";
+import { BillingPage } from "@/pages/dashboard/billing";
 import { FormsPage } from "@/pages/dashboard/forms";
 import { CreatePollPage } from "@/pages/polls/create";
 import { EditPollPage } from "@/pages/polls/edit";
@@ -98,6 +99,7 @@ export function App() {
               {config.aiEnabled && <Route path="chat" element={<ChatPage />} />}
               <Route path="forms" element={<FormsPage />} />
               <Route path="profile" element={<ProfilePage />} />
+              <Route path="billing" element={<BillingPage />} />
             </Route>
             <Route element={<AppShell />}>
               <Route path="/polls/create" element={<CreatePollPage />} />

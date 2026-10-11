@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { UpgradeIntentNote } from "@/components/billing/upgrade-intent-note";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -39,6 +40,7 @@ export function LoginPage() {
           <span className="font-semibold text-foreground">Kollects</span>
         </motion.div>
 
+        <UpgradeIntentNote action="sign in" />
         <motion.div variants={fadeUp} className="mb-6">
           <h1 className="text-2xl font-bold">Sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">

@@ -169,4 +169,16 @@ describe("PublicFormPage", () => {
       expect(testState.submittedForm).toBeNull();
     });
   });
+
+  it("shows the Made with Kollects badge only when the creator's plan lacks branding", async () => {
+    testState.publicForm = makePublicForm({ showPoweredBy: true });
+    const { unmount } = renderPage();
+    expect(await screen.findByText(/made with/i)).toBeInTheDocument();
+    unmount();
+
+    testState.publicForm = makePublicForm({ showPoweredBy: false });
+    renderPage();
+    await screen.findByPlaceholderText("Your answer");
+    expect(screen.queryByText(/made with/i)).not.toBeInTheDocument();
+  });
 });

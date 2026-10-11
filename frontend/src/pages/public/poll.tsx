@@ -9,6 +9,7 @@ import type { AnswerPayload, PublicPollQuestion } from "@/types";
 import { timeUntilExpiry, shuffle } from "@/lib/utils";
 import { useAuthStore } from "@/store/use-auth-store";
 import { AuthGateDialog } from "@/components/auth/auth-gate-dialog";
+import { PoweredBy } from "@/components/billing/powered-by";
 
 // The backend returns Mongoose subdocuments, so ids arrive as `_id`; the typed
 // `questionId`/`optionId` may be absent. Model both and normalize below.
@@ -312,6 +313,7 @@ export function PublicPollPage() {
             {submitResponse.isPending ? "Submitting…" : "Submit Response"}
           </Button>
         </motion.div>
+        <PoweredBy show={poll.showPoweredBy} />
       </div>
 
       <AuthGateDialog

@@ -4,12 +4,16 @@ import {
   makePublicPoll,
   makeDashboardOverview,
   makeForm,
+  makePlanCatalog,
+  makePlanState,
   oid,
 } from "./factories";
 import type {
   PublicForm,
   PublicPoll,
   DashboardOverview,
+  PlanRequest,
+  PlanState,
   SubmitFormResponsePayload,
   SubmitResponsePayload,
 } from "@/types";
@@ -37,6 +41,9 @@ export const testState = {
     messages: [] as unknown[],
   },
   aiLastBody: null as Record<string, unknown> | null,
+  planState: makePlanState() as PlanState,
+  planRequests: [] as PlanRequest[],
+  planRequestBodies: [] as Record<string, unknown>[],
 };
 
 export function resetTestState() {
@@ -49,12 +56,31 @@ export function resetTestState() {
   testState.failUpload = false;
   testState.ai = { reply: "Sure!", actions: [], conversationId: "conv1", messages: [] };
   testState.aiLastBody = null;
+  testState.planState = makePlanState();
+  testState.planRequests = [];
+  testState.planRequestBodies = [];
 }
 
 const ok = (data: unknown, message = "ok") =>
   HttpResponse.json({ statusCode: 200, data, message, success: true });
 
 export const handlers = [
+  // ─── Plans ────────────────────────────────────────────────────────────────
+  http.get(`${API}/plans`, () => ok(makePlanCatalog())),
+  http.get(`${API}/billing/me`, () => ok(testState.planState)),
+  http.get(`${API}/billing/requests/me`, () => ok(testState.planRequests)),
+  http.post(`${API}/billing/requests`, async ({ request }) => {
+    const body = (await request.json()) as { plan: "plus" | "pro"; period: "monthly" | "yearly" };
+    testState.planRequestBodies.push(body);
+    const r: PlanRequest = { id: "req1", ...body, note: null, status: "pending", adminNote: null, createdAt: new Date().toISOString(), decidedAt: null };
+    testState.planRequests = [r];
+    return HttpResponse.json({ statusCode: 201, data: r, message: "ok", success: true }, { status: 201 });
+  }),
+  http.delete(`${API}/billing/requests/:id`, ({ params }) => {
+    testState.planRequests = testState.planRequests.map((r) => (r.id === params.id ? { ...r, status: "cancelled" as const } : r));
+    return ok(testState.planRequests.find((r) => r.id === params.id));
+  }),
+
   // ─── Public forms ─────────────────────────────────────────────────────────
   http.get(`${API}/public/forms/:shareToken`, () => ok(testState.publicForm)),
 

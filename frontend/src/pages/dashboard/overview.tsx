@@ -10,6 +10,7 @@ import { TopList } from "@/components/dashboard/top-list";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { config } from "@/config/config";
+import { UsageBanner } from "@/components/billing/usage-banner";
 import type { TimelineGranularity } from "@/types";
 
 export function OverviewPage() {
@@ -56,6 +57,7 @@ export function OverviewPage() {
       )}
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-6 md:px-8">
+        <UsageBanner />
         {/* Stats row */}
         <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           {stats.map((stat) => (

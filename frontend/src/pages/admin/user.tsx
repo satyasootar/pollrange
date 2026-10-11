@@ -1,12 +1,77 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, BarChart3, FileText, MessageSquare, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatTile } from "@/components/dashboard/stat-tile";
-import { useAdminUser } from "@/hooks/use-admin";
-import { buildFormShareUrl, buildShareUrl, formatDate, formatDatetime, timeAgo } from "@/lib/utils";
+import { useAdminUser, useSetUserPlan } from "@/hooks/use-admin";
+import { buildFormShareUrl, buildShareUrl, formatDate, formatDatetime, timeAgo, toastApiError } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Panel, Pill } from "@/components/admin/admin-ui";
 import { formatNumber, statusTone } from "@/lib/admin-format";
-import type { AdminContentItem } from "@/types";
+import type { AdminContentItem, AdminUserDetail, PlanId } from "@/types";
+
+const toDateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
+
+/** Assign Free/Plus/Pro with an optional end date (end of that local day). */
+function PlanControl({ userId, user }: { userId: string; user: AdminUserDetail["user"] }) {
+  const [plan, setPlan] = useState<PlanId>(user.assignedPlan);
+  const [until, setUntil] = useState(toDateInput(user.planExpiresAt));
+  // Lazy init keeps the impure Date.now() out of render.
+  const [tomorrow] = useState(() => toDateInput(new Date(Date.now() + 86_400_000).toISOString()));
+  const save = useSetUserPlan(userId);
+  const dirty = plan !== user.assignedPlan || until !== toDateInput(user.planExpiresAt);
+  const lapsed = user.assignedPlan !== user.plan;
+
+  return (
+    <Panel
+      title="Plan"
+      action={
+        <span className="flex items-center gap-2 text-xs text-muted-foreground">
+          Effective now: <Pill tone={user.plan === "free" ? "muted" : "good"}>{user.plan}</Pill>
+          {lapsed && <Pill tone="warn">{user.assignedPlan} expired</Pill>}
+        </span>
+      }
+    >
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex items-center border border-border" role="group" aria-label="Plan">
+          {(["free", "plus", "pro"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              aria-pressed={plan === p}
+              onClick={() => setPlan(p)}
+              className={`px-3 py-1.5 text-sm capitalize ${plan === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+        {plan !== "free" && (
+          <div className="space-y-1">
+            <Label htmlFor="plan-until" className="text-xs">Active until (optional)</Label>
+            <Input id="plan-until" type="date" value={until} min={tomorrow} onChange={(e) => setUntil(e.target.value)} className="w-44" />
+          </div>
+        )}
+        <Button
+          disabled={!dirty || save.isPending}
+          onClick={() =>
+            save.mutate(
+              { plan, expiresAt: plan !== "free" && until ? new Date(`${until}T23:59:59.999`).toISOString() : null },
+              { onSuccess: (r) => toast.success(`Plan set to ${r.plan}.`), onError: toastApiError }
+            )
+          }
+        >
+          {save.isPending ? "Saving…" : "Save plan"}
+        </Button>
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {plan === "free" ? "Free never expires." : until ? `Drops back to Free after ${formatDate(new Date(`${until}T23:59:59`))}.` : "No end date: stays on this plan until changed."} Every change is recorded in the audit log.
+      </p>
+    </Panel>
+  );
+}
 
 function ContentTable({ items, kind }: { items: AdminContentItem[]; kind: "poll" | "form" }) {
   if (items.length === 0) return <p className="text-sm text-muted-foreground">No {kind}s yet.</p>;
@@ -93,6 +158,8 @@ export function AdminUserPage() {
                   </Pill>
                 ))}
             </div>
+
+            <PlanControl key={`${data.user.assignedPlan}-${data.user.planExpiresAt}`} userId={userId!} user={data.user} />
 
             <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
               <StatTile stat={{ label: "Polls", value: live(data.polls).length, icon: BarChart3, color: "text-amber-500" }} />

@@ -1,75 +1,61 @@
-import { ArrowLeft, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { readUpgradeIntent } from "@/lib/upgrade-intent";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useOnboardingStore } from "@/store/use-onboarding-store";
-import { PLAN_OPTIONS } from "./onboarding-config";
+import { usePlans } from "@/hooks/use-plan";
+import { PlanCards, PeriodToggle, type BillingPeriod } from "@/components/billing/plan-cards";
 
 export function StepPlan() {
   const { form, setField, nextStep, prevStep } = useOnboardingStore();
+  const { data: plans, isLoading } = usePlans();
+  const [period, setPeriod] = useState<BillingPeriod>(() => readUpgradeIntent()?.period ?? "monthly");
+
+  // Came from "Get Plus" on the pricing page? Pre-select that plan.
+  useEffect(() => {
+    const intent = readUpgradeIntent();
+    if (intent && !form.plan) setField("plan", intent.plan);
+  }, [form.plan, setField]);
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-8 space-y-8">
-      <div>
-        <h2 className="text-lg font-semibold">Choose your plan</h2>
-        <p className="text-sm text-muted-foreground">You can change this anytime.</p>
+    <div className="mx-auto max-w-4xl space-y-8 px-8 py-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Which plan fits you?</h2>
+          <p className="text-sm text-muted-foreground">Everyone starts on Free. Upgrade anytime from Plan & usage.</p>
+        </div>
+        <PeriodToggle value={period} onChange={setPeriod} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {PLAN_OPTIONS.map((plan) => {
-          const selected = form.plan === plan.value;
-          return (
-            <button
-              key={plan.value}
-              type="button"
-              onClick={() => setField("plan", plan.value)}
-              className={cn(
-                "relative flex h-full flex-col border-2 p-5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5",
-                selected ? "border-primary bg-primary/10" : "border-border"
-              )}
-            >
-              {plan.badge && (
-                <span className="absolute -top-3 left-4 border-2 border-primary bg-background px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                  {plan.badge}
-                </span>
-              )}
-
-              <p className="text-base font-semibold">{plan.label}</p>
-              <p className="mt-2 flex items-baseline gap-1">
-                <span className="text-2xl font-bold tabular-nums">{plan.price}</span>
-                <span className="text-xs text-muted-foreground">{plan.period}</span>
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">{plan.blurb}</p>
-
-              <ul className="mt-4 flex-1 space-y-2 border-t border-border pt-4">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-xs">
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div
+      {isLoading || !plans ? (
+        <div className="shimmer h-96" />
+      ) : (
+        <PlanCards
+          plans={plans}
+          period={period}
+          highlight="plus"
+          action={(plan) => {
+            const selected = form.plan === plan.id;
+            return (
+              <button
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setField("plan", plan.id)}
                 className={cn(
-                  "mt-4 flex h-8 items-center justify-center border text-xs font-semibold uppercase tracking-wide",
-                  selected
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border text-muted-foreground"
+                  "flex h-8 w-full items-center justify-center border text-xs font-semibold uppercase tracking-wide",
+                  selected ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary/40"
                 )}
               >
-                {selected ? "Selected" : "Select"}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                {selected ? "Selected" : plan.priceMonthly === 0 ? "Start free" : "I'm interested"}
+              </button>
+            );
+          }}
+        />
+      )}
 
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={prevStep}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-        >
+        <button type="button" onClick={prevStep} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3.5 w-3.5" />
           Back
         </button>
