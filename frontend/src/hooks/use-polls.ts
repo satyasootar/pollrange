@@ -4,10 +4,10 @@ import {
   useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { pollsApi } from "@/api/polls.api";
 import type { PollFilters, PollBuilderForm } from "@/types";
-import { getApiErrorMessage, buildShareUrl } from "@/lib/utils";
+import { buildShareUrl, toastApiError } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const pollKeys = {
   all: ["polls"] as const,
@@ -56,7 +56,7 @@ export function useUpdatePoll(pollId: string) {
       qc.invalidateQueries({ queryKey: pollKeys.all });
       toast.success("Poll updated.");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -68,7 +68,7 @@ export function useDeletePoll() {
       qc.invalidateQueries({ queryKey: pollKeys.all });
       toast.success("Poll deleted.");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -84,7 +84,7 @@ export function usePublishPoll(pollId: string) {
         description: `Public link: ${buildShareUrl(poll.shareToken)}/results`,
       });
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -97,7 +97,7 @@ export function useClosePoll(pollId: string) {
       qc.invalidateQueries({ queryKey: pollKeys.all });
       toast.success("Poll closed.");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -110,7 +110,7 @@ export function useReopenPoll(pollId: string) {
       qc.invalidateQueries({ queryKey: pollKeys.all });
       toast.success("Poll reopened!");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -123,6 +123,6 @@ export function useRegenerateToken(pollId: string) {
       qc.invalidateQueries({ queryKey: pollKeys.all });
       toast.success("New share link generated.");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { Plus, Sparkles, Trash2, MessageSquare, PanelRight, X } from "lucide-react";
 import { aiApi } from "@/api/ai.api";
 import { aiKeys, useConversations, useDeleteConversation, useSendChat } from "@/hooks/use-ai";
@@ -8,7 +7,7 @@ import { ChatMessages } from "@/components/ai/chat-messages";
 import { ChatComposer } from "@/components/ai/chat-composer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { cn, getApiErrorMessage } from "@/lib/utils";
+import { cn, toastApiError } from "@/lib/utils";
 import type { AiChatMessage, AiConversationListItem } from "@/types";
 
 const SUGGESTIONS = [
@@ -39,7 +38,7 @@ export function ChatPage() {
       setActiveId(id);
       setMessages(res.data.data.messages ?? []);
     } catch (err) {
-      toast.error(getApiErrorMessage(err));
+      toastApiError(err);
     }
   };
 
@@ -55,7 +54,7 @@ export function ChatPage() {
           qc.invalidateQueries({ queryKey: aiKeys.conversations });
         },
         onError: (err) => {
-          toast.error(getApiErrorMessage(err));
+          toastApiError(err);
           setMessages((prev) => prev.slice(0, -1));
         },
       }
@@ -70,7 +69,7 @@ export function ChatPage() {
         if (id === activeId) newChat();
         setPendingDelete(null);
       },
-      onError: (err) => toast.error(getApiErrorMessage(err)),
+      onError: (err) => toastApiError(err),
     });
   };
 

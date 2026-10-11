@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
 import { useCreateForm } from "@/hooks/use-forms";
 import { FormPreview } from "./form-preview";
 import { PublishErrorDialog } from "@/components/builder/publish-error-dialog";
-import { formatDatetime, getApiErrorMessage, getValidationErrors, type ApiValidationError } from "@/lib/utils";
+import { formatDatetime, getValidationErrors, type ApiValidationError, toastApiError } from "@/lib/utils";
 import type { FormBuilderForm } from "@/types";
 
 export function StepFormReview() {
@@ -26,7 +25,7 @@ export function StepFormReview() {
         onError: (err) => {
           const validationErrors = getValidationErrors(err);
           if (validationErrors) setDialogErrors(validationErrors);
-          else toast.error(getApiErrorMessage(err));
+          else toastApiError(err);
         },
       }
     );

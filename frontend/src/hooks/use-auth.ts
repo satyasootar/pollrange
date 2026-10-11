@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { authApi } from "@/api/auth.api";
 import { useAuthStore } from "@/store/use-auth-store";
-import { getApiErrorMessage } from "@/lib/utils";
+import { toastApiError } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function useLogin() {
   const { setUser } = useAuthStore();
@@ -18,7 +18,7 @@ export function useLogin() {
       const params = new URLSearchParams(window.location.search);
       navigate(params.get("redirect") || "/dashboard/overview", { replace: true });
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -34,7 +34,7 @@ export function useRegister() {
       const params = new URLSearchParams(window.location.search);
       navigate(params.get("redirect") || "/dashboard", { replace: true });
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -58,7 +58,7 @@ export function useForgotPassword() {
     mutationFn: (email: string) => authApi.forgotPassword(email),
     onSuccess: () =>
       toast.success("Reset email sent! Check your inbox."),
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -71,6 +71,6 @@ export function useResetPassword() {
       toast.success("Password reset! Please log in.");
       navigate("/auth/login");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }

@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Send } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { usePollBuilderStore } from "@/store/use-poll-builder-store";
 import { useCreatePoll } from "@/hooks/use-polls";
 import { PublishErrorDialog } from "@/components/builder/publish-error-dialog";
 import { fadeUp, stagger } from "@/lib/animations";
-import { formatDatetime, getApiErrorMessage, getValidationErrors, type ApiValidationError } from "@/lib/utils";
+import { formatDatetime, getValidationErrors, type ApiValidationError, toastApiError } from "@/lib/utils";
 import type { PollBuilderForm } from "@/types";
 
 export function StepReview() {
@@ -34,7 +33,7 @@ export function StepReview() {
       onError: (err) => {
         const validationErrors = getValidationErrors(err);
         if (validationErrors) setDialogErrors(validationErrors);
-        else toast.error(getApiErrorMessage(err));
+        else toastApiError(err);
       },
     });
   };

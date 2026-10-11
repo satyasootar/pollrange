@@ -1,8 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { publicApi } from "@/api/public.api";
-import { getOrCreateSessionToken, getApiErrorMessage } from "@/lib/utils";
+import { getOrCreateSessionToken, toastApiError } from "@/lib/utils";
 import type { AnswerPayload } from "@/types";
-import { toast } from "sonner";
 
 export function usePublicPoll(shareToken: string) {
   return useQuery({
@@ -45,7 +44,7 @@ export function useSubmitResponse(pollId: string, shareToken: string) {
         isComplete: true 
       });
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 

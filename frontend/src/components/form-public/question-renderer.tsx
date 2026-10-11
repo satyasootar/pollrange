@@ -2,7 +2,7 @@ import { Star, Upload, Loader2, X, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formPublicApi } from "@/api/form-public.api";
-import { getApiErrorMessage, newObjectId } from "@/lib/utils";
+import { newObjectId, toastApiError } from "@/lib/utils";
 import { toast } from "sonner";
 import type { FormQuestion, FormFileValue, FormGridValue } from "@/types";
 import { calculatePayment, formatInr, selectionHint } from "@/lib/upi-payment";
@@ -100,7 +100,7 @@ export function QuestionRenderer({ formId, question: q, value, onChange, preview
           }));
         })
         .catch((err) => {
-          toast.error(getApiErrorMessage(err));
+          toastApiError(err);
           onChange((prev) => ({
             ...prev,
             filePreviews: (prev.filePreviews ?? []).map((f) => (f.id === id ? { ...f, status: "error" } : f)),

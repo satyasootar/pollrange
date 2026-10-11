@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { formatDistanceToNow, format, isAfter } from "date-fns";
+import { toast } from "sonner";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -161,4 +162,22 @@ export function getValidationErrors(error: unknown): ApiValidationError[] | null
   const status = axiosError?.response?.status;
   const errors = axiosError?.response?.data?.errors;
   return status === 400 && errors && errors.length > 0 ? errors : null;
+}
+
+/**
+ * Toasts an API error. Plan-limit (402) errors for creators get a "See plans" action;
+ * respondent-facing 402s carry no plan details and show as plain errors.
+ */
+export function toastApiError(error: unknown): void {
+  const res = (error as { response?: { status?: number; data?: { message?: string; errors?: { code?: string; plan?: string }[] } } })?.response;
+  const detail = res?.data?.errors?.[0];
+  if (res?.status === 402 && detail?.code === "PLAN_LIMIT" && detail.plan) {
+    toast.error(res.data?.message ?? "You've reached a plan limit.", {
+      id: "plan-limit",
+      duration: 8000,
+      action: { label: "See plans", onClick: () => window.location.assign("/dashboard/billing") },
+    });
+    return;
+  }
+  toast.error(getApiErrorMessage(error));
 }

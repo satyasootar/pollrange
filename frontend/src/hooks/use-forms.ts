@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { formsApi } from "@/api/forms.api";
 import type { FormFilters, FormBuilderForm } from "@/types";
-import { getApiErrorMessage } from "@/lib/utils";
+import { toastApiError } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const formKeys = {
   all: ["forms"] as const,
@@ -50,7 +50,7 @@ export function useUpdateForm(formId: string) {
       qc.invalidateQueries({ queryKey: formKeys.all });
       toast.success("Form updated.");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -62,7 +62,7 @@ export function useDeleteForm() {
       qc.invalidateQueries({ queryKey: formKeys.all });
       toast.success("Form deleted.");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -74,7 +74,7 @@ export function useDuplicateForm() {
       qc.invalidateQueries({ queryKey: formKeys.all });
       toast.success("Form duplicated.");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -87,7 +87,7 @@ export function useCloseForm(formId: string) {
       qc.invalidateQueries({ queryKey: formKeys.all });
       toast.success("Form closed.");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -100,6 +100,6 @@ export function useReopenForm(formId: string) {
       qc.invalidateQueries({ queryKey: formKeys.all });
       toast.success("Form reopened!");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }

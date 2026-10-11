@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { authApi } from "@/api/auth.api";
-import { getApiErrorMessage } from "@/lib/utils";
+import { toastApiError } from "@/lib/utils";
+import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
 import type { UserBranding } from "@/types";
 
@@ -17,7 +17,7 @@ export function useUpdateProfile() {
       qc.invalidateQueries({ queryKey: ["auth", "me"] });
       toast.success("Profile updated successfully!");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }
 
@@ -27,6 +27,6 @@ export function useChangePassword() {
     onSuccess: () => {
       toast.success("Password changed successfully!");
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => toastApiError(err),
   });
 }

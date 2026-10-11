@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { toast } from "sonner";
 import { Sparkles, X } from "lucide-react";
 import { useSendChat } from "@/hooks/use-ai";
-import { getApiErrorMessage } from "@/lib/utils";
+import { toastApiError } from "@/lib/utils";
 import { ChatMessages } from "./chat-messages";
 import { ChatComposer } from "./chat-composer";
 import type { AiAction, AiChatMessage } from "@/types";
@@ -41,7 +40,7 @@ export function BuilderChatPanel({
           if (actions?.length) onActions(actions);
         },
         onError: (err) => {
-          toast.error(getApiErrorMessage(err));
+          toastApiError(err);
           setMessages((prev) => prev.slice(0, -1)); // roll back the optimistic user msg
         },
       }
