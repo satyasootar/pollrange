@@ -1,6 +1,17 @@
 {
     "rewrites": [
         {
+            "source": "/:kind(f|p)/:token",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": "(?i).*(bot|crawler|spider|facebookexternalhit|whatsapp|slack|twitter|linkedin|discord|telegram|skype|pinterest|embedly|preview).*"
+                }
+            ],
+            "destination": "https://pollrange.onrender.com/api/share/:kind/:token"
+        },
+        {
             "source": "/((?!api/).*)",
             "destination": "/"
         }
