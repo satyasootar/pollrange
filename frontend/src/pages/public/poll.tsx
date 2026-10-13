@@ -5,11 +5,13 @@ import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePublicPoll, useSubmitResponse, usePollStatus } from "@/hooks/use-public-poll";
 import { fadeUp, stagger, pageTransition } from "@/lib/animations";
-import type { AnswerPayload, PublicPollQuestion } from "@/types";
+import type { AnswerPayload, PublicBrand, PublicPollQuestion } from "@/types";
 import { timeUntilExpiry, shuffle } from "@/lib/utils";
 import { useAuthStore } from "@/store/use-auth-store";
 import { AuthGateDialog } from "@/components/auth/auth-gate-dialog";
 import { PoweredBy } from "@/components/billing/powered-by";
+import { useBrandTheme } from "@/hooks/use-brand-theme";
+import { BrandFooter, BrandHeader, BrandThankYou } from "@/components/brand/brand-chrome";
 
 // The backend returns Mongoose subdocuments, so ids arrive as `_id`; the typed
 // `questionId`/`optionId` may be absent. Model both and normalize below.
@@ -107,6 +109,8 @@ export function PublicPollPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poll, user]);
 
+  useBrandTheme(poll?.brand, poll?.title);
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -147,6 +151,7 @@ export function PublicPollPage() {
         isResultsPublic={poll.isResultsPublic || poll.status === "published"}
         shareToken={shareToken!}
         totalResponses={poll.totalResponses}
+        brand={poll.brand}
       />
     );
   }
@@ -204,6 +209,7 @@ export function PublicPollPage() {
       animate="visible"
     >
       <div className="mx-auto max-w-xl">
+        <BrandHeader brand={poll.brand} />
         {/* Poll header */}
         <motion.div variants={fadeUp} className="mb-8">
           <div className="mb-2 flex items-center gap-2">
@@ -313,6 +319,7 @@ export function PublicPollPage() {
             {submitResponse.isPending ? "Submitting…" : "Submit Response"}
           </Button>
         </motion.div>
+        <BrandFooter brand={poll.brand} />
         <PoweredBy show={poll.showPoweredBy} />
       </div>
 
@@ -332,10 +339,12 @@ function ThankYouState({
   isResultsPublic,
   shareToken,
   totalResponses,
+  brand,
 }: {
   isResultsPublic: boolean;
   shareToken: string;
   totalResponses: number;
+  brand?: PublicBrand | null | undefined;
 }) {
   const navigate = useNavigate();
   return (
@@ -346,6 +355,7 @@ function ThankYouState({
         animate="visible"
         className="border border-border bg-card p-10 text-center max-w-sm w-full"
       >
+        <BrandHeader brand={brand} className="mb-6 justify-center" />
         <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
         <h2 className="mb-2 text-xl font-bold">Thank you!</h2>
         <p className="mb-6 text-sm text-muted-foreground">
@@ -357,6 +367,7 @@ function ThankYouState({
             View Results
           </Button>
         )}
+        <BrandThankYou brand={brand} />
       </motion.div>
     </div>
   );

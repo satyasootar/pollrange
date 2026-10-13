@@ -21,6 +21,7 @@ import { OverviewPage } from "@/pages/dashboard/overview";
 import { ChatPage } from "@/pages/dashboard/chat";
 import { ProfilePage } from "@/pages/dashboard/profile";
 import { BillingPage } from "@/pages/dashboard/billing";
+import { BrandingPage } from "@/pages/dashboard/branding";
 import { FormsPage } from "@/pages/dashboard/forms";
 import { CreatePollPage } from "@/pages/polls/create";
 import { EditPollPage } from "@/pages/polls/edit";
@@ -100,6 +101,7 @@ export function App() {
               <Route path="forms" element={<FormsPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="billing" element={<BillingPage />} />
+              <Route path="branding" element={<BrandingPage />} />
             </Route>
             <Route element={<AppShell />}>
               <Route path="/polls/create" element={<CreatePollPage />} />

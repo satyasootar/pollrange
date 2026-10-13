@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { buildShareUrl } from "@/lib/utils";
+import { QR_CIRCLE_LOGO } from "@/lib/brand";
 import type { UserBranding } from "@/types";
 
 interface QRCardDialogProps {
@@ -39,12 +40,14 @@ interface QRCardDialogProps {
 }
 
 export function QRCardDialog({ pollId, shareToken, pollTitle, defaultBranding, trigger, open, onOpenChange }: QRCardDialogProps) {
-  const [branding, setBranding] = useState<UserBranding>({
+  const [branding, setBranding] = useState({
     companyName: defaultBranding?.companyName || "",
     businessDetails: defaultBranding?.businessDetails || "",
-    logoUrl: defaultBranding?.logoUrl || "",
     qrColor: defaultBranding?.qrColor || "#000000",
   });
+  // Brand kit logo in the QR centre when enabled; otherwise the Kollects mark.
+  const qrLogo = defaultBranding?.qrLogo && defaultBranding.logoUrl ? defaultBranding.logoUrl : "/logo/logo1.png";
+  const accent = defaultBranding?.accentColor || "#000000";
 
   const [cardStyles, setCardStyles] = useState({
     backgroundColor: "#ffffff",
@@ -290,10 +293,13 @@ export function QRCardDialog({ pollId, shareToken, pollTitle, defaultBranding, t
                   >
                     {/* Header Section */}
                     <div className={`w-full flex flex-col ${alignmentClass}`}>
+                      {defaultBranding?.logoUrl && (
+                        <img src={defaultBranding.logoUrl} alt="" crossOrigin="anonymous" className="mb-3 max-h-12 w-auto object-contain" />
+                      )}
                       <span className={`font-black tracking-tighter uppercase leading-none mb-3 ${getFontSize("company")}`}>
                         {branding.companyName || "Your Brand"}
                       </span>
-                      <div className="h-2.5 w-20 bg-black" />
+                      <div className="h-2.5 w-20" style={{ backgroundColor: accent }} />
                     </div>
 
                     {/* QR Section */}
@@ -305,8 +311,10 @@ export function QRCardDialog({ pollId, shareToken, pollTitle, defaultBranding, t
                           fgColor={branding.qrColor} 
                           level="H"
                           includeMargin={false}
+                          className={defaultBranding?.qrLogo && defaultBranding.logoUrl && defaultBranding.qrLogoShape === "circle" ? QR_CIRCLE_LOGO : undefined}
                           imageSettings={{
-                            src: "/logo/logo1.png",
+                            src: qrLogo,
+                            crossOrigin: "anonymous",
                             x: undefined,
                             y: undefined,
                             height: cardStyles.qrSize * 0.25,

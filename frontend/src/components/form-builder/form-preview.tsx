@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 import { QuestionRenderer, type AnswerDraft } from "@/components/form-public/question-renderer";
 import { builderToPreviewForm } from "@/lib/form-mappers";
+import { BrandScope } from "@/components/brand/brand-scope";
+import { BrandHeader } from "@/components/brand/brand-chrome";
+import { useCanUse } from "@/hooks/use-plan";
+import { useAuthStore } from "@/store/use-auth-store";
+import { kitToPublic, withBrandDefaults } from "@/lib/brand";
 import type { FormBuilderForm } from "@/types";
 
 /**
@@ -12,9 +17,14 @@ export function FormPreview({ form }: { form: FormBuilderForm }) {
   const preview = useMemo(() => builderToPreviewForm(form), [form]);
   const [answers, setAnswers] = useState<Record<string, AnswerDraft>>({});
   const multiSection = preview.sections.length > 1;
+  const kit = useAuthStore((s) => s.user?.branding);
+  const canBrand = useCanUse("branding");
+  // Same rule as the server's resolveBrand: plan includes branding and the form didn't opt out.
+  const brand = canBrand && form.branding.useKit ? kitToPublic(withBrandDefaults(kit), form.branding) : null;
 
   return (
-    <div className="space-y-8">
+    <BrandScope brand={brand} className="space-y-8 border border-border bg-background p-4 sm:p-6">
+      <BrandHeader brand={brand} className="mb-0" />
       {preview.sections.map((section, si) => (
         <div key={section._id} className="space-y-4">
           {(multiSection || section.title || section.description) && (
@@ -51,6 +61,6 @@ export function FormPreview({ form }: { form: FormBuilderForm }) {
           ))}
         </div>
       ))}
-    </div>
+    </BrandScope>
   );
 }

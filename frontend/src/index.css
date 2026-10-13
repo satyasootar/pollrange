@@ -56,6 +56,7 @@
 
 :root {
     --background: #e7e5e4;
+    --page-bg: #e7e5e4; /* theme background; brand tint mixes against it */
     --foreground: #1e293b;
     --card: #f5f5f4;
     --card-foreground: #1e293b;
@@ -111,6 +112,7 @@
 
 .dark {
     --background: #1e1b18;
+    --page-bg: #1e1b18;
     --foreground: #e2e8f0;
     --card: #2c2825;
     --card-foreground: #e2e8f0;
@@ -358,4 +360,13 @@ html.dark .blueprint-lines::after {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+}
+/* Brand kit corner style on public pages. Unlayered so it beats the rounded-none utilities. */
+[data-brand-radius] :where(button, input, textarea, select, img, .border, .border-2):not(.rounded-full) {
+  border-radius: var(--brand-radius);
+}
+
+/* Brand tint is for the page only: form fields keep the theme's own background. */
+:where(input, textarea, select) {
+  --background: var(--page-bg);
 }

@@ -13,6 +13,7 @@ import {
   BarChart3,
   ShieldCheck,
   CreditCard,
+  Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/use-auth-store";
@@ -223,6 +224,10 @@ export function AppShell() {
               <DropdownMenuItem onClick={() => navigate("/dashboard/billing")}>
                 <CreditCard className="mr-2 h-4 w-4" />
                 Plan & usage
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/dashboard/branding")}>
+                <Palette className="mr-2 h-4 w-4" />
+                Brand kit
               </DropdownMenuItem>
 
               <DropdownMenuSub>

@@ -69,6 +69,7 @@ function defaultForm(): FormBuilderForm {
     title: "",
     description: "",
     slug: "",
+    branding: { useKit: true },
     isQuiz: false,
     expiresAt: "",
     responseMode: "anonymous",

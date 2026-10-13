@@ -21,12 +21,50 @@ export interface PaginatedData<T> {
 }
 
 // ─── User / Auth ──────────────────────────────────────────────────────────────
+export type BrandFont = "default" | "inter" | "poppins" | "dm-sans" | "lora" | "playfair" | "space-grotesk" | "nunito";
+export type BrandRadius = "sharp" | "soft" | "round";
+export type BrandBackground = "plain" | "tint";
+
+/** The account's brand kit (Settings → Branding). */
 export type UserBranding = {
   companyName: string;
   businessDetails: string;
   logoUrl: string;
   qrColor: string;
+  accentColor: string;
+  font: BrandFont;
+  radius: BrandRadius;
+  background: BrandBackground;
+  website: string;
+  supportEmail: string;
+  qrLogo: boolean;
+  qrLogoShape: "square" | "circle";
+  shareImageUrl: string;
 };
+
+/** Brand resolved server-side for respondents; null when the plan lacks branding or the form opted out. */
+export interface PublicBrand {
+  companyName: string;
+  logoUrl: string;
+  accentColor: string;
+  font: BrandFont;
+  radius: BrandRadius;
+  background: BrandBackground;
+  website: string;
+  supportEmail: string;
+  redirectUrl: string;
+  shareImageUrl: string;
+}
+
+/** Per-form tweaks on top of the brand kit. */
+export interface FormBrandingOverride {
+  useKit: boolean;
+  accentColor?: string;
+  redirectUrl?: string;
+  shareTitle?: string;
+  shareDescription?: string;
+  shareImageUrl?: string;
+}
 
 export interface User {
   _id: string;
@@ -131,6 +169,7 @@ export interface PublicPoll {
   alreadyResponded: boolean;
   /** True when the creator's plan doesn't include branding. */
   showPoweredBy?: boolean;
+  brand?: PublicBrand | null;
   settings: Pick<
     PollSettings,
     "showProgressBar" | "randomizeQuestions" | "randomizeOptions"
@@ -454,6 +493,7 @@ export interface Form {
   title: string;
   description?: string;
   coverImageUrl?: string;
+  branding?: FormBrandingOverride;
   shareToken: string;
   isQuiz: boolean;
   status: PollStatus;
@@ -483,6 +523,7 @@ export interface PublicForm {
   totalResponses: number;
   alreadyResponded: boolean;
   showPoweredBy?: boolean;
+  brand?: PublicBrand | null;
   settings: FormSettings;
   sections: FormSection[];
 }
@@ -626,6 +667,7 @@ export interface FormBuilderForm {
   description: string;
   slug: string;
   coverImageUrl?: string;
+  branding: FormBrandingOverride;
   isQuiz: boolean;
   expiresAt: string;
   responseMode: ResponseMode;

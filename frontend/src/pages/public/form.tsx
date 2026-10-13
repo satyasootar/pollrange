@@ -14,7 +14,9 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
 import { AuthGateDialog } from "@/components/auth/auth-gate-dialog";
 import { PoweredBy } from "@/components/billing/powered-by";
-import type { FormQuestion, FormSection, FormAnswerPayload, SubmitFormResult } from "@/types";
+import { useBrandTheme } from "@/hooks/use-brand-theme";
+import { BrandFooter, BrandHeader, BrandThankYou } from "@/components/brand/brand-chrome";
+import type { FormQuestion, FormSection, FormAnswerPayload, PublicBrand, SubmitFormResult } from "@/types";
 
 type AnswerMap = Record<string, AnswerDraft>;
 
@@ -112,6 +114,8 @@ export function PublicFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, user]);
 
+  useBrandTheme(form?.brand, form?.title);
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -142,6 +146,7 @@ export function PublicFormPage() {
         title="Thank you!"
         message={form.settings.confirmationMessage || "Your response has been recorded."}
         score={form.isQuiz && form.settings.releaseScoreImmediately ? result : null}
+        brand={form.brand}
       />
     );
   }
@@ -253,6 +258,7 @@ export function PublicFormPage() {
   return (
     <motion.div className="min-h-screen bg-background py-12 px-4" variants={pageTransition} initial="hidden" animate="visible">
       <div className="mx-auto max-w-xl">
+        <BrandHeader brand={form.brand} />
         {form.coverImageUrl && (
           <img src={form.coverImageUrl} alt="" className="mb-6 max-h-48 w-full border border-border object-cover" />
         )}
@@ -335,6 +341,7 @@ export function PublicFormPage() {
             {anyUploading ? "Uploading files…" : submit.isPending ? "Submitting…" : isLastStep ? "Submit" : "Next →"}
           </Button>
         </motion.div>
+        <BrandFooter brand={form.brand} />
         <PoweredBy show={form.showPoweredBy} />
       </div>
 
@@ -355,17 +362,20 @@ function FormStateScreen({
   title,
   message,
   score,
+  brand,
 }: {
   icon: "check" | "clock" | "error";
   title: string;
   message: string;
   score?: SubmitFormResult | null;
+  brand?: PublicBrand | null | undefined;
 }) {
   const Icon = icon === "clock" ? Clock : icon === "error" ? AlertCircle : CheckCircle2;
   const tone = icon === "error" ? "text-destructive" : icon === "clock" ? "text-amber-500" : "text-emerald-500";
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm border border-border bg-card p-10 text-center">
+        <BrandHeader brand={brand} className="mb-6 justify-center" />
         <Icon className={`mx-auto mb-4 h-12 w-12 ${tone}`} />
         <h2 className="mb-2 text-xl font-bold">{title}</h2>
         <p className="text-sm text-muted-foreground">{message}</p>
@@ -374,6 +384,7 @@ function FormStateScreen({
             Score: {score.score} / {score.totalPoints}
           </p>
         )}
+        <BrandThankYou brand={brand} />
       </div>
     </div>
   );

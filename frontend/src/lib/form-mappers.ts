@@ -53,6 +53,7 @@ export function formEntityToBuilder(form: Form): FormBuilderForm {
     description: form.description ?? "",
     slug: form.shareToken,
     coverImageUrl: form.coverImageUrl,
+    branding: { ...form.branding, useKit: form.branding?.useKit ?? true },
     isQuiz: form.isQuiz,
     expiresAt: form.expiresAt ? form.expiresAt.slice(0, 16) : "",
     responseMode: form.responseMode,

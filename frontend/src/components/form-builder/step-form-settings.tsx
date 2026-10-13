@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { ImagePlus, Loader2, X, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCanUse } from "@/hooks/use-plan";
+import { FormBrandingCard } from "./form-branding-card";
 import type { FormSettings } from "@/types";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
@@ -58,6 +59,15 @@ export function StepFormSettings({ formId }: { formId?: string }) {
   const handleNext = async () => {
     if (form.title.trim().length < 1) {
       toast.error("Give your form a title.");
+      return;
+    }
+    const { accentColor, redirectUrl } = form.branding;
+    if (accentColor && !/^#[0-9a-fA-F]{6}$/.test(accentColor)) {
+      toast.error("Accent colour must be a 6-digit hex like #4f46e5.");
+      return;
+    }
+    if (redirectUrl && !/^https?:\/\/\S+\.\S+/.test(redirectUrl)) {
+      toast.error("Redirect link must start with https://");
       return;
     }
     if (!(await checkSlug())) return;
@@ -291,6 +301,8 @@ export function StepFormSettings({ formId }: { formId?: string }) {
           onChange={(e) => updateSettings({ confirmationMessage: e.target.value })}
         />
       </div>
+
+      <FormBrandingCard />
 
       <div className="flex justify-end">
         <Button onClick={handleNext}>Continue to Questions →</Button>

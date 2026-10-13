@@ -45,6 +45,7 @@ export function toFormPayload(form: FormBuilderForm) {
     description: form.description || undefined,
     slug: form.slug.trim() || undefined,
     coverImageUrl: form.coverImageUrl || undefined,
+    branding: form.branding,
     isQuiz: form.isQuiz,
     responseMode: form.responseMode,
     expiresAt: form.expiresAt || null,

@@ -13,7 +13,6 @@ import {
   CreditCard,
 } from "lucide-react"
 import { Link } from "react-router-dom"
-import { useCanUse } from "@/hooks/use-plan"
 import { useAuthStore } from "@/store/use-auth-store"
 import { useUpdateProfile, useChangePassword } from "@/hooks/use-profile"
 import { useRequestVerification } from "@/hooks/use-auth-actions"
@@ -23,7 +22,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { fadeUp, stagger } from "@/lib/animations"
-import { Textarea } from "@/components/ui/textarea"
 
 export function ProfilePage() {
   const { user } = useAuthStore()
@@ -31,28 +29,16 @@ export function ProfilePage() {
   const changePassword = useChangePassword()
   const requestVerification = useRequestVerification()
   const logout = useLogout()
-  const canBrand = useCanUse("branding")
 
   const [name, setName] = useState(user?.name || "")
-  const [branding, setBranding] = useState({
-    companyName: user?.branding?.companyName || "",
-    businessDetails: user?.branding?.businessDetails || "",
-    logoUrl: user?.branding?.logoUrl || "",
-    qrColor: user?.branding?.qrColor || "#000000",
-  })
   const [oldPassword, setOldPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault()
-    updateProfile.mutate({ name, branding })
+    updateProfile.mutate({ name })
   }
-
-  const isBrandingDirty =
-    branding.companyName !== (user?.branding?.companyName || "") ||
-    branding.businessDetails !== (user?.branding?.businessDetails || "") ||
-    branding.qrColor !== (user?.branding?.qrColor || "#000000")
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault()
@@ -173,7 +159,7 @@ export function ProfilePage() {
                 type="submit"
                 disabled={
                   updateProfile.isPending ||
-                  (name === user?.name && !isBrandingDirty)
+                  name === user?.name
                 }
                 className="gap-2"
               >
@@ -197,97 +183,19 @@ export function ProfilePage() {
             </div>
           </Link>
 
-          {/* Branding Section */}
-          <motion.div
-            variants={fadeUp}
-            className="mb-8 border border-border bg-card p-6 shadow-none"
+          {/* Brand kit shortcut */}
+          <Link
+            to="/dashboard/branding"
+            className="mb-8 flex items-center gap-3 border border-border bg-card p-4 hover:border-primary/40"
           >
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-indigo-500/20 bg-indigo-500/5 text-indigo-500">
-                <Building2 className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold">Business Branding</h2>
-                <p className="text-xs text-muted-foreground">
-                  Set up your default company info for QR marketing materials.
-                </p>
-              </div>
+            <div className="flex h-10 w-10 items-center justify-center border border-indigo-500/20 bg-indigo-500/5 text-indigo-500">
+              <Building2 className="h-5 w-5" />
             </div>
-
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
-              {!canBrand && (
-                <p className="flex items-center gap-2 border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
-                  <Lock className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  Custom branding is part of Plus and Pro.
-                  <Link to="/dashboard/billing" className="font-medium text-primary underline-offset-2 hover:underline">See plans</Link>
-                </p>
-              )}
-              <fieldset disabled={!canBrand} className="space-y-4 disabled:opacity-60">
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name</Label>
-                <Input
-                  id="companyName"
-                  value={branding.companyName}
-                  onChange={(e) =>
-                    setBranding({ ...branding, companyName: e.target.value })
-                  }
-                  placeholder="Acme Corp"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="businessDetails">Business Description</Label>
-                <Textarea
-                  id="businessDetails"
-                  value={branding.businessDetails}
-                  onChange={(e) =>
-                    setBranding({
-                      ...branding,
-                      businessDetails: e.target.value,
-                    })
-                  }
-                  placeholder="Tell us more about your business..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="qrColor">Default QR Color</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="qrColor"
-                    type="color"
-                    value={branding.qrColor}
-                    onChange={(e) =>
-                      setBranding({ ...branding, qrColor: e.target.value })
-                    }
-                    className="h-10 w-12 p-1"
-                  />
-                  <Input
-                    value={branding.qrColor}
-                    onChange={(e) =>
-                      setBranding({ ...branding, qrColor: e.target.value })
-                    }
-                    placeholder="#000000"
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-              </fieldset>
-
-              <Button
-                type="submit"
-                disabled={
-                  updateProfile.isPending ||
-                  (name === user?.name && !isBrandingDirty)
-                }
-                className="gap-2"
-              >
-                <Save className="h-4 w-4" />
-                {updateProfile.isPending ? "Saving..." : "Save Changes"}
-              </Button>
-            </form>
-          </motion.div>
+            <div className="flex-1">
+              <p className="font-semibold">Brand kit</p>
+              <p className="text-xs text-muted-foreground">Logo, colours and fonts for your forms, polls and QR codes</p>
+            </div>
+          </Link>
 
           {/* Security Section */}
           <motion.div
