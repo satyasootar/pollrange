@@ -1,0 +1,42 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Kollects",
+    "identifier": "kollects.tech",
+    "documentationUrl": "https://kollects.tech/llms.txt",
+    "logoUrl": "https://kollects.tech/logo/logo1.png"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:kollects.tech:docs:llms-txt",
+      "displayName": "Kollects overview for AI models",
+      "type": "text/markdown",
+      "url": "https://kollects.tech/llms.txt",
+      "description": "Summary of Kollects (polls, forms and quizzes with live results) with links to features, pricing and policies.",
+      "tags": ["polls", "forms", "quizzes", "surveys", "analytics"],
+      "updatedAt": "2026-10-14T00:00:00Z"
+    },
+    {
+      "identifier": "urn:air:kollects.tech:site:web-app",
+      "displayName": "Kollects web app",
+      "type": "text/html",
+      "url": "https://kollects.tech/",
+      "description": "Build polls, forms and quizzes, share them by link or QR code, and watch responses arrive on a live dashboard.",
+      "representativeQueries": [
+        "Create a live poll for my audience",
+        "Make a feedback form that collects UPI payments",
+        "Run a quiz and see the results in real time"
+      ],
+      "updatedAt": "2026-10-14T00:00:00Z"
+    },
+    {
+      "identifier": "urn:air:kollects.tech:api:plans",
+      "displayName": "Kollects plans and pricing",
+      "type": "application/json",
+      "url": "https://pollrange.onrender.com/api/plans",
+      "description": "Public JSON list of Kollects plans (Free, Plus, Pro) with monthly and yearly INR prices and usage limits.",
+      "tags": ["pricing"],
+      "updatedAt": "2026-10-14T00:00:00Z"
+    }
+  ]
+}
