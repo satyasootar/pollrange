@@ -9,6 +9,8 @@ import { AdminSystemTab } from "@/components/admin/admin-system";
 import { AdminApisTab } from "@/components/admin/admin-apis";
 import { AdminCleanupTab } from "@/components/admin/admin-cleanup";
 import { AdminUpgradesTab } from "@/components/admin/admin-upgrades";
+import { AdminSiteAnalyticsTab } from "@/components/admin/admin-site-analytics";
+import { AdminConsentTab } from "@/components/admin/admin-consent";
 
 /** Client-side gate for UX only; every /api/admin call is enforced server-side. */
 export function AdminRoute() {
@@ -19,7 +21,9 @@ const TABS = [
   { value: "overview", label: "Overview", el: <AdminOverviewTab /> },
   { value: "users", label: "Users", el: <AdminUsersTab /> },
   { value: "upgrades", label: "Upgrades", el: <AdminUpgradesTab /> },
-  { value: "traffic", label: "Traffic", el: <AdminTrafficTab /> },
+  { value: "site", label: "Site analytics", el: <AdminSiteAnalyticsTab /> },
+  { value: "consent", label: "Cookie consent", el: <AdminConsentTab /> },
+  { value: "traffic", label: "API traffic", el: <AdminTrafficTab /> },
   { value: "apis", label: "APIs", el: <AdminApisTab /> },
   { value: "system", label: "System & storage", el: <AdminSystemTab /> },
   { value: "cleanup", label: "Cleanup", el: <AdminCleanupTab /> },

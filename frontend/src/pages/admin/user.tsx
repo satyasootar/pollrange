@@ -157,6 +157,22 @@ export function AdminUserPage() {
                     {k}: {String(v).replace("_", " ")}
                   </Pill>
                 ))}
+              {data.user.acquisition && (
+                <span
+                  title={[
+                    data.user.acquisition.referrer && `Referrer: ${data.user.acquisition.referrer}`,
+                    data.user.acquisition.landingPage && `Landed on: ${data.user.acquisition.landingPage}`,
+                    `First seen: ${formatDate(data.user.acquisition.firstSeenAt)}`,
+                  ]
+                    .filter(Boolean)
+                    .join("\n")}
+                >
+                  <Pill tone="primary">
+                    came from: {data.user.acquisition.source ?? "direct"}
+                    {data.user.acquisition.campaign ? ` · ${data.user.acquisition.campaign}` : ""}
+                  </Pill>
+                </span>
+              )}
             </div>
 
             <PlanControl key={`${data.user.assignedPlan}-${data.user.planExpiresAt}`} userId={userId!} user={data.user} />

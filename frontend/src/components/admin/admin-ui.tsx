@@ -71,3 +71,43 @@ export function ChartTooltip({ active, payload, label }: { active?: boolean; pay
     </div>
   );
 }
+
+/** Segmented switch for a small set of options (e.g. report windows). */
+export function Toggle<T extends string | number>({ value, options, onChange, label }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
+  return (
+    <div className="flex items-center border border-border" role="group" aria-label={label}>
+      {options.map((o) => (
+        <button
+          key={String(o.value)}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={cn("px-2.5 py-1 text-xs", value === o.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Ranked list with proportional bars, e.g. top sources or pages. */
+export function BarList({ rows, empty = "No data yet.", unit }: { rows: { label: string; value: number; hint?: string }[]; empty?: string; unit?: string }) {
+  if (!rows.length) return <p className="text-sm text-muted-foreground">{empty}</p>;
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  return (
+    <ul className="space-y-1.5">
+      {rows.map((r) => (
+        <li key={r.label} className="relative flex items-center justify-between gap-3 px-2 py-1 text-sm">
+          <span className="absolute inset-y-0 left-0 bg-primary/10" style={{ width: `${(r.value / max) * 100}%` }} aria-hidden="true" />
+          <span className="relative min-w-0 truncate" title={r.label}>{r.label}</span>
+          <span className="relative shrink-0 tabular-nums text-muted-foreground">
+            {r.value.toLocaleString("en-IN")}
+            {unit ? ` ${unit}` : ""}
+            {r.hint ? <span className="ml-2 text-xs">{r.hint}</span> : null}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}

@@ -755,10 +755,66 @@ export interface AdminUserDetail {
     assignedPlan: PlanId;
     hasCompletedOnboarding: boolean;
     onboarding: Record<string, string> | null;
+    /** How they first found Kollects; only known when they allowed campaign cookies. */
+    acquisition: {
+      source?: string;
+      medium?: string;
+      campaign?: string;
+      referrer?: string;
+      landingPage?: string;
+      firstSeenAt: string;
+    } | null;
   };
   polls: AdminContentItem[];
   forms: AdminContentItem[];
   sessions: { userAgent: string; ipAddress: string; createdAt: string; lastUsedAt: string; active: boolean }[];
+}
+
+// ─── Admin: site analytics & consent ────────────────────────────────────────────
+export type ReportDays = 7 | 30 | 90;
+export interface KeyCount { key: string; sessions?: number; users?: number }
+
+export interface AdminSiteAnalytics {
+  days: ReportDays;
+  activeNow: number;
+  totals: { pageviews: number; visitors: number; sessions: number; bounceRate: number; pagesPerSession: number; avgSessionSeconds: number };
+  timeline: { date: string; pageviews: number; visitors: number }[];
+  topPages: { path: string; views: number; visitors: number }[];
+  landingPages: KeyCount[];
+  sources: KeyCount[];
+  campaigns: KeyCount[];
+  devices: KeyCount[];
+  browsers: KeyCount[];
+  os: KeyCount[];
+  events: { name: string; count: number; visitors: number }[];
+  funnel: { step: string; visitors: number }[];
+  signupSources: KeyCount[];
+}
+
+export type ConsentActionKind = "accept_all" | "reject_all" | "custom";
+export interface AdminConsentRecord {
+  id: string;
+  consentId: string;
+  user: { id: string; name: string; email: string } | null;
+  analytics: boolean;
+  marketing: boolean;
+  action: ConsentActionKind;
+  source: "banner" | "settings";
+  version: number;
+  page: string | null;
+  gpc: boolean;
+  device: string | null;
+  browser: string | null;
+  os: string | null;
+  createdAt: string;
+}
+export interface AdminConsentReport {
+  days: ReportDays;
+  /** Each browser's latest decision. */
+  current: { browsers: number; analytics: number; marketing: number; acceptAll: number; rejectAll: number; custom: number };
+  inWindow: Record<ConsentActionKind, number>;
+  timeline: ({ date: string } & Record<ConsentActionKind, number>)[];
+  recent: AdminConsentRecord[];
 }
 
 export interface AdminTrafficPoint { t: string; requests: number; errors: number; clientErrors: number; avgMs: number }

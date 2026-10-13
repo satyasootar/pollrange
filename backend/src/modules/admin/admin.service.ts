@@ -117,7 +117,7 @@ export async function getOverview(groupBy: Granularity) {
 
 // ─── Users ──────────────────────────────────────────────────────────────────────
 
-const USER_FIELDS = "name email avatarUrl isEmailVerified isActive role googleId hasCompletedOnboarding onboarding createdAt plan";
+const USER_FIELDS = "name email avatarUrl isEmailVerified isActive role googleId hasCompletedOnboarding onboarding createdAt plan acquisition";
 
 /** Mongo filter for users whose *effective* plan is `plan` (expired paid plans count as free). */
 export function planFilter(plan: PlanId, now = new Date()): Record<string, any> {
@@ -211,6 +211,7 @@ export async function getUserDetail(userId: string) {
       provider: user.googleId ? "google" : "password",
       hasCompletedOnboarding: user.hasCompletedOnboarding,
       onboarding: user.onboarding ?? null,
+      acquisition: user.acquisition?.firstSeenAt ? user.acquisition : null,
       createdAt: user.createdAt,
       plan: effectivePlan(user),
       assignedPlan: user.plan?.id ?? "free",

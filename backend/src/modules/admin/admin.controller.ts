@@ -5,6 +5,7 @@ import { parseGranularity } from "../../utils/timeline.js";
 import * as Cleanup from "./admin.cleanup.js";
 import { PLAN_IDS } from "../../config/plans.js";
 import * as PlanRequests from "../billing/plan-request.service.js";
+import * as SiteReports from "../site-analytics/site-analytics.admin.js";
 
 const ok = (res: Response, data: unknown) => res.status(200).json(new ApiResponse(200, data, "ok"));
 
@@ -26,6 +27,14 @@ export async function getUser(req: Request, res: Response) {
 
 export async function getTraffic(_req: Request, res: Response) {
   return ok(res, AdminService.getTraffic());
+}
+
+export async function getSiteAnalytics(req: Request, res: Response) {
+  return ok(res, await SiteReports.getSiteAnalytics(SiteReports.parseDays(req.query.days)));
+}
+
+export async function getConsent(req: Request, res: Response) {
+  return ok(res, await SiteReports.getConsentReport(SiteReports.parseDays(req.query.days)));
 }
 
 export async function getSystem(_req: Request, res: Response) {

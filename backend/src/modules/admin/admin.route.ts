@@ -16,6 +16,8 @@ router.get("/plan-requests", AdminController.listPlanRequests);
 router.post("/plan-requests/:requestId/approve", AdminController.approvePlanRequest);
 router.post("/plan-requests/:requestId/reject", AdminController.rejectPlanRequest);
 router.get("/traffic", AdminController.getTraffic);
+router.get("/site-analytics", AdminController.getSiteAnalytics);
+router.get("/consent", AdminController.getConsent);
 router.get("/system", AdminController.getSystem);
 router.get("/storage", AdminController.getStorage);
 router.post("/cleanup/forms/preview", AdminController.previewFormCleanup);

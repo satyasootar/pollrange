@@ -1,6 +1,6 @@
 /** Formatting helpers for the admin dashboard. */
 
-import type { AdminEndpoint, FormCleanupFilter, FormStatus } from "@/types";
+import type { AdminEndpoint, FormCleanupFilter, FormStatus, ReportDays } from "@/types";
 
 export const statusTone = (status: string) =>
   status === "active" || status === "published" ? "good" : status === "draft" ? "muted" : "warn";
@@ -45,3 +45,10 @@ export function toCleanupFilter(from: string, to: string, statuses: FormStatus[]
     onlyTrashed,
   };
 }
+
+/** Report windows for the site analytics and consent tabs. */
+export const DAY_OPTIONS: { value: ReportDays; label: string }[] = [
+  { value: 7, label: "7 days" },
+  { value: 30, label: "30 days" },
+  { value: 90, label: "90 days" },
+];
