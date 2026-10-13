@@ -1,8 +1,12 @@
+import { useMemo, useState } from "react";
 import { Users } from "lucide-react";
-import type { RespondentEntry } from "@/types";
+import type { ReceiptFilter, ReceiptSummary as Summary, RespondentEntry } from "@/types";
 import { formatDatetime } from "@/lib/utils";
 import { useSendReceipt } from "@/hooks/use-send-receipt";
-import { ReceiptStatus } from "./receipt-status";
+import { ReceiptStatus, ReceiptSummary } from "./receipt-status";
+
+/** Emailed-copy state of one respondent; null when there's no address to send to. */
+const receiptState = (r: RespondentEntry): ReceiptFilter | null => r.receipt?.status ?? (r.email ? "unsent" : null);
 
 interface RespondentsListProps {
   pollId: string;
@@ -12,6 +16,17 @@ interface RespondentsListProps {
 
 export function RespondentsList({ pollId, respondents, isLoading }: RespondentsListProps) {
   const sendReceipt = useSendReceipt("poll", pollId);
+  const [filter, setFilter] = useState<ReceiptFilter | undefined>();
+  const summary = useMemo(() => {
+    const counts: Summary = { sent: 0, failed: 0, unsent: 0 };
+    for (const r of respondents) {
+      const s = receiptState(r);
+      if (s) counts[s]++;
+    }
+    return counts;
+  }, [respondents]);
+  const shown = filter ? respondents.filter((r) => receiptState(r) === filter) : respondents;
+
   return (
     <div className="border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-5 py-4">
@@ -22,13 +37,20 @@ export function RespondentsList({ pollId, respondents, isLoading }: RespondentsL
         </span>
       </div>
 
+      {respondents.length > 0 && (
+        <div className="border-b border-border px-5 py-3">
+          <ReceiptSummary summary={summary} filter={filter} onFilter={setFilter} />
+        </div>
+      )}
+
       {isLoading ? (
         <div className="p-5 text-sm text-muted-foreground">Loading respondents…</div>
       ) : respondents.length === 0 ? (
         <div className="p-5 text-sm text-muted-foreground">No responses yet.</div>
       ) : (
         <div className="max-h-80 divide-y divide-border overflow-y-auto">
-          {respondents.map((r) => (
+          {shown.length === 0 && <div className="p-5 text-sm text-muted-foreground">No respondents match this filter.</div>}
+          {shown.map((r) => (
             <div
               key={r.responseId}
               className="flex items-center justify-between gap-4 px-5 py-3"
@@ -42,6 +64,7 @@ export function RespondentsList({ pollId, respondents, isLoading }: RespondentsL
               <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-4">
                 <ReceiptStatus
                   receipt={r.receipt}
+                  history={r.receiptHistory}
                   email={r.email}
                   sending={sendReceipt.isPending && sendReceipt.variables === r.responseId}
                   onSend={() => sendReceipt.mutate(r.responseId)}

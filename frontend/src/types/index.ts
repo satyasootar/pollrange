@@ -322,8 +322,14 @@ export interface ReceiptInfo {
   status: "sent" | "failed";
   to: string;
   at: string;
+  /** "auto" = sent on submit, "manual" = the creator pressed Send copy. */
+  trigger: "auto" | "manual";
   error?: string;
 }
+
+/** Emailed-copy filter; "unsent" = has an address but no copy was ever attempted. */
+export type ReceiptFilter = "sent" | "failed" | "unsent";
+export type ReceiptSummary = Record<ReceiptFilter, number>;
 
 export interface RespondentEntry {
   responseId: string;
@@ -332,6 +338,8 @@ export interface RespondentEntry {
   submittedAt: string;
   isComplete: boolean;
   receipt: ReceiptInfo | null;
+  /** Every send attempt, oldest first. */
+  receiptHistory: ReceiptInfo[];
 }
 
 // ─── Socket event payloads ────────────────────────────────────────────────────
@@ -628,6 +636,8 @@ export interface IndividualFormResponse {
   payment?: SubmitPaymentDue & { status: "pending" | "paid" | "failed" };
   answers: (FormAnswerPayload & { questionTitleSnapshot?: string; isCorrect?: boolean; pointsEarned?: number })[];
   receipt: ReceiptInfo | null;
+  /** Every send attempt, oldest first. */
+  receiptHistory: ReceiptInfo[];
 }
 
 // ─── Form builder state ─────────────────────────────────────────────────────────

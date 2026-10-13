@@ -157,7 +157,7 @@ export async function submitResponse(
         meta.respondentId ? meta.userEmail : undefined,
         buildPollReceipt(poll, responseData.answers, meta.userName),
         { model: ResponseModel, id: response._id },
-        `receipt-${response._id}`
+        "auto"
     );
 
     return response;

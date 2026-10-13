@@ -1,5 +1,6 @@
 import { sendEmail } from "./mail.js";
 import { z } from "zod";
+import { Schema } from "mongoose";
 import { escapeHtml } from "./html.js";
 
 export interface ReceiptRow {
@@ -36,35 +37,51 @@ ${notes.map((n) => `<p><strong>${escapeHtml(n)}</strong></p>`).join("")}
 </div>`;
 }
 
-/** Delivery outcome stored on the response so the creator can see who got their copy. */
+/** One delivery attempt, stored on the response so the creator can see who got their copy. */
 export interface ReceiptStatus {
   status: "sent" | "failed";
   to: string;
   at: Date;
+  /** "auto" = sent on submit, "manual" = the creator pressed Send copy. */
+  trigger: "auto" | "manual";
   error?: string;
 }
 
-export const receiptStatusZod = z
-  .object({ status: z.enum(["sent", "failed"]), to: z.string(), at: z.date(), error: z.string().optional() })
-  .optional();
+const receiptStatusShape = z.object({
+  status: z.enum(["sent", "failed"]),
+  to: z.string(),
+  at: z.date(),
+  trigger: z.enum(["auto", "manual"]),
+  error: z.string().optional(),
+});
+export const receiptStatusZod = receiptStatusShape.optional();
+export const receiptHistoryZod = z.array(receiptStatusShape).optional();
 
-/** Mongoose sub-schema for ReceiptStatus (shared by poll and form responses). */
-export const receiptStatusSchema = {
-  status: { type: String, enum: ["sent", "failed"] },
-  to: String,
-  at: Date,
-  error: String,
-};
+/** Mongoose sub-schema for one attempt (shared by poll and form responses). */
+export const receiptStatusSchema = new Schema(
+  {
+    status: { type: String, enum: ["sent", "failed"] },
+    to: String,
+    at: Date,
+    trigger: { type: String, enum: ["auto", "manual"] },
+    error: String,
+  },
+  { _id: false }
+);
+
+/** Attempts kept per response; older ones roll off. */
+export const RECEIPT_HISTORY_LIMIT = 20;
 
 /**
- * Emails a respondent a copy of their answers and records the outcome on the response.
+ * Emails a respondent a copy of their answers and records the attempt on the response:
+ * `receipt` is the latest outcome, `receiptHistory` keeps every attempt (newest last).
  * Never throws, so callers can fire-and-forget it after a submit.
  */
 export async function sendSubmissionCopy(
   to: string | undefined,
   receipt: Receipt,
   target: { model: { updateOne: (filter: any, update: any) => any }; id: unknown },
-  idempotencyKey?: string
+  trigger: "auto" | "manual"
 ): Promise<ReceiptStatus | null> {
   if (!to) return null;
   let error: string | undefined;
@@ -73,16 +90,20 @@ export async function sendSubmissionCopy(
       to,
       subject: `Your response to "${receipt.title}"`,
       html: receiptHtml(receipt),
-      ...(idempotencyKey ? { idempotencyKey } : {}),
+      // Auto sends dedupe retries of the same submit; manual resends must always go out.
+      ...(trigger === "auto" ? { idempotencyKey: `receipt-${String(target.id)}` } : {}),
     });
     if (!r.success) error = typeof r.error === "string" ? r.error : JSON.stringify(r.error);
   } catch (e: any) {
     error = e?.message ?? String(e);
   }
   if (error) console.error("[receipt] email failed", error);
-  const status: ReceiptStatus = { status: error ? "failed" : "sent", to, at: new Date(), ...(error ? { error } : {}) };
+  const status: ReceiptStatus = { status: error ? "failed" : "sent", to, at: new Date(), trigger, ...(error ? { error } : {}) };
   try {
-    await target.model.updateOne({ _id: target.id }, { $set: { receipt: status } });
+    await target.model.updateOne(
+      { _id: target.id },
+      { $set: { receipt: status }, $push: { receiptHistory: { $each: [status], $slice: -RECEIPT_HISTORY_LIMIT } } }
+    );
   } catch (e) {
     console.error("[receipt] could not record status", e);
   }

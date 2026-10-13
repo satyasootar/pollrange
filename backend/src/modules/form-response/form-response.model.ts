@@ -39,6 +39,7 @@ const formResponseSchema = new Schema<IFormResponse>(
     totalPoints: Number,
     isComplete: { type: Boolean, required: true },
     receipt: receiptStatusSchema,
+    receiptHistory: { type: [receiptStatusSchema], default: undefined },
     submittedAt: { type: Date, required: true },
   },
   { timestamps: true }

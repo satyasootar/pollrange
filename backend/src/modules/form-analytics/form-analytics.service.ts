@@ -138,11 +138,26 @@ export async function getQuestionSummaries(formId: string) {
   });
 }
 
+/** Who can be emailed a copy: signed-in respondents, or anyone who typed an email. */
+const HAS_EMAIL = { $or: [{ respondentId: { $exists: true, $ne: null } }, { respondentEmail: { $nin: [null, ""] } }] };
+
+/** Emailed-copy filters for the responses list ("unsent" = has an address, never attempted). */
+export const RECEIPT_FILTERS = {
+  sent: { "receipt.status": "sent" },
+  failed: { "receipt.status": "failed" },
+  unsent: { "receipt.status": { $exists: false }, ...HAS_EMAIL },
+} as const;
+export type ReceiptFilter = keyof typeof RECEIPT_FILTERS;
+
 /** Paginated individual responses (owner-only PII — verify ownership in controller). */
-export async function getIndividualResponses(formId: string, page = 1, limit = 20) {
+export async function getIndividualResponses(formId: string, page = 1, limit = 20, receipt?: ReceiptFilter) {
   const skip = (page - 1) * limit;
-  const total = await FormResponse.countDocuments({ formId });
-  const responses = await FormResponse.find({ formId })
+  const query = { formId, ...(receipt ? RECEIPT_FILTERS[receipt] : {}) };
+  const [total, sent, failed, unsent] = await Promise.all([
+    FormResponse.countDocuments(query),
+    ...Object.values(RECEIPT_FILTERS).map((f) => FormResponse.countDocuments({ formId, ...f })),
+  ]);
+  const responses = await FormResponse.find(query)
     .populate("respondentId", "name email")
     .sort({ submittedAt: -1 })
     .skip(skip)
@@ -160,10 +175,12 @@ export async function getIndividualResponses(formId: string, page = 1, limit = 2
     payment: r.payment?.totalAmount ? r.payment : undefined,
     answers: r.answers,
     receipt: r.receipt?.status ? r.receipt : null,
+    receiptHistory: r.receiptHistory ?? [],
   }));
 
   return {
     items,
+    receiptSummary: { sent, failed, unsent },
     pagination: {
       page,
       limit,
@@ -220,7 +237,7 @@ export async function resendFormReceipt(formId: string, responseId: string) {
   if (!form || !r) throw new ApiError(404, "Response not found");
   const to = r.respondentId?.email ?? r.respondentEmail;
   if (!to) throw new ApiError(400, "This respondent has no email address");
-  return sendSubmissionCopy(to, buildFormReceipt(form, r, r.respondentId?.name), { model: FormResponse, id: r._id });
+  return sendSubmissionCopy(to, buildFormReceipt(form, r, r.respondentId?.name), { model: FormResponse, id: r._id }, "manual");
 }
 
 /** Builds a CSV: one row per response, one column per question. */

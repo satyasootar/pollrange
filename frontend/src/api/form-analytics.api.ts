@@ -5,6 +5,8 @@ import type {
   IndividualFormResponse,
   PaginationMeta,
   ReceiptInfo,
+  ReceiptFilter,
+  ReceiptSummary,
   TimelinePoint,
   TimelineGranularity,
 } from "@/types";
@@ -21,10 +23,10 @@ export const formAnalyticsApi = {
   questions: (formId: string) =>
     api.get<{ data: FormQuestionSummary[] }>(`/form-analytics/${formId}/questions`),
 
-  responses: (formId: string, page = 1, limit = 20) =>
-    api.get<{ data: { items: IndividualFormResponse[]; pagination: PaginationMeta } }>(
+  responses: (formId: string, page = 1, limit = 20, receipt?: ReceiptFilter) =>
+    api.get<{ data: { items: IndividualFormResponse[]; pagination: PaginationMeta; receiptSummary: ReceiptSummary } }>(
       `/form-analytics/${formId}/responses`,
-      { params: { page, limit } }
+      { params: { page, limit, ...(receipt ? { receipt } : {}) } }
     ),
 
   sendReceipt: (formId: string, responseId: string) =>

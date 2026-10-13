@@ -233,7 +233,7 @@ export async function submitResponse(
     meta.respondentId ? meta.userEmail : data.respondentEmail,
     buildFormReceipt(form, { answers: data.answers, score, totalPoints, payment: paymentSnapshot }, meta.userName),
     { model: FormResponse, id: response._id },
-    `receipt-${response._id}`
+    "auto"
   );
   return result;
 }

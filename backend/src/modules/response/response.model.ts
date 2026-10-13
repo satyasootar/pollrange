@@ -59,6 +59,7 @@ const responseSchema = new Schema<IResponse>(
     },
 
     receipt: receiptStatusSchema,
+    receiptHistory: { type: [receiptStatusSchema], default: undefined },
 
     submittedAt: {
       type: Date,

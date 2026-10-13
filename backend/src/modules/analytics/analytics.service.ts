@@ -66,7 +66,7 @@ export async function getWordCloudData(pollId: string, questionId: string) {
  */
 export async function getPollRespondents(pollId: string) {
     const responses = await ResponseModel.find({ pollId })
-        .select("respondentId submittedAt isComplete receipt")
+        .select("respondentId submittedAt isComplete receipt receiptHistory")
         .populate("respondentId", "name email")
         .sort({ submittedAt: -1 });
 
@@ -77,6 +77,7 @@ export async function getPollRespondents(pollId: string) {
         submittedAt: r.submittedAt,
         isComplete: r.isComplete,
         receipt: r.receipt?.status ? r.receipt : null,
+        receiptHistory: r.receiptHistory ?? [],
     }));
 }
 
@@ -92,7 +93,7 @@ export async function resendPollReceipt(poll: any, responseId: string) {
     if (!r) throw new ApiError(404, "Response not found");
     const to = r.respondentId?.email;
     if (!to) throw new ApiError(400, "This respondent has no email address");
-    return sendSubmissionCopy(to, buildPollReceipt(poll, r.answers, r.respondentId?.name), { model: ResponseModel, id: r._id });
+    return sendSubmissionCopy(to, buildPollReceipt(poll, r.answers, r.respondentId?.name), { model: ResponseModel, id: r._id }, "manual");
 }
 
 /**

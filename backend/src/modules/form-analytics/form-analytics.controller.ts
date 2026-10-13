@@ -35,8 +35,9 @@ export async function getQuestions(req: Request, res: Response) {
 
 export async function getResponses(req: Request, res: Response) {
   const formId = await assertOwnership(req);
-  const { page, limit } = req.query;
-  const data = await FormAnalyticsService.getIndividualResponses(formId, Number(page) || 1, Number(limit) || 20);
+  const { page, limit, receipt } = req.query;
+  const filter = typeof receipt === "string" && receipt in FormAnalyticsService.RECEIPT_FILTERS ? (receipt as FormAnalyticsService.ReceiptFilter) : undefined;
+  const data = await FormAnalyticsService.getIndividualResponses(formId, Number(page) || 1, Number(limit) || 20, filter);
   return res.status(200).json(new ApiResponse(200, data, "Responses fetched successfully"));
 }
 

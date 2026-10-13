@@ -33,21 +33,28 @@ describe("submission receipt", () => {
   it("only emails when there is an address, and records the outcome on the response", async () => {
     const receipt = { kind: "poll" as const, title: "T", url: "u", rows: [] };
     const model = { updateOne: vi.fn().mockResolvedValue({}) };
-    expect(await sendSubmissionCopy(undefined, receipt, { model, id: "r1" }, "k")).toBeNull();
+    expect(await sendSubmissionCopy(undefined, receipt, { model, id: "r1" }, "auto")).toBeNull();
     expect(sendEmail).not.toHaveBeenCalled();
 
-    const sent = await sendSubmissionCopy("bob@test.local", receipt, { model, id: "r1" }, "receipt-1");
-    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "bob@test.local", subject: 'Your response to "T"', idempotencyKey: "receipt-1" }));
-    expect(sent).toMatchObject({ status: "sent", to: "bob@test.local" });
-    expect(model.updateOne).toHaveBeenCalledWith({ _id: "r1" }, { $set: { receipt: sent } });
+    const sent = await sendSubmissionCopy("bob@test.local", receipt, { model, id: "r1" }, "auto");
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "bob@test.local", subject: 'Your response to "T"', idempotencyKey: "receipt-r1" }));
+    expect(sent).toMatchObject({ status: "sent", to: "bob@test.local", trigger: "auto" });
+    // Latest outcome plus an appended, capped history entry.
+    expect(model.updateOne).toHaveBeenCalledWith(
+      { _id: "r1" },
+      { $set: { receipt: sent }, $push: { receiptHistory: { $each: [sent], $slice: -20 } } }
+    );
   });
 
   it("records a failure instead of throwing when the email can't be sent", async () => {
     sendEmail.mockResolvedValueOnce({ success: false, error: "domain not verified" });
     const model = { updateOne: vi.fn().mockResolvedValue({}) };
-    const res = await sendSubmissionCopy("bob@test.local", { kind: "form", title: "T", url: "u", rows: [] }, { model, id: "r2" });
-    expect(res).toMatchObject({ status: "failed", error: "domain not verified" });
-    expect(model.updateOne).toHaveBeenCalledWith({ _id: "r2" }, { $set: { receipt: res } });
+    const res = await sendSubmissionCopy("bob@test.local", { kind: "form", title: "T", url: "u", rows: [] }, { model, id: "r2" }, "manual");
+    expect(res).toMatchObject({ status: "failed", error: "domain not verified", trigger: "manual" });
+    expect(model.updateOne).toHaveBeenCalledWith(
+      { _id: "r2" },
+      expect.objectContaining({ $set: { receipt: res }, $push: { receiptHistory: { $each: [res], $slice: -20 } } })
+    );
     // No idempotency key on manual resends, so a retry isn't swallowed as a duplicate.
     expect(sendEmail.mock.calls[0]![0]).not.toHaveProperty("idempotencyKey");
   });

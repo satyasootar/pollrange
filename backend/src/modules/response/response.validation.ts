@@ -1,6 +1,6 @@
 import { z } from "zod";
 import mongoose from "mongoose";
-import { receiptStatusZod } from "../../utils/receipt.js";
+import { receiptStatusZod, receiptHistoryZod } from "../../utils/receipt.js";
 
 const answerItemZodSchema = z.object({
   questionId: z.custom<mongoose.Types.ObjectId>(),
@@ -20,6 +20,7 @@ export const responseZodSchema = z.object({
   isComplete: z.boolean(),
   submittedAt: z.date(),
   receipt: receiptStatusZod,
+  receiptHistory: receiptHistoryZod,
 });
 
 export type IResponse = z.infer<typeof responseZodSchema>;

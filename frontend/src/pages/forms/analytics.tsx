@@ -10,12 +10,12 @@ import { useForm } from "@/hooks/use-forms";
 import { useFormSummary, useFormTimeline, useFormQuestionSummaries, useFormResponses, formAnalyticsKeys } from "@/hooks/use-form-analytics";
 import { useFormSocket } from "@/hooks/use-form-socket";
 import { useSendReceipt } from "@/hooks/use-send-receipt";
-import { ReceiptStatus } from "@/components/analytics/receipt-status";
+import { ReceiptStatus, ReceiptSummary } from "@/components/analytics/receipt-status";
 import { formAnalyticsApi } from "@/api/form-analytics.api";
 import { buildFormShareUrl, copyToClipboard, formatDatetime, downloadBlob, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatInr } from "@/lib/upi-payment";
-import type { Form, FormQuestion, IndividualFormResponse, FormAnswerPayload, TimelineGranularity } from "@/types";
+import type { Form, FormQuestion, IndividualFormResponse, FormAnswerPayload, ReceiptFilter, TimelineGranularity } from "@/types";
 
 /** Renders a single answer value in human-readable form. */
 function AnswerValue({
@@ -50,9 +50,17 @@ function AnswerValue({
   return <span>{answer.textValue ?? answer.dateValue ?? (answer.numberValue != null ? String(answer.numberValue) : "No answer")}</span>;
 }
 
-function IndividualResponses({ formId, form }: { formId: string; form: Form }) {
+/** Shared by the Individual and Table tabs so the emailed-copy filter carries across. */
+interface ResponsesViewProps {
+  formId: string;
+  form: Form;
+  receiptFilter: ReceiptFilter | undefined;
+  onReceiptFilter: (f: ReceiptFilter | undefined) => void;
+}
+
+function IndividualResponses({ formId, form, receiptFilter, onReceiptFilter }: ResponsesViewProps) {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useFormResponses(formId, page);
+  const { data, isLoading } = useFormResponses(formId, page, 20, receiptFilter);
   const sendReceipt = useSendReceipt("form", formId);
   const questionsById = useMemo(() => {
     const map = new Map<string, FormQuestion>();
@@ -61,11 +69,20 @@ function IndividualResponses({ formId, form }: { formId: string; form: Form }) {
   }, [form]);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading responses…</p>;
-  if (!data || data.items.length === 0)
+  if (!data || (data.items.length === 0 && !receiptFilter))
     return <p className="py-12 text-center text-sm text-muted-foreground">No responses yet.</p>;
 
   return (
     <div className="space-y-4">
+      <ReceiptSummary
+        summary={data.receiptSummary}
+        filter={receiptFilter}
+        onFilter={(f) => {
+          setPage(1);
+          onReceiptFilter(f);
+        }}
+      />
+      {data.items.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No responses match this filter.</p>}
       {data.items.map((r: IndividualFormResponse) => (
         <div key={r.responseId} className="border border-border bg-card p-5">
           <div className="mb-3 flex items-center justify-between border-b border-border pb-3">
@@ -75,6 +92,7 @@ function IndividualResponses({ formId, form }: { formId: string; form: Form }) {
               <div className="mt-2">
                 <ReceiptStatus
                   receipt={r.receipt}
+                  history={r.receiptHistory}
                   email={r.email}
                   sending={sendReceipt.isPending && sendReceipt.variables === r.responseId}
                   onSend={() => sendReceipt.mutate(r.responseId)}
@@ -137,16 +155,21 @@ function IndividualResponses({ formId, form }: { formId: string; form: Form }) {
   );
 }
 
-function ResponsesTable({ formId, form }: { formId: string; form: Form }) {
-  const { data, isLoading } = useFormResponses(formId, 1, 100);
+function ResponsesTable({ formId, form, receiptFilter, onReceiptFilter }: ResponsesViewProps) {
+  const { data, isLoading } = useFormResponses(formId, 1, 100, receiptFilter);
   const sendReceipt = useSendReceipt("form", formId);
   const questions = useMemo(() => form.sections.flatMap((s) => s.questions), [form]);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
-  if (!data || data.items.length === 0)
+  if (!data || (data.items.length === 0 && !receiptFilter))
     return <p className="py-12 text-center text-sm text-muted-foreground">No responses yet.</p>;
 
   return (
+    <div className="space-y-4">
+      <ReceiptSummary summary={data.receiptSummary} filter={receiptFilter} onFilter={onReceiptFilter} />
+      {data.items.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">No responses match this filter.</p>
+      ) : (
     <div className="overflow-x-auto border border-border">
       <table className="min-w-full border-collapse text-sm">
         <thead className="bg-muted/50">
@@ -175,6 +198,7 @@ function ResponsesTable({ formId, form }: { formId: string; form: Form }) {
                 <td className="p-3 align-top">
                   <ReceiptStatus
                     receipt={r.receipt}
+                    history={r.receiptHistory}
                     email={r.email}
                     sending={sendReceipt.isPending && sendReceipt.variables === r.responseId}
                     onSend={() => sendReceipt.mutate(r.responseId)}
@@ -196,6 +220,8 @@ function ResponsesTable({ formId, form }: { formId: string; form: Form }) {
         </tbody>
       </table>
     </div>
+      )}
+    </div>
   );
 }
 
@@ -207,6 +233,7 @@ export function FormAnalyticsPage() {
   const { data: summary } = useFormSummary(formId!);
   const { data: questionSummaries } = useFormQuestionSummaries(formId!);
   const [timelineGroupBy, setTimelineGroupBy] = useState<TimelineGranularity>("day");
+  const [receiptFilter, setReceiptFilter] = useState<ReceiptFilter | undefined>();
   const { data: timeline } = useFormTimeline(formId!, timelineGroupBy);
 
   useFormSocket({
@@ -309,11 +336,11 @@ export function FormAnalyticsPage() {
           </TabsContent>
 
           <TabsContent value="individual">
-            <IndividualResponses formId={formId!} form={form} />
+            <IndividualResponses formId={formId!} form={form} receiptFilter={receiptFilter} onReceiptFilter={setReceiptFilter} />
           </TabsContent>
 
           <TabsContent value="table">
-            <ResponsesTable formId={formId!} form={form} />
+            <ResponsesTable formId={formId!} form={form} receiptFilter={receiptFilter} onReceiptFilter={setReceiptFilter} />
           </TabsContent>
         </Tabs>
       </div>
