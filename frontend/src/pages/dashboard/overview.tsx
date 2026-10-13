@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { config } from "@/config/config";
 import { UsageBanner } from "@/components/billing/usage-banner";
+import { PlanChip } from "@/components/billing/plan-chip";
 import type { TimelineGranularity } from "@/types";
 
 export function OverviewPage() {
@@ -29,12 +30,15 @@ export function OverviewPage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex h-20 shrink-0 items-center justify-between border-b border-border px-4 md:px-8">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            Overview{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
-          </h1>
-          <p className="text-sm text-muted-foreground">Analytics across all your polls and forms</p>
+      <div className="flex h-20 shrink-0 items-center justify-between gap-4 border-b border-border px-4 md:px-8">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <h1 className="truncate text-xl font-semibold tracking-tight">
+              Overview{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
+            </h1>
+            <PlanChip />
+          </div>
+          <p className="truncate text-sm text-muted-foreground">Analytics across all your polls and forms</p>
         </div>
         {config.aiEnabled && (
           <Button onClick={() => navigate("/dashboard/chat")} className="hidden gap-2 md:inline-flex">
