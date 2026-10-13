@@ -1,13 +1,17 @@
 import { Users } from "lucide-react";
 import type { RespondentEntry } from "@/types";
 import { formatDatetime } from "@/lib/utils";
+import { useSendReceipt } from "@/hooks/use-send-receipt";
+import { ReceiptStatus } from "./receipt-status";
 
 interface RespondentsListProps {
+  pollId: string;
   respondents: RespondentEntry[];
   isLoading: boolean;
 }
 
-export function RespondentsList({ respondents, isLoading }: RespondentsListProps) {
+export function RespondentsList({ pollId, respondents, isLoading }: RespondentsListProps) {
+  const sendReceipt = useSendReceipt("poll", pollId);
   return (
     <div className="border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-5 py-4">
@@ -35,9 +39,15 @@ export function RespondentsList({ respondents, isLoading }: RespondentsListProps
                   <p className="truncate text-xs text-muted-foreground">{r.email}</p>
                 )}
               </div>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {formatDatetime(r.submittedAt)}
-              </span>
+              <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+                <ReceiptStatus
+                  receipt={r.receipt}
+                  email={r.email}
+                  sending={sendReceipt.isPending && sendReceipt.variables === r.responseId}
+                  onSend={() => sendReceipt.mutate(r.responseId)}
+                />
+                <span className="text-xs text-muted-foreground">{formatDatetime(r.submittedAt)}</span>
+              </div>
             </div>
           ))}
         </div>

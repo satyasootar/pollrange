@@ -3,6 +3,8 @@ import { Poll } from "../poll/poll.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { aggregateTimeline, fillSeries, type Granularity } from "../../utils/timeline.js";
 import mongoose from "mongoose";
+import { buildPollReceipt } from "../response/response.service.js";
+import { sendSubmissionCopy } from "../../utils/receipt.js";
 
 /** Response timeline bucketed by the requested granularity, zero-filled for a continuous chart. */
 export async function getPollTimeline(pollId: string, groupBy: Granularity) {
@@ -64,7 +66,7 @@ export async function getWordCloudData(pollId: string, questionId: string) {
  */
 export async function getPollRespondents(pollId: string) {
     const responses = await ResponseModel.find({ pollId })
-        .select("respondentId submittedAt isComplete")
+        .select("respondentId submittedAt isComplete receipt")
         .populate("respondentId", "name email")
         .sort({ submittedAt: -1 });
 
@@ -74,7 +76,23 @@ export async function getPollRespondents(pollId: string) {
         email: r.respondentId?.email ?? null,
         submittedAt: r.submittedAt,
         isComplete: r.isComplete,
+        receipt: r.receipt?.status ? r.receipt : null,
     }));
+}
+
+/**
+ * Re-sends a respondent their copy on the creator's request. Only for sign-in polls:
+ * an anonymous poll must never reveal who answered. Caller verifies ownership.
+ */
+export async function resendPollReceipt(poll: any, responseId: string) {
+    if (poll.responseMode !== "authenticated") throw new ApiError(400, "Copies can only be sent for sign-in polls");
+    const r: any = mongoose.isValidObjectId(responseId)
+        ? await ResponseModel.findOne({ _id: responseId, pollId: poll._id }).populate("respondentId", "name email")
+        : null;
+    if (!r) throw new ApiError(404, "Response not found");
+    const to = r.respondentId?.email;
+    if (!to) throw new ApiError(400, "This respondent has no email address");
+    return sendSubmissionCopy(to, buildPollReceipt(poll, r.answers, r.respondentId?.name), { model: ResponseModel, id: r._id });
 }
 
 /**

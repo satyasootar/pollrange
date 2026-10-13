@@ -317,12 +317,21 @@ export interface FullAnalytics {
   timeline: TimelinePoint[];
 }
 
+/** Whether the respondent's emailed copy of their answers went out. null = never attempted. */
+export interface ReceiptInfo {
+  status: "sent" | "failed";
+  to: string;
+  at: string;
+  error?: string;
+}
+
 export interface RespondentEntry {
   responseId: string;
   name: string;
   email: string | null;
   submittedAt: string;
   isComplete: boolean;
+  receipt: ReceiptInfo | null;
 }
 
 // ─── Socket event payloads ────────────────────────────────────────────────────
@@ -618,6 +627,7 @@ export interface IndividualFormResponse {
   totalPoints?: number;
   payment?: SubmitPaymentDue & { status: "pending" | "paid" | "failed" };
   answers: (FormAnswerPayload & { questionTitleSnapshot?: string; isCorrect?: boolean; pointsEarned?: number })[];
+  receipt: ReceiptInfo | null;
 }
 
 // ─── Form builder state ─────────────────────────────────────────────────────────

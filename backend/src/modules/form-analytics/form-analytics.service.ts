@@ -4,6 +4,8 @@ import { ApiError } from "../../utils/ApiError.js";
 import { CHOICE_TYPES, GRID_TYPES } from "../form/form.validation.js";
 import { aggregateTimeline, fillSeries, type Granularity } from "../../utils/timeline.js";
 import mongoose from "mongoose";
+import config from "../../config/config.js";
+import { sendSubmissionCopy, type Receipt } from "../../utils/receipt.js";
 
 /** Response timeline bucketed by the requested granularity, zero-filled for a continuous chart. */
 export async function getFormTimeline(formId: string, groupBy: Granularity) {
@@ -157,6 +159,7 @@ export async function getIndividualResponses(formId: string, page = 1, limit = 2
     totalPoints: r.totalPoints,
     payment: r.payment?.totalAmount ? r.payment : undefined,
     answers: r.answers,
+    receipt: r.receipt?.status ? r.receipt : null,
   }));
 
   return {
@@ -181,6 +184,43 @@ export function formatFormAnswer(q: any, a: any): string {
   if (q.type === "file_upload") return (a.fileUrls ?? []).map((f: any) => f.url).join("; ");
   if (a.scaleValue != null) return String(a.scaleValue);
   return a.textValue ?? a.dateValue ?? (a.numberValue != null ? String(a.numberValue) : "");
+}
+
+/**
+ * The emailed copy of one form response, built the same way on submit and on a manual resend.
+ * Only questions the respondent actually reached are listed (branching can skip sections).
+ */
+export function buildFormReceipt(
+  form: any,
+  r: { answers: any[]; score?: number | null | undefined; totalPoints?: number | null | undefined; payment?: any },
+  name?: string
+): Receipt {
+  const byId = new Map<string, any>(r.answers.map((a) => [String(a.questionId), a]));
+  const notes: string[] = [];
+  if (form.isQuiz && form.settings?.releaseScoreImmediately && r.score != null) notes.push(`Score: ${r.score}/${r.totalPoints ?? 0}`);
+  if (r.payment?.totalAmount > 0) notes.push(`Amount due: ₹${r.payment.totalAmount.toFixed(2)}`);
+  return {
+    kind: "form",
+    title: form.title,
+    url: `${config.CLIENT_URL}/f/${form.shareToken}`,
+    name,
+    notes,
+    rows: flattenQuestions(form)
+      .filter((q) => byId.has(String(q._id)))
+      .map((q) => ({ question: q.title, answer: formatFormAnswer(q, byId.get(String(q._id))) })),
+  };
+}
+
+/** Sends (or re-sends) a respondent their copy on the creator's request. Caller verifies ownership. */
+export async function resendFormReceipt(formId: string, responseId: string) {
+  const form = await Form.findById(formId);
+  const r: any = mongoose.isValidObjectId(responseId)
+    ? await FormResponse.findOne({ _id: responseId, formId }).populate("respondentId", "name email").lean()
+    : null;
+  if (!form || !r) throw new ApiError(404, "Response not found");
+  const to = r.respondentId?.email ?? r.respondentEmail;
+  if (!to) throw new ApiError(400, "This respondent has no email address");
+  return sendSubmissionCopy(to, buildFormReceipt(form, r, r.respondentId?.name), { model: FormResponse, id: r._id });
 }
 
 /** Builds a CSV: one row per response, one column per question. */

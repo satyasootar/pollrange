@@ -4,6 +4,7 @@ import type {
   FormQuestionSummary,
   IndividualFormResponse,
   PaginationMeta,
+  ReceiptInfo,
   TimelinePoint,
   TimelineGranularity,
 } from "@/types";
@@ -25,6 +26,9 @@ export const formAnalyticsApi = {
       `/form-analytics/${formId}/responses`,
       { params: { page, limit } }
     ),
+
+  sendReceipt: (formId: string, responseId: string) =>
+    api.post<{ data: ReceiptInfo }>(`/form-analytics/${formId}/responses/${responseId}/receipt`),
 
   exportCsvUrl: (formId: string) => `/form-analytics/${formId}/export`,
 

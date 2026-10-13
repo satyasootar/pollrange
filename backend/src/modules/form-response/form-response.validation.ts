@@ -1,5 +1,6 @@
 import { z } from "zod";
 import mongoose from "mongoose";
+import { receiptStatusZod } from "../../utils/receipt.js";
 
 // A single answer. Only the value block matching the question's type is populated.
 const gridValueZodSchema = z.object({
@@ -52,6 +53,7 @@ export const formResponseZodSchema = z.object({
   totalPoints: z.number().optional(),
   isComplete: z.boolean(),
   submittedAt: z.date(),
+  receipt: receiptStatusZod,
 });
 
 export type IFormResponse = z.infer<typeof formResponseZodSchema>;

@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { FullAnalytics, WordCloudItem, TimelinePoint, RespondentEntry, TimelineGranularity } from "@/types";
+import type { FullAnalytics, WordCloudItem, TimelinePoint, RespondentEntry, TimelineGranularity, ReceiptInfo } from "@/types";
 
 export const analyticsApi = {
   getSnapshot: (pollId: string) =>
@@ -12,6 +12,9 @@ export const analyticsApi = {
 
   getRespondents: (pollId: string) =>
     api.get<{ data: RespondentEntry[] }>(`/analytics/${pollId}/respondents`),
+
+  sendReceipt: (pollId: string, responseId: string) =>
+    api.post<{ data: ReceiptInfo }>(`/analytics/${pollId}/respondents/${responseId}/receipt`),
 
   getSummary: (pollId: string) =>
     api.get<{ data: { totalResponses: number; completionRate: number; status: string } }>(

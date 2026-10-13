@@ -53,7 +53,7 @@ const config: Config = {
         maxAge: 1000 * 60 * 60 * 24 * 7,
     },
     RESEND_API_KEY: process.env.RESEND_API_KEY || "",
-    FROM_EMAIL: process.env.FROM_EMAIL || "onboarding@resend.dev",
+    FROM_EMAIL: process.env.FROM_EMAIL || "Kollects <noreply@kollects.tech>",
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
     GOOGLE_CALLBACK_URL: `${BACKEND_URL}/api/auth/google/callback`,

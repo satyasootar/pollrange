@@ -1,4 +1,5 @@
 import { sendEmail } from "./mail.js";
+import { z } from "zod";
 import { escapeHtml } from "./html.js";
 
 export interface ReceiptRow {
@@ -35,10 +36,55 @@ ${notes.map((n) => `<p><strong>${escapeHtml(n)}</strong></p>`).join("")}
 </div>`;
 }
 
-/** Emails a respondent a copy of their answers. Fire-and-forget: never fails the submit. */
-export function sendSubmissionCopy(to: string | undefined, receipt: Receipt, idempotencyKey: string) {
-  if (!to) return;
-  void sendEmail({ to, subject: `Your response to "${receipt.title}"`, html: receiptHtml(receipt), idempotencyKey })
-    .then((r) => !r.success && console.error("[receipt] email failed", r.error))
-    .catch((e) => console.error("[receipt] email failed", e));
+/** Delivery outcome stored on the response so the creator can see who got their copy. */
+export interface ReceiptStatus {
+  status: "sent" | "failed";
+  to: string;
+  at: Date;
+  error?: string;
+}
+
+export const receiptStatusZod = z
+  .object({ status: z.enum(["sent", "failed"]), to: z.string(), at: z.date(), error: z.string().optional() })
+  .optional();
+
+/** Mongoose sub-schema for ReceiptStatus (shared by poll and form responses). */
+export const receiptStatusSchema = {
+  status: { type: String, enum: ["sent", "failed"] },
+  to: String,
+  at: Date,
+  error: String,
+};
+
+/**
+ * Emails a respondent a copy of their answers and records the outcome on the response.
+ * Never throws, so callers can fire-and-forget it after a submit.
+ */
+export async function sendSubmissionCopy(
+  to: string | undefined,
+  receipt: Receipt,
+  target: { model: { updateOne: (filter: any, update: any) => any }; id: unknown },
+  idempotencyKey?: string
+): Promise<ReceiptStatus | null> {
+  if (!to) return null;
+  let error: string | undefined;
+  try {
+    const r = await sendEmail({
+      to,
+      subject: `Your response to "${receipt.title}"`,
+      html: receiptHtml(receipt),
+      ...(idempotencyKey ? { idempotencyKey } : {}),
+    });
+    if (!r.success) error = typeof r.error === "string" ? r.error : JSON.stringify(r.error);
+  } catch (e: any) {
+    error = e?.message ?? String(e);
+  }
+  if (error) console.error("[receipt] email failed", error);
+  const status: ReceiptStatus = { status: error ? "failed" : "sent", to, at: new Date(), ...(error ? { error } : {}) };
+  try {
+    await target.model.updateOne({ _id: target.id }, { $set: { receipt: status } });
+  } catch (e) {
+    console.error("[receipt] could not record status", e);
+  }
+  return status;
 }

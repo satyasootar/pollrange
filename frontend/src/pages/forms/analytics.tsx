@@ -9,6 +9,8 @@ import { QuestionSummaryCard } from "@/components/form-analytics/question-summar
 import { useForm } from "@/hooks/use-forms";
 import { useFormSummary, useFormTimeline, useFormQuestionSummaries, useFormResponses, formAnalyticsKeys } from "@/hooks/use-form-analytics";
 import { useFormSocket } from "@/hooks/use-form-socket";
+import { useSendReceipt } from "@/hooks/use-send-receipt";
+import { ReceiptStatus } from "@/components/analytics/receipt-status";
 import { formAnalyticsApi } from "@/api/form-analytics.api";
 import { buildFormShareUrl, copyToClipboard, formatDatetime, downloadBlob, cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -51,6 +53,7 @@ function AnswerValue({
 function IndividualResponses({ formId, form }: { formId: string; form: Form }) {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useFormResponses(formId, page);
+  const sendReceipt = useSendReceipt("form", formId);
   const questionsById = useMemo(() => {
     const map = new Map<string, FormQuestion>();
     form.sections.forEach((s) => s.questions.forEach((q) => map.set(q._id, q)));
@@ -69,6 +72,14 @@ function IndividualResponses({ formId, form }: { formId: string; form: Form }) {
             <div>
               <p className="text-sm font-semibold">{r.name}</p>
               {r.email && <p className="text-xs text-muted-foreground">{r.email}</p>}
+              <div className="mt-2">
+                <ReceiptStatus
+                  receipt={r.receipt}
+                  email={r.email}
+                  sending={sendReceipt.isPending && sendReceipt.variables === r.responseId}
+                  onSend={() => sendReceipt.mutate(r.responseId)}
+                />
+              </div>
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">{formatDatetime(r.submittedAt)}</p>
@@ -128,6 +139,7 @@ function IndividualResponses({ formId, form }: { formId: string; form: Form }) {
 
 function ResponsesTable({ formId, form }: { formId: string; form: Form }) {
   const { data, isLoading } = useFormResponses(formId, 1, 100);
+  const sendReceipt = useSendReceipt("form", formId);
   const questions = useMemo(() => form.sections.flatMap((s) => s.questions), [form]);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -141,6 +153,7 @@ function ResponsesTable({ formId, form }: { formId: string; form: Form }) {
           <tr>
             <th className="whitespace-nowrap p-3 text-left text-xs font-semibold">Submitted</th>
             <th className="whitespace-nowrap p-3 text-left text-xs font-semibold">Respondent</th>
+            <th className="whitespace-nowrap p-3 text-left text-xs font-semibold">Emailed copy</th>
             {questions.map((q) => (
               <th key={q._id} className="whitespace-nowrap p-3 text-left text-xs font-semibold">
                 {q.title || "(untitled)"}
@@ -155,7 +168,18 @@ function ResponsesTable({ formId, form }: { formId: string; form: Form }) {
             return (
               <tr key={r.responseId} className="border-t border-border">
                 <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">{formatDatetime(r.submittedAt)}</td>
-                <td className="whitespace-nowrap p-3">{r.name}</td>
+                <td className="whitespace-nowrap p-3">
+                  {r.name}
+                  {r.email && <span className="block text-xs text-muted-foreground">{r.email}</span>}
+                </td>
+                <td className="p-3 align-top">
+                  <ReceiptStatus
+                    receipt={r.receipt}
+                    email={r.email}
+                    sending={sendReceipt.isPending && sendReceipt.variables === r.responseId}
+                    onSend={() => sendReceipt.mutate(r.responseId)}
+                  />
+                </td>
                 {questions.map((q) => (
                   <td key={q._id} className="p-3 align-top">
                     {byId.get(q._id) ? <AnswerValue answer={byId.get(q._id)!} question={q} /> : <span className="text-muted-foreground">No answer</span>}

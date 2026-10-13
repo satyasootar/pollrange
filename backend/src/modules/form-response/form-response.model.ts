@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import type { IFormResponse } from "./form-response.validation.js";
+import { receiptStatusSchema } from "../../utils/receipt.js";
 
 const answerSchema = new Schema({
   questionId: { type: Schema.Types.ObjectId, required: true },
@@ -37,6 +38,7 @@ const formResponseSchema = new Schema<IFormResponse>(
     score: Number,
     totalPoints: Number,
     isComplete: { type: Boolean, required: true },
+    receipt: receiptStatusSchema,
     submittedAt: { type: Date, required: true },
   },
   { timestamps: true }

@@ -40,6 +40,13 @@ export async function getResponses(req: Request, res: Response) {
   return res.status(200).json(new ApiResponse(200, data, "Responses fetched successfully"));
 }
 
+/** Sends (or re-sends) a respondent their copy of a response. */
+export async function resendReceipt(req: Request, res: Response) {
+  const formId = await assertOwnership(req);
+  const status = await FormAnalyticsService.resendFormReceipt(formId, req.params.responseId as string);
+  return res.status(200).json(new ApiResponse(200, status, status?.status === "sent" ? "Copy sent" : "Email could not be sent"));
+}
+
 export async function exportData(req: Request, res: Response) {
   const formId = await assertOwnership(req);
   const csv = await FormAnalyticsService.exportCsv(formId);

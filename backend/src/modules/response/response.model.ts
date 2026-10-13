@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import type { IResponse } from "./response.validation.js";
+import { receiptStatusSchema } from "../../utils/receipt.js";
 
 const answerItemSchema = new Schema(
   {
@@ -56,6 +57,8 @@ const responseSchema = new Schema<IResponse>(
       type: Boolean,
       required: true,
     },
+
+    receipt: receiptStatusSchema,
 
     submittedAt: {
       type: Date,

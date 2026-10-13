@@ -7,9 +7,8 @@ import type { ISubmitFormResponse, ISubmitAnswer } from "./form-response.validat
 import mongoose from "mongoose";
 import { calculatePayment } from "../form/payment.util.js";
 import { consume, refund } from "../billing/billing.service.js";
-import { formatFormAnswer } from "../form-analytics/form-analytics.service.js";
+import { buildFormReceipt } from "../form-analytics/form-analytics.service.js";
 import { sendSubmissionCopy } from "../../utils/receipt.js";
-import config from "../../config/config.js";
 
 /** Flattens every question across all sections into one list. */
 function allQuestions(form: any): any[] {
@@ -230,27 +229,12 @@ export async function submitResponse(
   }
 
   // Signed-in account email, else the address typed on a "collect email" form.
-  const copyTo = meta.respondentId ? meta.userEmail : data.respondentEmail;
-  if (copyTo) {
-    const notes: string[] = [];
-    if (result.score != null) notes.push(`Score: ${result.score}/${result.totalPoints}`);
-    if (result.payment) notes.push(`Amount due: ₹${result.payment.totalAmount.toFixed(2)}`);
-    sendSubmissionCopy(
-      copyTo,
-      {
-        kind: "form",
-        title: form.title,
-        url: `${config.CLIENT_URL}/f/${form.shareToken}`,
-        name: meta.userName,
-        notes,
-        // Only questions the respondent actually reached (branching can skip sections).
-        rows: allQuestions(form)
-          .filter((q) => answersById.has(q._id.toString()))
-          .map((q) => ({ question: q.title, answer: formatFormAnswer(q, answersById.get(q._id.toString())) })),
-      },
-      `receipt-${response._id}`
-    );
-  }
+  void sendSubmissionCopy(
+    meta.respondentId ? meta.userEmail : data.respondentEmail,
+    buildFormReceipt(form, { answers: data.answers, score, totalPoints, payment: paymentSnapshot }, meta.userName),
+    { model: FormResponse, id: response._id },
+    `receipt-${response._id}`
+  );
   return result;
 }
 

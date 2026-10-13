@@ -4,8 +4,26 @@ import { ApiError } from "../../utils/ApiError.js";
 import { emitAnalyticsUpdate } from "../../socket/index.js";
 import mongoose from "mongoose";
 import { consume, refund } from "../billing/billing.service.js";
-import { sendSubmissionCopy } from "../../utils/receipt.js";
+import { sendSubmissionCopy, type Receipt } from "../../utils/receipt.js";
 import config from "../../config/config.js";
+
+/** The emailed copy of one poll response, built the same way on submit and on a manual resend. */
+export function buildPollReceipt(poll: any, answers: any[], name?: string): Receipt {
+    const byId = new Map<string, any>(answers.map((a) => [String(a.questionId), a]));
+    return {
+        kind: "poll",
+        title: poll.title,
+        url: `${config.CLIENT_URL}/p/${poll.shareToken}`,
+        name,
+        rows: (poll.questions as any[]).map((q) => {
+            const a = byId.get(String(q._id));
+            if (!a || a.skipped) return { question: q.text, answer: "" };
+            const ids = [a.selectedOptionId, ...(a.selectedOptionIds ?? [])].filter(Boolean).map(String);
+            const picked = (q.options ?? []).filter((o: any) => ids.includes(String(o._id))).map((o: any) => o.text);
+            return { question: q.text, answer: picked.length ? picked.join(", ") : (a.textResponse ?? "") };
+        }),
+    };
+}
 
 /**
  * Processes a poll response submission.
@@ -135,25 +153,12 @@ export async function submitResponse(
         });
     }
 
-    if (meta.respondentId) {
-        const answers = new Map<string, any>(responseData.answers.map((a: any) => [String(a.questionId), a]));
-        sendSubmissionCopy(
-            meta.userEmail,
-            {
-                kind: "poll",
-                title: poll.title,
-                url: `${config.CLIENT_URL}/p/${poll.shareToken}`,
-                name: meta.userName,
-                rows: (poll.questions as any[]).map((q) => {
-                    const a = answers.get(String(q._id));
-                    const ids = a?.skipped ? [] : [a?.selectedOptionId, ...(a?.selectedOptionIds ?? [])].filter(Boolean).map(String);
-                    const picked = (q.options ?? []).filter((o: any) => ids.includes(String(o._id))).map((o: any) => o.text);
-                    return { question: q.text, answer: a?.skipped ? "" : picked.length ? picked.join(", ") : (a?.textResponse ?? "") };
-                }),
-            },
-            `receipt-${response._id}`
-        );
-    }
+    void sendSubmissionCopy(
+        meta.respondentId ? meta.userEmail : undefined,
+        buildPollReceipt(poll, responseData.answers, meta.userName),
+        { model: ResponseModel, id: response._id },
+        `receipt-${response._id}`
+    );
 
     return response;
 }

@@ -9,6 +9,7 @@ router.get("/:pollId/wordcloud/:questionId", verifyJWT, AnalyticsController.getW
 router.get("/:pollId/snapshot", verifyJWT, AnalyticsController.getSnapshot);
 router.get("/:pollId/full", verifyJWT, AnalyticsController.getFullAnalytics);
 router.get("/:pollId/respondents", verifyJWT, AnalyticsController.getRespondents);
+router.post("/:pollId/respondents/:responseId/receipt", verifyJWT, AnalyticsController.resendReceipt);
 router.get("/:pollId/summary", verifyJWT, AnalyticsController.getSummary);
 router.get("/:pollId/timeline", verifyJWT, AnalyticsController.getTimeline);
 router.get("/:pollId/export", verifyJWT, AnalyticsController.exportData);

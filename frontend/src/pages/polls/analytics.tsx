@@ -279,6 +279,7 @@ export function AnalyticsPage() {
           {isAuthenticatedPoll && (
             <motion.div variants={fadeUp}>
               <RespondentsList
+                pollId={pollId!}
                 respondents={respondents ?? []}
                 isLoading={isRespondentsLoading}
               />

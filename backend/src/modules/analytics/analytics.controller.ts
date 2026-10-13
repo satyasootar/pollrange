@@ -104,6 +104,16 @@ export async function getRespondents(req: Request, res: Response) {
     return res.status(200).json(new ApiResponse(200, data, "Respondents fetched successfully"));
 }
 
+/** Sends (or re-sends) a respondent their copy of a response. */
+export async function resendReceipt(req: Request, res: Response) {
+    const { pollId, responseId } = req.params;
+    const user = (req as any).user;
+    const poll = await Poll.findOne({ _id: pollId, creatorId: user._id, isDeleted: false });
+    if (!poll) throw new ApiError(404, "Poll not found or unauthorized");
+    const status = await AnalyticsService.resendPollReceipt(poll, responseId as string);
+    return res.status(200).json(new ApiResponse(200, status, status?.status === "sent" ? "Copy sent" : "Email could not be sent"));
+}
+
 export async function getSummary(req: Request, res: Response) {
     const { pollId } = req.params;
     const snapshot = await AnalyticsService.getPollAnalyticsSnapshot(pollId as string);
