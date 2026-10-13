@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
+import { CookieConsent } from "@/components/cookie-consent";
+import { SiteTracker } from "@/components/site-tracker";
 import { queryClient } from "@/lib/query-client";
 import { config } from "@/config/config";
 
@@ -120,6 +122,8 @@ export function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         <Toaster position="top-center" richColors expand />
+        <CookieConsent />
+        <SiteTracker />
       </Router>
     </QueryClientProvider>
   );

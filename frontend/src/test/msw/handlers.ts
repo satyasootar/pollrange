@@ -44,6 +44,8 @@ export const testState = {
   planState: makePlanState() as PlanState,
   planRequests: [] as PlanRequest[],
   planRequestBodies: [] as Record<string, unknown>[],
+  siteConsents: [] as Record<string, unknown>[],
+  siteEvents: [] as Record<string, unknown>[],
 };
 
 export function resetTestState() {
@@ -59,12 +61,24 @@ export function resetTestState() {
   testState.planState = makePlanState();
   testState.planRequests = [];
   testState.planRequestBodies = [];
+  testState.siteConsents = [];
+  testState.siteEvents = [];
 }
 
 const ok = (data: unknown, message = "ok") =>
   HttpResponse.json({ statusCode: 200, data, message, success: true });
 
 export const handlers = [
+  // ─── Cookie consent log + first-party analytics ───────────────────────────
+  http.post(`${API}/site/consent`, async ({ request }) => {
+    testState.siteConsents.push((await request.json()) as Record<string, unknown>);
+    return new HttpResponse(null, { status: 204 });
+  }),
+  http.post(`${API}/site/events`, async ({ request }) => {
+    testState.siteEvents.push((await request.json()) as Record<string, unknown>);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
   // ─── Plans ────────────────────────────────────────────────────────────────
   http.get(`${API}/plans`, () => ok(makePlanCatalog())),
   http.get(`${API}/billing/me`, () => ok(testState.planState)),

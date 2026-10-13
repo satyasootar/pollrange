@@ -4,6 +4,7 @@ import { authApi } from "@/api/auth.api";
 import { useAuthStore } from "@/store/use-auth-store";
 import { toastApiError } from "@/lib/utils";
 import { toast } from "sonner";
+import { track } from "@/lib/tracker";
 
 export function useLogin() {
   const { setUser } = useAuthStore();
@@ -14,6 +15,7 @@ export function useLogin() {
     mutationFn: authApi.login,
     onSuccess: (res) => {
       setUser(res.data.data.user);
+      track("login", { method: "password" });
       qc.invalidateQueries({ queryKey: ["me"] });
       const params = new URLSearchParams(window.location.search);
       navigate(params.get("redirect") || "/dashboard/overview", { replace: true });
@@ -30,6 +32,7 @@ export function useRegister() {
     mutationFn: authApi.register,
     onSuccess: (res) => {
       setUser(res.data.data.user);
+      track("signup", { method: "password" });
       toast.success("Account created! A verification email has been sent to your inbox.");
       const params = new URLSearchParams(window.location.search);
       navigate(params.get("redirect") || "/dashboard", { replace: true });

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { openCookieSettings } from "@/lib/consent";
 
 const FOOTER_COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
   {
@@ -46,6 +47,13 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
+              {col.title === "Legal" && (
+                <li>
+                  <button type="button" onClick={openCookieSettings} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Cookie settings
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         ))}

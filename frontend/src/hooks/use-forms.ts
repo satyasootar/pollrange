@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { track } from "@/lib/tracker";
 import { formsApi } from "@/api/forms.api";
 import type { FormFilters, FormBuilderForm } from "@/types";
 import { toastApiError } from "@/lib/utils";
@@ -36,6 +37,7 @@ export function useCreateForm() {
     mutationFn: (form: FormBuilderForm) => formsApi.create(form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: formKeys.all });
+      track("form_created");
       toast.success("Form created successfully!");
     },
   });

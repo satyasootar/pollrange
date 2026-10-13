@@ -4,6 +4,7 @@ import {
   useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
+import { track } from "@/lib/tracker";
 import { pollsApi } from "@/api/polls.api";
 import type { PollFilters, PollBuilderForm } from "@/types";
 import { buildShareUrl, toastApiError } from "@/lib/utils";
@@ -42,6 +43,7 @@ export function useCreatePoll() {
     mutationFn: (form: PollBuilderForm) => pollsApi.create(form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: pollKeys.all });
+      track("poll_created");
       toast.success("Poll created successfully!");
     },
   });

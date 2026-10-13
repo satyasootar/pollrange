@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { track } from "@/lib/tracker";
 import { billingApi } from "@/api/billing.api";
 import type { BillingPeriod, PlanFeature, PlanRequest } from "@/types";
 
@@ -22,7 +23,10 @@ export function useRequestUpgrade() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { plan: PlanRequest["plan"]; period: BillingPeriod; note?: string }) => billingApi.requestUpgrade(body).then((r) => r.data.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["billing"] }),
+    onSuccess: (_r, body) => {
+      track("upgrade_requested", { plan: body.plan, period: body.period });
+      return qc.invalidateQueries({ queryKey: ["billing"] });
+    },
   });
 }
 

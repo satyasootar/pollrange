@@ -1,10 +1,13 @@
 import { Lock } from "lucide-react";
+import { openCookieSettings } from "@/lib/consent";
+import { COOKIE_CATEGORIES } from "@/lib/cookie-catalog";
 import { FocusedPageLayout, FocusedSection } from "@/components/layout/focused-page-layout";
 
 const TOC = [
   { id: "who-we-are", label: "Who we are" },
   { id: "information-we-collect", label: "Information we collect" },
   { id: "how-we-use-it", label: "How we use it" },
+  { id: "cookies", label: "Cookies" },
   { id: "sharing", label: "Who we share data with" },
   { id: "retention", label: "How long we keep data" },
   { id: "your-rights", label: "Your rights" },
@@ -20,7 +23,7 @@ export function PrivacyPage() {
       icon={Lock}
       eyebrow="Legal"
       title="Privacy Policy"
-      subtitle="Last updated January 2026. This page explains what data Kollects collects, why, and how you can control it."
+      subtitle="Last updated October 2026. This page explains what data Kollects collects, why, and how you can control it."
       summary="We collect only what's needed to run your account, your polls and forms, and the
         answers people give. We never sell your data or use it for advertising, and you
         can view, export, or delete your information at any time from your profile."
@@ -48,8 +51,7 @@ export function PrivacyPage() {
         <p><strong>Technical data.</strong> To stop the same person from voting twice on an
           anonymous poll, we store a one-way hash of their IP address and browser
           information. We cannot reverse this hash back into an IP address.</p>
-        <p><strong>Cookies.</strong> We use cookies to keep you signed in and to remember your
-          session. We do not use cookies for advertising.</p>
+        <p><strong>Cookies.</strong> See <a href="#cookies" className="text-primary underline">Cookies</a> below.</p>
       </FocusedSection>
 
       <FocusedSection id="how-we-use-it" title="How we use your information">
@@ -60,6 +62,50 @@ export function PrivacyPage() {
           <li>To keep the platform secure and prevent abuse, such as duplicate voting.</li>
           <li>To improve the product based on how it is used.</li>
         </ul>
+      </FocusedSection>
+
+      <FocusedSection id="cookies" title="Cookies">
+        <p>We ask before using any cookie that isn't needed to run the site, optional cookies stay
+          off until you turn them on, and saying no is as easy as saying yes. We never use cookies
+          for advertising, and we keep a record of each choice (with a one-way hash of your IP
+          address, never the address itself) so we can show what you agreed to.</p>
+        <p>Analytics data is kept for up to 13 months. Withdrawing consent deletes these cookies
+          from your browser straight away.</p>
+        {COOKIE_CATEGORIES.map((cat) => (
+          <div key={cat.id} className="space-y-2">
+            <p>
+              <strong>{cat.title}{cat.id === "necessary" ? " (always on)" : " (only with your permission)"}.</strong> {cat.description}
+            </p>
+            <div className="overflow-x-auto border border-border">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="p-2 font-semibold">Name</th>
+                    <th className="p-2 font-semibold">Purpose</th>
+                    <th className="p-2 font-semibold">Type</th>
+                    <th className="p-2 font-semibold">Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cat.entries.map((e) => (
+                    <tr key={e.name} className="border-t border-border align-top">
+                      <td className="p-2 font-mono">{e.name}</td>
+                      <td className="p-2">{e.purpose}</td>
+                      <td className="whitespace-nowrap p-2">{e.kind}</td>
+                      <td className="p-2">{e.duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+        <p>
+          <button type="button" onClick={openCookieSettings} className="text-primary underline">
+            Change your cookie settings
+          </button>{" "}
+          at any time.
+        </p>
       </FocusedSection>
 
       <FocusedSection id="sharing" title="Who we share data with">
