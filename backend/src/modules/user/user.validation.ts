@@ -1,4 +1,5 @@
 import { brandingInputSchema } from "../branding/branding.validation.js";
+import { attributionSchema } from "../site-analytics/site-analytics.validation.js";
 import { z } from "zod";
 
 export const userZodSchema = z.object({
@@ -28,6 +29,7 @@ export const userZodSchema = z.object({
   role: z.enum(["user", "admin"]).default("user"),
   isActive: z.boolean().default(true),
   branding: brandingInputSchema.optional(),
+  acquisition: attributionSchema.extend({ visitorId: z.string().optional(), firstSeenAt: z.date().optional() }).optional(),
 
   plan: z.object({
     id: z.enum(["free", "plus", "pro"]).default("free"),

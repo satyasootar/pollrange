@@ -13,6 +13,7 @@ import dashboardRouter from "../modules/dashboard/dashboard.route.js";
 import aiRouter from "../modules/ai/ai.route.js";
 import adminRouter from "../modules/admin/admin.route.js";
 import shareRouter from "../modules/branding/share.route.js";
+import siteAnalyticsRouter from "../modules/site-analytics/site-analytics.route.js";
 import billingRouter from "../modules/billing/billing.route.js";
 import { getPlans } from "../modules/billing/billing.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -40,5 +41,6 @@ rootRouter.use("/admin", adminRouter);
 rootRouter.use("/billing", billingRouter);
 rootRouter.get("/plans", getPlans);
 rootRouter.use("/share", shareRouter);
+rootRouter.use("/site", optionalAuth, siteAnalyticsRouter);
 
 export default rootRouter;

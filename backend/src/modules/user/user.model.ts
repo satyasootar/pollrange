@@ -71,6 +71,19 @@ const userSchema = new Schema<IUser>(
       shareImageUrl: { type: String, default: "" },
     },
 
+    // How they first found Kollects (only recorded with marketing-cookie consent). Set once.
+    acquisition: {
+      source: String,
+      medium: String,
+      campaign: String,
+      term: String,
+      content: String,
+      referrer: String,
+      landingPage: String,
+      visitorId: String,
+      firstSeenAt: Date,
+    },
+
     // Entitlement (what they can use). onboarding.plan below is only their stated preference.
     plan: {
       id: { type: String, enum: ["free", "plus", "pro"], default: "free" },
