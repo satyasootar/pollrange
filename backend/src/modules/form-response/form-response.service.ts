@@ -7,6 +7,9 @@ import type { ISubmitFormResponse, ISubmitAnswer } from "./form-response.validat
 import mongoose from "mongoose";
 import { calculatePayment } from "../form/payment.util.js";
 import { consume, refund } from "../billing/billing.service.js";
+import { formatFormAnswer } from "../form-analytics/form-analytics.service.js";
+import { sendSubmissionCopy } from "../../utils/receipt.js";
+import config from "../../config/config.js";
 
 /** Flattens every question across all sections into one list. */
 function allQuestions(form: any): any[] {
@@ -86,7 +89,7 @@ function gradeAnswer(q: any, a: ISubmitAnswer): { isCorrect: boolean; pointsEarn
 export async function submitResponse(
   formId: string,
   data: ISubmitFormResponse,
-  meta: { respondentId?: string; userName?: string; ipHash: string; userAgent: string }
+  meta: { respondentId?: string; userName?: string; userEmail?: string; ipHash: string; userAgent: string }
 ) {
   const form = await Form.findOne({ _id: formId, isDeleted: false, status: "active" });
   if (!form) throw new ApiError(404, "Form not found or not active");
@@ -224,6 +227,29 @@ export async function submitResponse(
   if (paymentSnapshot && paymentSnapshot.totalAmount > 0) {
     const { totalAmount, selectedOptions, message, upiId } = paymentSnapshot;
     result.payment = { totalAmount, selectedOptions, message, upiId };
+  }
+
+  // Signed-in account email, else the address typed on a "collect email" form.
+  const copyTo = meta.respondentId ? meta.userEmail : data.respondentEmail;
+  if (copyTo) {
+    const notes: string[] = [];
+    if (result.score != null) notes.push(`Score: ${result.score}/${result.totalPoints}`);
+    if (result.payment) notes.push(`Amount due: ₹${result.payment.totalAmount.toFixed(2)}`);
+    sendSubmissionCopy(
+      copyTo,
+      {
+        kind: "form",
+        title: form.title,
+        url: `${config.CLIENT_URL}/f/${form.shareToken}`,
+        name: meta.userName,
+        notes,
+        // Only questions the respondent actually reached (branching can skip sections).
+        rows: allQuestions(form)
+          .filter((q) => answersById.has(q._id.toString()))
+          .map((q) => ({ question: q.title, answer: formatFormAnswer(q, answersById.get(q._id.toString())) })),
+      },
+      `receipt-${response._id}`
+    );
   }
   return result;
 }

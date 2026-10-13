@@ -172,6 +172,17 @@ export async function getIndividualResponses(formId: string, page = 1, limit = 2
   };
 }
 
+/** One answer as plain text (CSV cells, response receipts). Empty when skipped. */
+export function formatFormAnswer(q: any, a: any): string {
+  if (!a || a.skipped) return "";
+  const optionText = (id: string) => (q.options ?? []).find((o: any) => o._id.toString() === String(id))?.text ?? id;
+  if (CHOICE_TYPES.includes(q.type)) return (a.selectedOptionIds ?? []).map(optionText).join("; ");
+  if (GRID_TYPES.includes(q.type)) return (a.gridValues ?? []).map((g: any) => `${g.row}: ${g.columns.join(", ")}`).join(" | ");
+  if (q.type === "file_upload") return (a.fileUrls ?? []).map((f: any) => f.url).join("; ");
+  if (a.scaleValue != null) return String(a.scaleValue);
+  return a.textValue ?? a.dateValue ?? (a.numberValue != null ? String(a.numberValue) : "");
+}
+
 /** Builds a CSV: one row per response, one column per question. */
 export async function exportCsv(formId: string): Promise<string> {
   const form = await Form.findById(formId);
@@ -188,16 +199,6 @@ export async function exportCsv(formId: string): Promise<string> {
   const hasPayment = questions.some((q: any) => q.payment?.enabled);
   if (hasPayment) header.push("Amount Due (INR)", "Payment Note");
 
-  const optionText = (q: any, id: string) => (q.options ?? []).find((o: any) => o._id.toString() === id)?.text ?? id;
-  const cell = (q: any, a: any): string => {
-    if (!a || a.skipped) return "";
-    if (CHOICE_TYPES.includes(q.type)) return (a.selectedOptionIds ?? []).map((id: string) => optionText(q, id)).join("; ");
-    if (GRID_TYPES.includes(q.type)) return (a.gridValues ?? []).map((g: any) => `${g.row}: ${g.columns.join(", ")}`).join(" | ");
-    if (q.type === "file_upload") return (a.fileUrls ?? []).map((f: any) => f.url).join("; ");
-    if (a.scaleValue != null) return String(a.scaleValue);
-    return a.textValue ?? a.dateValue ?? (a.numberValue != null ? String(a.numberValue) : "");
-  };
-
   const rows = [header.map(esc).join(",")];
   for (const r of responses as any[]) {
     const answersById = new Map(r.answers.map((a: any) => [a.questionId.toString(), a]));
@@ -205,7 +206,7 @@ export async function exportCsv(formId: string): Promise<string> {
       new Date(r.submittedAt).toISOString(),
       r.respondentId?.name ?? "Anonymous",
       r.respondentId?.email ?? r.respondentEmail ?? "",
-      ...questions.map((q: any) => cell(q, answersById.get(q._id.toString()))),
+      ...questions.map((q: any) => formatFormAnswer(q, answersById.get(q._id.toString()))),
     ];
     if (form.isQuiz) row.push(`${r.score ?? 0}/${r.totalPoints ?? 0}`);
     if (hasPayment) row.push(r.payment?.totalAmount ? r.payment.totalAmount.toFixed(2) : "", r.payment?.message ?? "");

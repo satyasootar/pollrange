@@ -55,7 +55,7 @@ export async function createRequest(userId: string, input: z.infer<typeof create
   const doc = await PlanRequest.findOneAndUpdate(
     { userId, status: "pending" },
     { $set: { plan: input.plan, period: input.period, note: input.note ?? "" } },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   ).lean();
 
   notify(
@@ -75,7 +75,7 @@ export async function myRequests(userId: string) {
 
 export async function cancelRequest(userId: string, requestId: string) {
   if (!mongoose.isValidObjectId(requestId)) throw new ApiError(404, "Request not found");
-  const r = await PlanRequest.findOneAndUpdate({ _id: requestId, userId, status: "pending" }, { $set: { status: "cancelled" } }, { new: true }).lean();
+  const r = await PlanRequest.findOneAndUpdate({ _id: requestId, userId, status: "pending" }, { $set: { status: "cancelled" } }, { returnDocument: "after" }).lean();
   if (!r) throw new ApiError(404, "No pending request to cancel");
   return toDto(r);
 }
@@ -118,7 +118,7 @@ async function claim(requestId: string, status: "approved" | "rejected", admin: 
   const r: any = await PlanRequest.findOneAndUpdate(
     { _id: requestId, status: "pending" },
     { $set: { status, decidedBy: admin._id, decidedAt: new Date(), ...(adminNote ? { adminNote } : {}) } },
-    { new: true }
+    { returnDocument: "after" }
   )
     .populate("userId", "name email")
     .lean();

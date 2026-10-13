@@ -91,7 +91,7 @@ export async function consume(
     doc = await Usage.findOneAndUpdate(
       { userId, period, $or: [{ [metric]: { $lt: cap } }, { [metric]: { $exists: false } }] },
       { $inc: { [metric]: 1 } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     ).lean();
   } catch (err: any) {
     if (err?.code !== 11000) throw err;

@@ -162,7 +162,7 @@ export async function updateForm(userId: string, formId: string, updateData: IUp
   const form = await Form.findOneAndUpdate(
     { _id: formId, creatorId: userId, isDeleted: false },
     { $set: { ...persistedUpdateData, ...(slug !== undefined ? { shareToken: slug } : {}) } },
-    { new: true }
+    { returnDocument: "after" }
   );
   if (!form) throw new ApiError(404, "Form not found or unauthorized");
   return form;
@@ -181,7 +181,7 @@ export async function deleteForm(userId: string, formId: string) {
   const form = await Form.findOneAndUpdate(
     { _id: formId, creatorId: userId },
     { $set: { isDeleted: true } },
-    { new: true }
+    { returnDocument: "after" }
   );
   if (!form) throw new ApiError(404, "Form not found or unauthorized");
   return { success: true };

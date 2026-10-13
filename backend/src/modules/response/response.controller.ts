@@ -23,6 +23,8 @@ export async function submitResponse(req: Request, res: Response) {
         validatedData,
         {
             respondentId: user?._id?.toString(),
+            userName: user?.name,
+            userEmail: user?.email,
             ipHash,
             userAgent: req.headers["user-agent"] || "unknown",
         }

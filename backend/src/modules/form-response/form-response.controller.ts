@@ -20,6 +20,7 @@ export async function submitResponse(req: Request, res: Response) {
   const response = await FormResponseService.submitResponse(formId as string, data, {
     respondentId: user?._id?.toString(),
     userName: user?.name,
+    userEmail: user?.email,
     ipHash,
     userAgent: req.headers["user-agent"] || "unknown",
   });

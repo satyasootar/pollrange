@@ -81,7 +81,7 @@ export async function updatePoll(userId: string, pollId: string, updateData: IUp
     const poll = await Poll.findOneAndUpdate(
         { _id: pollId, creatorId: userId, totalResponses: 0 },
         { $set: updateData },
-        { new: true }
+        { returnDocument: "after" }
     );
 
     if (!poll) {
@@ -98,7 +98,7 @@ export async function deletePoll(userId: string, pollId: string) {
     const poll = await Poll.findOneAndUpdate(
         { _id: pollId, creatorId: userId },
         { $set: { isDeleted: true } },
-        { new: true }
+        { returnDocument: "after" }
     );
 
     if (!poll) {

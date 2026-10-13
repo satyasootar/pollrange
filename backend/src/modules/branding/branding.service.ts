@@ -5,6 +5,7 @@ import { Poll } from "../poll/poll.model.js";
 import config from "../../config/config.js";
 import { PLANS, effectivePlan } from "../../config/plans.js";
 import { BRAND_DEFAULTS, type FormBranding } from "./branding.validation.js";
+import { escapeHtml } from "../../utils/html.js";
 
 /** What respondents' pages receive. Never includes private profile data. */
 export interface PublicBrand {
@@ -46,8 +47,7 @@ export async function resolveBrand(
   };
 }
 
-const esc = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+const esc = escapeHtml;
 
 /**
  * Minimal HTML with Open Graph tags for link-preview crawlers (WhatsApp, Slack…).

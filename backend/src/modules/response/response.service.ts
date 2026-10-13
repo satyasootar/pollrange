@@ -4,6 +4,8 @@ import { ApiError } from "../../utils/ApiError.js";
 import { emitAnalyticsUpdate } from "../../socket/index.js";
 import mongoose from "mongoose";
 import { consume, refund } from "../billing/billing.service.js";
+import { sendSubmissionCopy } from "../../utils/receipt.js";
+import config from "../../config/config.js";
 
 /**
  * Processes a poll response submission.
@@ -13,7 +15,7 @@ import { consume, refund } from "../billing/billing.service.js";
 export async function submitResponse(
     pollId: string, 
     responseData: any, 
-    meta: { respondentId?: string, ipHash: string, userAgent: string }
+    meta: { respondentId?: string, userName?: string, userEmail?: string, ipHash: string, userAgent: string }
 ) {
     // Validate the poll exists and is active
     const poll = await Poll.findOne({ _id: pollId, isDeleted: false, status: "active" });
@@ -131,6 +133,26 @@ export async function submitResponse(
             totalResponses: updatedPoll.totalResponses,
             questions: updatedPoll.questions,
         });
+    }
+
+    if (meta.respondentId) {
+        const answers = new Map<string, any>(responseData.answers.map((a: any) => [String(a.questionId), a]));
+        sendSubmissionCopy(
+            meta.userEmail,
+            {
+                kind: "poll",
+                title: poll.title,
+                url: `${config.CLIENT_URL}/p/${poll.shareToken}`,
+                name: meta.userName,
+                rows: (poll.questions as any[]).map((q) => {
+                    const a = answers.get(String(q._id));
+                    const ids = a?.skipped ? [] : [a?.selectedOptionId, ...(a?.selectedOptionIds ?? [])].filter(Boolean).map(String);
+                    const picked = (q.options ?? []).filter((o: any) => ids.includes(String(o._id))).map((o: any) => o.text);
+                    return { question: q.text, answer: a?.skipped ? "" : picked.length ? picked.join(", ") : (a?.textResponse ?? "") };
+                }),
+            },
+            `receipt-${response._id}`
+        );
     }
 
     return response;
