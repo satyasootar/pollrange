@@ -110,7 +110,7 @@ export function QRCardDialog({ pollId, shareToken, pollTitle, defaultBranding, t
       <DialogContent className="max-w-[95vw] lg:max-w-6xl w-full h-[95vh] lg:h-[85vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-background">
         <div className="flex flex-col lg:flex-row h-full">
           {/* Sidebar: Controls */}
-          <div className="w-full lg:w-[380px] shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card flex flex-col max-h-[40vh] lg:max-h-full">
+          <div className="w-full lg:w-95 shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card flex flex-col max-h-[40vh] lg:max-h-full">
             <div className="p-5 border-b border-border">
               <DialogTitle className="text-xl font-bold tracking-tight">Design QR Card</DialogTitle>
               <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-bold">Customize your marketing asset</p>
@@ -284,7 +284,7 @@ export function QRCardDialog({ pollId, shareToken, pollTitle, defaultBranding, t
                <div className="scale-[0.5] sm:scale-[0.6] md:scale-[0.8] lg:scale-[0.9] xl:scale-100 origin-center transition-transform duration-500">
                   <div 
                     ref={cardRef}
-                    className={`w-[450px] aspect-[1/1.4] shadow-[0_80px_160px_-40px_rgba(0,0,0,0.8)] flex flex-col p-12 border-[20px] border-black`}
+                    className={`w-112.5 aspect-[1/1.4] shadow-[0_80px_160px_-40px_rgba(0,0,0,0.8)] flex flex-col p-12 border-20 border-black`}
                     style={{ 
                       backgroundColor: cardStyles.backgroundColor,
                       color: cardStyles.textColor,
@@ -304,7 +304,7 @@ export function QRCardDialog({ pollId, shareToken, pollTitle, defaultBranding, t
 
                     {/* QR Section */}
                     <div className="flex-1 flex items-center justify-center">
-                      <div className="p-5 bg-white border-[8px] border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] transition-all duration-300">
+                      <div className="p-5 bg-white border-8 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] transition-all duration-300">
                         <QRCodeSVG 
                           value={pollUrl} 
                           size={cardStyles.qrSize} 
