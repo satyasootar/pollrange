@@ -183,6 +183,7 @@ export async function executeFormCleanup(
 }
 
 export async function recentAudit(limit = 20) {
-  const rows = await AdminAudit.find().sort({ createdAt: -1 }).limit(limit).lean();
+  // Only cleanups: plan changes share this log but have a different result shape.
+  const rows = await AdminAudit.find({ action: "forms.cleanup" }).sort({ createdAt: -1 }).limit(limit).lean();
   return rows.map((r: any) => ({ id: String(r._id), adminEmail: r.adminEmail, action: r.action, params: r.params, result: r.result, at: r.createdAt }));
 }

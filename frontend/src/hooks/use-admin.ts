@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { adminApi } from "@/api/admin.api";
+import { authApi } from "@/api/auth.api";
 import type { FormCleanupFilter, PlanId, TimelineGranularity, User } from "@/types";
 
 /** Reads the server-computed flag from the ["me"] query ProtectedRoute already loaded. */
 export function useIsAdmin() {
-  const { data } = useQuery<User>({ queryKey: ["me"], enabled: false });
+  const { data } = useQuery<User>({ queryKey: ["me"], queryFn: () => authApi.me().then((r) => r.data.data), enabled: false });
   return !!data?.isAdmin;
 }
 
