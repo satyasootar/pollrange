@@ -6,6 +6,8 @@ import type { ICreateForm, IUpdateForm, ICreateSection } from "./form.validation
 import { GRADABLE_TYPES } from "./form.validation.js";
 import { emitFormStatusChange } from "../../socket/index.js";
 import { assertFeature, assertLiveCapacity, hasFeature } from "../billing/billing.service.js";
+import { resolveBrand } from "../branding/branding.service.js";
+import type { FormBranding } from "../branding/branding.validation.js";
 
 /**
  * Validates branching + quiz integrity before persisting. Throws ApiError(400) on
@@ -73,10 +75,19 @@ function validateFormStructure(sections: ICreateSection[], isQuiz: boolean) {
   }
 }
 
+/** True when a paid override field (not the kit on/off switch) gets a new non-empty value. */
+function brandingChanged(current: FormBranding | undefined, next: FormBranding | undefined) {
+  if (!next) return false;
+  return (["accentColor", "redirectUrl", "shareTitle", "shareDescription", "shareImageUrl"] as const).some(
+    (k) => !!next[k] && next[k] !== current?.[k]
+  );
+}
+
 export async function createForm(userId: string, formData: ICreateForm) {
   validateFormStructure(formData.sections, formData.isQuiz ?? false);
   const { slug, ...persistedFormData } = formData;
   if (slug) await assertFeature(userId, "customSlug");
+  if (brandingChanged(undefined, formData.branding)) await assertFeature(userId, "branding");
   await assertLiveCapacity(userId); // new forms go live immediately
   const shareToken = slug || crypto.randomUUID();
   if (slug && (await Form.exists({ shareToken }))) {
@@ -137,6 +148,10 @@ export async function updateForm(userId: string, formId: string, updateData: IUp
     validateFormStructure(updateData.sections, updateData.isQuiz ?? false);
   }
   const { slug, ...persistedUpdateData } = updateData;
+  if (updateData.branding) {
+    const current = await Form.findOne({ _id: formId, creatorId: userId }).select("branding").lean();
+    if (brandingChanged(current?.branding as FormBranding | undefined, updateData.branding)) await assertFeature(userId, "branding");
+  }
   if (slug !== undefined) {
     // Only a *changed* link needs the plan feature; editors resend the current one on every save.
     const current = await Form.findOne({ _id: formId, creatorId: userId }).select("shareToken").lean();
@@ -204,6 +219,7 @@ export async function duplicateForm(userId: string, formId: string) {
 function sanitizeForTaking(form: any) {
   const sanitized = form.toObject() as any;
   delete sanitized.creatorId;
+  delete sanitized.branding; // resolved into `brand` by the caller
   sanitized.formId = sanitized._id;
   for (const section of sanitized.sections ?? []) {
     for (const q of section.questions ?? []) {
@@ -239,7 +255,8 @@ export async function getPublicForm(
 
   const sanitized = sanitizeForTaking(form);
   sanitized.alreadyResponded = alreadyResponded;
-  sanitized.showPoweredBy = !(await hasFeature(form.creatorId, "branding"));
+  sanitized.brand = await resolveBrand(form.creatorId, form.branding as FormBranding | undefined);
+  sanitized.showPoweredBy = !sanitized.brand && !(await hasFeature(form.creatorId, "branding"));
   return sanitized;
 }
 

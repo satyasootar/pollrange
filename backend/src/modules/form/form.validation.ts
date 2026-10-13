@@ -2,6 +2,7 @@ import { z } from "zod";
 import mongoose from "mongoose";
 import { optionalExpiresAtSchema } from "../../utils/zod-helpers.js";
 import { DEFAULT_PAYMENT_MESSAGE, UPI_ID_REGEX } from "./payment.util.js";
+import { formBrandingSchema } from "../branding/branding.validation.js";
 
 // ─── Shared enums (single source of truth) ──────────────────────────────────────
 export const QUESTION_TYPES = [
@@ -132,6 +133,7 @@ export const formZodSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
   coverImageUrl: z.string().optional(),
+  branding: formBrandingSchema.optional(),
   shareToken: z.string(),
   isQuiz: z.boolean().default(false),
   status: z.enum(FORM_STATUSES).default("draft"),
@@ -237,6 +239,7 @@ export const createFormSchema = z.object({
     .max(80)
     .optional(),
   coverImageUrl: z.string().optional(),
+  branding: formBrandingSchema.optional(),
   isQuiz: z.boolean().optional(),
   responseMode: z.enum(RESPONSE_MODES),
   expiresAt: optionalExpiresAtSchema,

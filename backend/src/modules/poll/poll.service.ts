@@ -6,6 +6,7 @@ import type { IPoll, ICreatePoll, IUpdatePoll } from "./poll.validation.js";
 import * as AnalyticsService from "../analytics/analytics.service.js";
 import { emitPollStatusChange } from "../../socket/index.js";
 import { assertLiveCapacity, hasFeature } from "../billing/billing.service.js";
+import { resolveBrand } from "../branding/branding.service.js";
 
 /**
  * Creates a new poll for a user and assigns a unique share token.
@@ -155,7 +156,8 @@ export async function getPublicPoll(shareToken: string, context: { sessionToken?
     const sanitized = poll.toObject() as any;
     delete sanitized.creatorId;
     sanitized.alreadyResponded = alreadyResponded;
-    sanitized.showPoweredBy = !(await hasFeature(poll.creatorId, "branding"));
+    sanitized.brand = await resolveBrand(poll.creatorId);
+    sanitized.showPoweredBy = !sanitized.brand && !(await hasFeature(poll.creatorId, "branding"));
     sanitized.pollId = sanitized._id;
 
     // Active or Closed polls: return the poll structure for voting (hide vote counts)

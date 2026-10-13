@@ -60,6 +60,15 @@ const userSchema = new Schema<IUser>(
       businessDetails: { type: String, default: "" },
       logoUrl: { type: String, default: "" },
       qrColor: { type: String, default: "#000000" },
+      accentColor: { type: String, default: "" },
+      font: { type: String, default: "default" },
+      radius: { type: String, default: "sharp" },
+      background: { type: String, default: "plain" },
+      website: { type: String, default: "" },
+      supportEmail: { type: String, default: "" },
+      qrLogo: { type: Boolean, default: false },
+      qrLogoShape: { type: String, default: "square" },
+      shareImageUrl: { type: String, default: "" },
     },
 
     // Entitlement (what they can use). onboarding.plan below is only their stated preference.
