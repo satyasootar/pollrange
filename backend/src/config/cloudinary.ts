@@ -1,9 +1,21 @@
 import { v2 as cloudinary } from "cloudinary";
 // Import config so dotenv has definitely loaded and env access is centralized.
 import config from "./config.js";
+import { ApiError } from "../utils/ApiError.js";
 
 export const isCloudinaryConfigured = () =>
   !!(config.CLOUDINARY_CLOUD_NAME && config.CLOUDINARY_API_KEY && config.CLOUDINARY_API_SECRET);
+
+// SDK default is 60s; a 5–10 MB file needs far less, and users shouldn't stare at a spinner for a minute.
+const UPLOAD_TIMEOUT_MS = 30_000;
+
+/** Cloudinary errors carry `http_code`, not `statusCode`, so they'd otherwise surface as an opaque 500. */
+function toUploadError(error: any) {
+  if (error?.http_code === 499 || error?.name === "TimeoutError" || error?.code === "ETIMEDOUT")
+    return new ApiError(504, "Upload timed out reaching the file storage service. Check your connection and try again.");
+  if (error?.http_code && error.http_code < 500) return new ApiError(400, error.message || "Upload rejected by file storage");
+  return new ApiError(502, "File storage is unavailable right now. Please try again.");
+}
 
 /**
  * Streams a memory buffer to Cloudinary and resolves with the secure CDN URL.
@@ -26,9 +38,9 @@ export function uploadBufferToCloudinary(
       secure: true,
     });
     const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: mimeType.startsWith("image/") ? "image" : "auto" },
+      { folder, resource_type: mimeType.startsWith("image/") ? "image" : "auto", timeout: UPLOAD_TIMEOUT_MS },
       (error, result) => {
-        if (error || !result) return reject(error ?? new Error("Cloudinary upload failed"));
+        if (error || !result) return reject(toUploadError(error));
         resolve(result.secure_url);
       }
     );
