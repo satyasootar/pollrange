@@ -301,7 +301,8 @@
     bottom: 0;
     width: 1px;
     pointer-events: none;
-    z-index: 99999;
+    /* Above the sticky navbar (z-50), below floating UI: theme toggle (z-100), cookie banner (z-110). */
+    z-index: 60;
     background-image: repeating-linear-gradient(
         to bottom,
         rgba(30, 41, 59, 0.2) 0px,
