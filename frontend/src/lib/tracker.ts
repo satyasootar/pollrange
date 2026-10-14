@@ -67,16 +67,23 @@ function externalReferrer() {
 /** Set once this page load's entry has been attributed / its first page view sent. */
 let attributed = false;
 let landed = false;
+/**
+ * The URL this page load arrived on. Kept in memory (no cookie, so no consent needed) so a
+ * visitor who opts in after navigating still gets their real UTM tags and landing page.
+ */
+const landing = typeof location === "undefined" ? { search: "", path: "/" } : { search: location.search, path: location.pathname };
 
 /**
  * Records where this visit came from (UTM tags or an external referrer) in kl_ft / kl_lt.
  * Once per page load: SPA navigations keep the original document.referrer and would
- * otherwise re-attribute every in-app page.
+ * otherwise re-attribute every in-app page. Needs analytics too: the cookies are only
+ * ever read to send with analytics events.
  */
 export function captureAttribution() {
-  if (attributed || !readConsent()?.marketing) return;
+  const consent = readConsent();
+  if (attributed || !consent?.marketing || !consent.analytics) return;
   attributed = true;
-  const q = new URLSearchParams(location.search);
+  const q = new URLSearchParams(landing.search);
   const ref = externalReferrer();
   const refHost = ref ? new URL(ref).host.replace(/^www\./, "") : undefined;
   const touch: Attribution = Object.fromEntries(
@@ -87,7 +94,7 @@ export function captureAttribution() {
       term: q.get("utm_term"),
       content: q.get("utm_content"),
       referrer: ref,
-      landingPage: location.pathname,
+      landingPage: landing.path,
       at: new Date().toISOString(),
     }).filter(([, v]) => v)
   );
@@ -148,12 +155,16 @@ export function track(name: string, props?: TrackedEvent["props"]) {
 
 /** Withdrawn consent deletes what we stored; granting it mid-visit counts the current page. */
 export function watchConsent(onGranted: () => void) {
+  // Only a fresh grant counts the current page; re-saving with analytics already on must not.
+  let had = !!readConsent()?.analytics;
   const handler = (e: Event) => {
     const c = (e as CustomEvent<Consent>).detail;
     const { visitor, session, firstTouch, lastTouch } = TRACKING_COOKIES;
     if (!c.analytics) [visitor, session].forEach((k) => deleteCookie(k.name));
     if (!c.marketing) [firstTouch, lastTouch].forEach((k) => deleteCookie(k.name));
-    if (c.analytics) onGranted();
+    captureAttribution();
+    if (c.analytics && !had) onGranted();
+    had = c.analytics;
   };
   window.addEventListener(CONSENT_EVENT, handler);
   return () => window.removeEventListener(CONSENT_EVENT, handler);

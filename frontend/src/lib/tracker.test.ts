@@ -86,4 +86,38 @@ describe("tracker", () => {
     expect(cookie("kl_lt")).toBeUndefined();
     stop();
   });
+
+  it("opting in after navigating still attributes the landing URL", async () => {
+    window.history.replaceState(null, "", "/pricing?utm_source=newsletter&utm_campaign=oct");
+    const { watchConsent, trackPageview } = await loadTracker();
+    const stop = watchConsent(() => trackPageview(window.location.pathname));
+    window.history.replaceState(null, "", "/features"); // SPA navigation drops the query
+    saveConsent({ analytics: true, marketing: true }, "accept_all", "banner");
+    await waitFor(() => expect(testState.siteEvents).toHaveLength(1));
+    const body = testState.siteEvents[0] as unknown as SentBatch;
+    expect(body.firstTouch).toMatchObject({ source: "newsletter", campaign: "oct", landingPage: "/pricing" });
+    stop();
+  });
+
+  it("campaign consent without analytics stores nothing", async () => {
+    saveConsent({ analytics: false, marketing: true }, "custom", "banner");
+    window.history.replaceState(null, "", "/?utm_source=x");
+    const { trackPageview } = await loadTracker();
+    trackPageview("/");
+    expect(cookie("kl_ft")).toBeUndefined();
+    expect(cookie("kl_lt")).toBeUndefined();
+  });
+
+  it("counts the current page only when analytics is newly granted, not on every re-save", async () => {
+    const { watchConsent } = await loadTracker();
+    const onGranted = vi.fn();
+    const stop = watchConsent(onGranted);
+    saveConsent({ analytics: true, marketing: false }, "custom", "banner");
+    saveConsent({ analytics: true, marketing: true }, "accept_all", "settings");
+    expect(onGranted).toHaveBeenCalledTimes(1);
+    saveConsent({ analytics: false, marketing: false }, "reject_all", "settings");
+    saveConsent({ analytics: true, marketing: false }, "custom", "settings");
+    expect(onGranted).toHaveBeenCalledTimes(2);
+    stop();
+  });
 });

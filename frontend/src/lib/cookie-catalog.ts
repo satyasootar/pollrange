@@ -17,8 +17,8 @@ export const COOKIE_CATEGORIES: { id: CookieCategory; title: string; description
     title: "Strictly necessary",
     description: "Needed for the site to work, so they can't be turned off.",
     entries: [
-      { name: "accessToken", purpose: "Keeps you signed in (secure, httpOnly)", duration: "Browser session (token valid 10 minutes)", kind: "Cookie" },
-      { name: "refreshToken", purpose: "Renews your sign-in without asking again (secure, httpOnly)", duration: "Browser session (token valid 7 days)", kind: "Cookie" },
+      { name: "accessToken", purpose: "Keeps you signed in (secure, httpOnly)", duration: "7 days (token valid 10 minutes)", kind: "Cookie" },
+      { name: "refreshToken", purpose: "Renews your sign-in without asking again (secure, httpOnly)", duration: "7 days", kind: "Cookie" },
       { name: "kollects_consent", purpose: "Remembers your cookie choices", duration: "6 months", kind: "Cookie" },
       { name: "auth-storage", purpose: "Remembers who is signed in on this device", duration: "Until you sign out", kind: "Local storage" },
       { name: "kollects_session_*", purpose: "Stops the same browser answering a poll or form twice", duration: "Until cleared", kind: "Local storage" },
@@ -40,7 +40,7 @@ export const COOKIE_CATEGORIES: { id: CookieCategory; title: string; description
     id: "marketing",
     title: "Campaign attribution",
     description:
-      "Remembers which campaign, search engine or website first brought you to Kollects, so we can tell which channels lead to sign-ups. Not used for advertising and never shared.",
+      "Remembers which campaign, search engine or website first brought you to Kollects, so we can tell which channels lead to sign-ups. Only used when Analytics is also on. Not used for advertising and never shared.",
     entries: [
       { name: "kl_ft", purpose: "Where your first visit came from (campaign tags, referring site, landing page)", duration: "13 months", kind: "Cookie" },
       { name: "kl_lt", purpose: "The most recent campaign or site that brought you here", duration: "30 days", kind: "Cookie" },
