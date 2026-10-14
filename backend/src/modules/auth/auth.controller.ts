@@ -170,6 +170,7 @@ export async function googleAuthCallback(req: Request, res: Response) {
     redirectUrl.searchParams.set("accessToken", accessToken);
     redirectUrl.searchParams.set("refreshToken", refreshToken);
     if (state) redirectUrl.searchParams.set("state", state);
+    if (user.$locals?.isNew) redirectUrl.searchParams.set("new", "1");
 
     return res
         .cookie("accessToken", accessToken, cookieOptions)

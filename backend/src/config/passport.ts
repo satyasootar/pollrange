@@ -56,6 +56,8 @@ passport.use(
         }
 
         user = await User.create(userData);
+        // Read by googleAuthCallback to tell the client this was a sign-up.
+        user.$locals.isNew = true;
 
         return done(null, user);
       } catch (error) {

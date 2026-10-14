@@ -21,9 +21,8 @@ export function AuthSuccessPage() {
           // we just need to fetch the user profile to populate the store.
           const response = await api.get<ApiResponse<User>>("/auth/me");
           setUser(response.data.data);
-          // Google sign-in and sign-up share this page; a just-created account means sign-up.
-          const isNew = Date.now() - new Date(response.data.data.createdAt).getTime() < 2 * 60 * 1000;
-          track(isNew ? "signup" : "login", { method: "google" });
+          // Google sign-in and sign-up share this page; the server flags a just-created account.
+          track(searchParams.get("new") === "1" ? "signup" : "login", { method: "google" });
           
           const redirect = searchParams.get("state");
           navigate(redirect || "/dashboard/overview", { replace: true });
