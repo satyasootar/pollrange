@@ -12,7 +12,7 @@ interface RequestMeta {
 }
 
 /** Salted so the stored hash can't be matched against a list of IPs. */
-const hashIp = (ip: string) => crypto.createHash("sha256").update(`${config.JWT_SECRET}:${ip}`).digest("hex");
+const hashIp = (ip: string) => crypto.createHash("sha256").update(`${config.IP_HASH_SALT}:${ip}`).digest("hex");
 
 /** Host of a URL, or undefined for junk / our own site (internal navigation isn't a referral). */
 export function referrerHost(url: string | undefined): string | undefined {
@@ -75,13 +75,17 @@ export async function recordEvents(input: TrackInput, meta: RequestMeta) {
   const first = clean(input.firstTouch);
   if (meta.userId && first && Object.keys(first).length) {
     const at = first.at ? new Date(first.at as string) : new Date();
+    // Host only, same as events: full referrer URLs can carry personal data.
+    const refHost = referrerHost(first.referrer as string | undefined);
+    delete first.referrer;
+    if (refHost) first.referrer = refHost;
     await User.updateOne(
       { _id: meta.userId, "acquisition.firstSeenAt": { $exists: false } },
       {
         $set: {
           acquisition: {
             ...first,
-            source: (first.source as string | undefined)?.toLowerCase() || referrerHost(first.referrer as string | undefined) || "direct",
+            source: (first.source as string | undefined)?.toLowerCase() || refHost || "direct",
             visitorId: input.visitorId,
             firstSeenAt: Number.isNaN(at.getTime()) ? new Date() : at,
           },
