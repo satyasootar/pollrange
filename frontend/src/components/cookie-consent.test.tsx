@@ -43,9 +43,9 @@ describe("CookieConsent", () => {
     await waitFor(() => expect(testState.siteConsents[0]).toMatchObject({ action: "accept_all" }));
   });
 
-  it("Set preferences starts with optional categories off and saves a custom mix", async () => {
+  it("Customize starts with optional categories off and saves a custom mix", async () => {
     renderAt();
-    await userEvent.click(screen.getByRole("button", { name: "Set preferences" }));
+    await userEvent.click(screen.getByRole("button", { name: "Customize" }));
     const analytics = screen.getByRole("switch", { name: "Analytics" });
     const marketing = screen.getByRole("switch", { name: "Campaign attribution" });
     expect(analytics).not.toBeChecked();

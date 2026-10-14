@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, Cookie } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Cookie, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,6 +9,9 @@ import { COOKIE_CATEGORIES } from "@/lib/cookie-catalog";
 
 const NONE: ConsentChoice = { analytics: false, marketing: false };
 const ALL: ConsentChoice = { analytics: true, marketing: true };
+
+/** Quieter than the global uppercase button style; Reject and Accept stay the same size. */
+const compact = "border normal-case tracking-normal font-semibold hover:shadow-none";
 
 /**
  * Cookie banner + preferences. Shown until the visitor chooses; "Reject all" is as
@@ -50,63 +53,75 @@ export function CookieConsent() {
         <section
           role="region"
           aria-label="Cookie consent"
-          className="fixed inset-x-4 bottom-4 z-110 border border-border bg-card p-5 text-card-foreground shadow-2xl sm:inset-x-auto sm:bottom-6 sm:left-6 sm:max-w-md"
+          className="fixed inset-x-4 bottom-4 z-110 overflow-hidden border border-border bg-card/95 text-card-foreground shadow-[0_24px_64px_-16px_rgba(0,0,0,0.55)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-300 motion-reduce:animate-none sm:inset-x-auto sm:bottom-6 sm:left-6 sm:w-95"
         >
-          <div className="mb-2 flex items-center gap-2">
-            <Cookie className="h-4 w-4 text-primary" aria-hidden="true" />
-            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em]">Cookies on Kollects</h2>
+          <div className="h-0.5 bg-primary" aria-hidden="true" />
+          <div className="flex gap-3 p-4">
+            <div className="flex size-9 shrink-0 items-center justify-center bg-primary/10 text-primary" aria-hidden="true">
+              <Cookie className="size-4" />
+            </div>
+            <div className="min-w-0 space-y-1.5">
+              <h2 className="text-sm font-semibold leading-none">Cookies, your call</h2>
+              <p className="text-[13px] leading-relaxed text-muted-foreground">
+                Essential cookies keep Kollects running. With your OK, we'll also use analytics to see how people find and
+                use it. No ads, ever.
+              </p>
+              <Link
+                to="/cookies"
+                className="inline-flex items-center gap-0.5 text-xs font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Cookie policy
+                <ArrowUpRight className="size-3" aria-hidden="true" />
+              </Link>
+            </div>
           </div>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            We use essential cookies to run the site. With your permission, we'd also like to use analytics and campaign
-            cookies to understand how people find and use Kollects. We never use cookies for advertising.{" "}
-            <Link to="/privacy#cookies" className="text-foreground underline underline-offset-2">
-              Cookie policy
-            </Link>
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => decide(NONE, "reject_all")} className="sm:flex-1">
-              Reject all
-            </Button>
-            <Button size="sm" onClick={() => decide(ALL, "accept_all")} className="sm:flex-1">
-              Accept all
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
+          <div className="flex items-center gap-2 border-t border-border bg-muted/30 px-4 py-3">
+            <button
+              type="button"
               onClick={() => {
                 setSource("banner");
                 setPrefsOpen(true);
               }}
-              className="col-span-2 sm:basis-full"
+              className="mr-auto text-xs font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
             >
-              Set preferences
+              Customize
+            </button>
+            <Button variant="outline" size="xs" onClick={() => decide(NONE, "reject_all")} className={compact}>
+              Reject all
+            </Button>
+            <Button size="xs" onClick={() => decide(ALL, "accept_all")} className={compact}>
+              Accept all
             </Button>
           </div>
         </section>
       )}
 
       <Dialog open={prefsOpen} onOpenChange={setPrefsOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="max-h-[90vh] gap-5 overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Cookie preferences</DialogTitle>
             <DialogDescription>
-              Choose which cookies Kollects can use. Optional cookies stay off unless you turn them on, and you can change
-              this any time from "Cookie settings" in the footer.
+              Optional cookies stay off unless you turn them on. Change this any time from "Cookie settings" in the
+              footer.{" "}
+              <Link to="/cookies" onClick={() => setPrefsOpen(false)} className="text-foreground underline underline-offset-2">
+                Read the cookie policy
+              </Link>
             </DialogDescription>
           </DialogHeader>
 
           {hasGpc() && (
-            <p className="border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            <p className="flex items-start gap-2 border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+              <ShieldCheck className="mt-px size-3.5 shrink-0 text-primary" aria-hidden="true" />
               Your browser is sending a Global Privacy Control signal, so optional cookies start switched off.
             </p>
           )}
 
-          <div className="space-y-3">
+          <ul className="divide-y divide-border border border-border">
             {COOKIE_CATEGORIES.map((cat) => {
               const optional = cat.id !== "necessary";
               const on = optional ? choice[cat.id as keyof ConsentChoice] : true;
               return (
-                <div key={cat.id} className="border border-border p-4">
+                <li key={cat.id} className="p-4">
                   <div className="flex items-center justify-between gap-4">
                     <label htmlFor={`consent-${cat.id}`} className="text-sm font-semibold">
                       {cat.title}
@@ -118,16 +133,18 @@ export function CookieConsent() {
                         onCheckedChange={(v) => setChoice((c) => ({ ...c, [cat.id]: v }))}
                       />
                     ) : (
-                      <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Always on</span>
+                      <span className="bg-muted px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Always on
+                      </span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{cat.description}</p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{cat.description}</p>
                   <details className="group mt-2">
-                    <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-foreground">
-                      <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
+                    <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-foreground/80 hover:text-foreground">
+                      <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
                       {cat.entries.length} {cat.entries.length === 1 ? "item" : "items"}
                     </summary>
-                    <ul className="mt-2 divide-y divide-border border border-border text-xs">
+                    <ul className="mt-2 divide-y divide-border bg-muted/30 text-xs">
                       {cat.entries.map((e) => (
                         <li key={e.name} className="grid gap-0.5 p-2 sm:grid-cols-[9rem_1fr]">
                           <span className="font-mono text-foreground">{e.name}</span>
@@ -138,20 +155,22 @@ export function CookieConsent() {
                       ))}
                     </ul>
                   </details>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
 
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button variant="outline" onClick={() => decide(NONE, "reject_all")}>
+            <Button variant="outline" size="sm" onClick={() => decide(NONE, "reject_all")} className={compact}>
               Reject all
             </Button>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={saveCustom}>
+              <Button variant="outline" size="sm" onClick={saveCustom} className={`${compact} flex-1 sm:flex-none`}>
                 Save choices
               </Button>
-              <Button onClick={() => decide(ALL, "accept_all")}>Accept all</Button>
+              <Button size="sm" onClick={() => decide(ALL, "accept_all")} className={`${compact} flex-1 sm:flex-none`}>
+                Accept all
+              </Button>
             </div>
           </DialogFooter>
         </DialogContent>
