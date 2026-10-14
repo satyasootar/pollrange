@@ -1,6 +1,6 @@
 import { Lock } from "lucide-react";
 import { openCookieSettings } from "@/lib/consent";
-import { COOKIE_CATEGORIES } from "@/lib/cookie-catalog";
+import { Link } from "react-router-dom";
 import { FocusedPageLayout, FocusedSection } from "@/components/layout/focused-page-layout";
 
 const TOC = [
@@ -69,37 +69,8 @@ export function PrivacyPage() {
           off until you turn them on, and saying no is as easy as saying yes. We never use cookies
           for advertising, and we keep a record of each choice (with a one-way hash of your IP
           address, never the address itself) so we can show what you agreed to.</p>
-        <p>Analytics data is kept for up to 13 months. Withdrawing consent deletes these cookies
-          from your browser straight away.</p>
-        {COOKIE_CATEGORIES.map((cat) => (
-          <div key={cat.id} className="space-y-2">
-            <p>
-              <strong>{cat.title}{cat.id === "necessary" ? " (always on)" : " (only with your permission)"}.</strong> {cat.description}
-            </p>
-            <div className="overflow-x-auto border border-border">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="p-2 font-semibold">Name</th>
-                    <th className="p-2 font-semibold">Purpose</th>
-                    <th className="p-2 font-semibold">Type</th>
-                    <th className="p-2 font-semibold">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cat.entries.map((e) => (
-                    <tr key={e.name} className="border-t border-border align-top">
-                      <td className="p-2 font-mono">{e.name}</td>
-                      <td className="p-2">{e.purpose}</td>
-                      <td className="whitespace-nowrap p-2">{e.kind}</td>
-                      <td className="p-2">{e.duration}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ))}
+        <p>Our <Link to="/cookies" className="text-primary underline">Cookie Policy</Link> lists
+          every cookie we use, what it's for, and how long it lasts.</p>
         <p>
           <button type="button" onClick={openCookieSettings} className="text-primary underline">
             Change your cookie settings

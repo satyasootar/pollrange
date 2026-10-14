@@ -15,6 +15,7 @@ const FOOTER_COLUMNS: { title: string; links: { label: string; to: string }[] }[
     title: "Legal",
     links: [
       { label: "Privacy", to: "/privacy" },
+      { label: "Cookies", to: "/cookies" },
       { label: "Terms", to: "/terms" },
       { label: "Security", to: "/security" },
       { label: "DMCA", to: "/dmca" },

@@ -19,6 +19,7 @@ Kollects is made for teachers, event hosts, community organisers and small busin
 ## Policies
 
 - [Privacy policy](https://kollects.tech/privacy): What data Kollects collects, cookies, and your rights
+- [Cookie policy](https://kollects.tech/cookies): Every cookie Kollects uses, why, and how to control them
 - [Terms of service](https://kollects.tech/terms): Rules for using Kollects
 - [Security](https://kollects.tech/security): How accounts, responses and uploads are protected
 
