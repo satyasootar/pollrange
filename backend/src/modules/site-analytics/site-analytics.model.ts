@@ -36,6 +36,7 @@ const consentRecordSchema = new Schema(
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 consentRecordSchema.index({ createdAt: -1 });
+consentRecordSchema.index({ userId: 1, createdAt: -1 }, { sparse: true });
 
 export const ConsentRecord = mongoose.model("ConsentRecord", consentRecordSchema);
 

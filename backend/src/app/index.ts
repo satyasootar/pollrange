@@ -15,7 +15,8 @@ export function createServerApplication(): Application {
         origin: config.ENVIRONMENT === "production" 
             ? config.CLIENT_URL 
             : ["http://localhost:5173", "http://localhost:5174"],
-        credentials: true
+        credentials: true,
+        exposedHeaders: ["X-Export-Truncated"],
     }))
     
     app.use(metricsMiddleware)

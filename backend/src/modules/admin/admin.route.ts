@@ -18,6 +18,9 @@ router.post("/plan-requests/:requestId/reject", AdminController.rejectPlanReques
 router.get("/traffic", AdminController.getTraffic);
 router.get("/site-analytics", AdminController.getSiteAnalytics);
 router.get("/consent", AdminController.getConsent);
+router.get("/consent/records", AdminController.listConsentRecords);
+router.get("/consent/records/:consentId", AdminController.getConsentHistory);
+router.get("/consent/export.csv", AdminController.exportConsent);
 router.get("/system", AdminController.getSystem);
 router.get("/storage", AdminController.getStorage);
 router.post("/cleanup/forms/preview", AdminController.previewFormCleanup);

@@ -16,6 +16,8 @@ import config from "../../config/config.js";
 import { effectivePlan, PLAN_IDS, type PlanId } from "../../config/plans.js";
 import { AdminAudit } from "./admin-audit.model.js";
 import { PlanRequest } from "../billing/plan-request.model.js";
+import { ConsentRecord } from "../site-analytics/site-analytics.model.js";
+import { toConsentRow } from "../site-analytics/site-analytics.admin.js";
 import { z } from "zod";
 
 const DAY = 86_400_000;
@@ -184,11 +186,13 @@ export async function getUserDetail(userId: string) {
   if (!user) throw new ApiError(404, "User not found");
 
   const contentFields = "title status totalResponses shareToken createdAt isDeleted expiresAt";
-  const [polls, forms, sessions] = await Promise.all([
+  const [polls, forms, sessions, consents] = await Promise.all([
     Poll.find({ creatorId: userId }).sort({ createdAt: -1 }).select(contentFields).lean(),
     Form.find({ creatorId: userId }).sort({ createdAt: -1 }).select(`${contentFields} isQuiz`).lean(),
     Session.find({ userId }).sort({ updatedAt: -1 }).limit(10).select("userAgent ipAddress createdAt updatedAt expiresAt isActive").lean(),
+    ConsentRecord.find({ userId }).sort({ createdAt: -1 }).limit(20).lean(),
   ]);
+  const consentHistory = consents.map(toConsentRow);
   const item = (x: any) => ({
     id: String(x._id),
     title: x.title,
@@ -226,6 +230,8 @@ export async function getUserDetail(userId: string) {
       lastUsedAt: s.updatedAt,
       active: s.isActive && new Date(s.expiresAt) > new Date(),
     })),
+    /** Cookie decisions made while signed in as this user, newest first. */
+    consent: { current: consentHistory[0] ?? null, history: consentHistory },
   };
 }
 

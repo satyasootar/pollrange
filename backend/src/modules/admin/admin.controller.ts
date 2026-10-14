@@ -6,6 +6,7 @@ import * as Cleanup from "./admin.cleanup.js";
 import { PLAN_IDS } from "../../config/plans.js";
 import * as PlanRequests from "../billing/plan-request.service.js";
 import * as SiteReports from "../site-analytics/site-analytics.admin.js";
+import { AdminAudit } from "./admin-audit.model.js";
 
 const ok = (res: Response, data: unknown) => res.status(200).json(new ApiResponse(200, data, "ok"));
 
@@ -35,6 +36,28 @@ export async function getSiteAnalytics(req: Request, res: Response) {
 
 export async function getConsent(req: Request, res: Response) {
   return ok(res, await SiteReports.getConsentReport(SiteReports.parseDays(req.query.days)));
+}
+
+export async function listConsentRecords(req: Request, res: Response) {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+  return ok(res, await SiteReports.listConsentRecords(SiteReports.parseConsentFilters(req.query), page, limit));
+}
+
+export async function getConsentHistory(req: Request, res: Response) {
+  return ok(res, await SiteReports.getConsentHistory(String(req.params.consentId)));
+}
+
+/** CSV of the filtered consent log. It holds user emails, so each export is audited. */
+export async function exportConsent(req: Request, res: Response) {
+  const filters = SiteReports.parseConsentFilters(req.query);
+  const { csv, rows, truncated } = await SiteReports.exportConsentCsv(filters);
+  const admin = (req as any).user;
+  await AdminAudit.create({ adminId: admin._id, adminEmail: admin.email, action: "consent.export", params: filters, result: { rows, truncated } });
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="consent-log-${new Date().toISOString().slice(0, 10)}.csv"`);
+  if (truncated) res.setHeader("X-Export-Truncated", String(SiteReports.EXPORT_LIMIT));
+  return res.status(200).send(csv);
 }
 
 export async function getSystem(_req: Request, res: Response) {
