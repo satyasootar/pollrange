@@ -768,6 +768,8 @@ export interface AdminUserDetail {
   polls: AdminContentItem[];
   forms: AdminContentItem[];
   sessions: { userAgent: string; ipAddress: string; createdAt: string; lastUsedAt: string; active: boolean }[];
+  /** Cookie decisions made while signed in as this user, newest first. */
+  consent: { current: AdminConsentRecord | null; history: AdminConsentRecord[] };
 }
 
 // ─── Admin: site analytics & consent ────────────────────────────────────────────
@@ -811,10 +813,45 @@ export interface AdminConsentRecord {
 export interface AdminConsentReport {
   days: ReportDays;
   /** Each browser's latest decision. */
-  current: { browsers: number; analytics: number; marketing: number; acceptAll: number; rejectAll: number; custom: number };
+  current: {
+    browsers: number;
+    analytics: number;
+    marketing: number;
+    acceptAll: number;
+    rejectAll: number;
+    custom: number;
+    gpc: number;
+    /** Browsers that made more than one decision. */
+    changedMind: number;
+    /** Allowed analytics at some point, but their latest choice doesn't. */
+    withdrew: number;
+  };
+  byVersion: { version: number; browsers: number }[];
+  bySource: { source: "banner" | "settings"; browsers: number }[];
   inWindow: Record<ConsentActionKind, number>;
   timeline: ({ date: string } & Record<ConsentActionKind, number>)[];
-  recent: AdminConsentRecord[];
+}
+
+export interface ConsentRecordFilters {
+  search?: string;
+  action?: ConsentActionKind;
+  analytics?: boolean;
+  marketing?: boolean;
+  source?: "banner" | "settings";
+}
+
+export interface AdminConsentPage {
+  items: AdminConsentRecord[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+/** Every decision one browser made, oldest first. */
+export interface AdminConsentHistory {
+  consentId: string;
+  current: AdminConsentRecord;
+  firstSeenAt: string;
+  decisions: AdminConsentRecord[];
+  users: { id: string; name: string; email: string }[];
 }
 
 export interface AdminTrafficPoint { t: string; requests: number; errors: number; clientErrors: number; avgMs: number }

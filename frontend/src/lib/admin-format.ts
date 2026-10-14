@@ -1,6 +1,6 @@
 /** Formatting helpers for the admin dashboard. */
 
-import type { AdminEndpoint, FormCleanupFilter, FormStatus, ReportDays } from "@/types";
+import type { AdminEndpoint, ConsentActionKind, FormCleanupFilter, FormStatus, ReportDays } from "@/types";
 
 export const statusTone = (status: string) =>
   status === "active" || status === "published" ? "good" : status === "draft" ? "muted" : "warn";
@@ -52,3 +52,10 @@ export const DAY_OPTIONS: { value: ReportDays; label: string }[] = [
   { value: 30, label: "30 days" },
   { value: 90, label: "90 days" },
 ];
+
+/** Label, chart colour and pill tone for each cookie decision. */
+export const CONSENT_ACTIONS: Record<ConsentActionKind, { label: string; color: string; tone: "good" | "bad" | "primary" }> = {
+  accept_all: { label: "Accepted all", color: "#10b981", tone: "good" },
+  custom: { label: "Custom", color: "var(--chart-1)", tone: "primary" },
+  reject_all: { label: "Rejected all", color: "var(--destructive)", tone: "bad" },
+};

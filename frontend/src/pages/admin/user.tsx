@@ -9,7 +9,8 @@ import { buildFormShareUrl, buildShareUrl, formatDate, formatDatetime, timeAgo, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Panel, Pill } from "@/components/admin/admin-ui";
-import { formatNumber, statusTone } from "@/lib/admin-format";
+import { ConsentChoicePills, ConsentHistoryDialog } from "@/components/admin/admin-consent-history";
+import { CONSENT_ACTIONS, formatNumber, statusTone } from "@/lib/admin-format";
 import type { AdminContentItem, AdminUserDetail, PlanId } from "@/types";
 
 const toDateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
@@ -121,6 +122,53 @@ function ContentTable({ items, kind }: { items: AdminContentItem[]; kind: "poll"
   );
 }
 
+/** Their latest cookie choice and recent decisions; each opens the full browser history. */
+function UserConsentPanel({ consent }: { consent: AdminUserDetail["consent"] }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const { current, history } = consent;
+
+  return (
+    <Panel
+      title="Cookie consent"
+      action={current && <span className="text-xs text-muted-foreground">Last choice {timeAgo(current.createdAt)}</span>}
+    >
+      {!current ? (
+        <p className="text-sm text-muted-foreground">No cookie choice recorded while signed in.</p>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Pill tone={CONSENT_ACTIONS[current.action].tone}>{CONSENT_ACTIONS[current.action].label}</Pill>
+            <ConsentChoicePills r={current} />
+            <Pill>policy v{current.version}</Pill>
+            {current.gpc && <Pill>GPC</Pill>}
+          </div>
+          <ul className="divide-y divide-border">
+            {history.map((r) => (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  onClick={() => setOpenId(r.consentId)}
+                  className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 py-2 text-left text-xs hover:text-primary"
+                >
+                  <span className="w-28 shrink-0 text-muted-foreground" title={formatDatetime(r.createdAt)}>
+                    {timeAgo(r.createdAt)}
+                  </span>
+                  <span className="font-medium">{CONSENT_ACTIONS[r.action].label}</span>
+                  <span className="text-muted-foreground">
+                    analytics {r.analytics ? "on" : "off"} · campaign {r.marketing ? "on" : "off"} · {r.source === "settings" ? "settings" : "banner"}
+                  </span>
+                  <span className="ml-auto font-mono text-muted-foreground">{r.consentId.slice(0, 8)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <ConsentHistoryDialog consentId={openId} onClose={() => setOpenId(null)} />
+    </Panel>
+  );
+}
+
 export function AdminUserPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -190,6 +238,8 @@ export function AdminUserPage() {
               />
               <StatTile stat={{ label: "Joined", value: formatDate(data.user.createdAt), icon: Calendar, color: "text-muted-foreground" }} />
             </div>
+
+            <UserConsentPanel consent={data.consent} />
 
             <Panel title={`Forms (${data.forms.length})`}>
               <ContentTable items={data.forms} kind="form" />

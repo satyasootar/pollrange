@@ -9,7 +9,7 @@ import { makeQueryClient } from "@/test/utils";
 import { AdminPage, AdminRoute } from "./index";
 import { AdminUserPage } from "./user";
 import { endpointHealth, formatBytes, formatUptime, toCleanupFilter } from "@/lib/admin-format";
-import type { AdminPlanRequest, FormCleanupPreview, AdminOverview, AdminSystem, AdminStorage, AdminTraffic, AdminUserDetail, AdminUsersPage } from "@/types";
+import type { AdminConsentHistory, AdminConsentPage, AdminConsentRecord, AdminConsentReport, AdminPlanRequest, FormCleanupPreview, AdminOverview, AdminSystem, AdminStorage, AdminTraffic, AdminUserDetail, AdminUsersPage } from "@/types";
 
 const API = "http://localhost:3030/api";
 const ok = (data: unknown) => HttpResponse.json({ statusCode: 200, success: true, message: "ok", data });
@@ -44,6 +44,28 @@ const userDetail: AdminUserDetail = {
   ],
   polls: [],
   sessions: [{ userAgent: "Chrome on Windows", ipAddress: "1.2.3.4", createdAt: "2026-10-01T00:00:00Z", lastUsedAt: "2026-10-10T00:00:00Z", active: true }],
+  consent: { current: null, history: [] },
+};
+
+const decision = (over: Partial<AdminConsentRecord>): AdminConsentRecord => ({
+  id: "c1", consentId: "abcd1234-0000-4000-8000-000000000001", user: null, analytics: true, marketing: true, action: "accept_all",
+  source: "banner", version: 2, page: "/pricing", gpc: false, device: "desktop", browser: "Chrome", os: "Windows", createdAt: "2026-10-01T10:00:00Z", ...over,
+});
+const accepted = decision({});
+const rejected = decision({ id: "c2", analytics: false, marketing: false, action: "reject_all", source: "settings", page: "/privacy", createdAt: "2026-10-05T10:00:00Z", user: { id: "u1", name: "Asha Rao", email: "asha@x.dev" } });
+userDetail.consent = { current: rejected, history: [rejected, accepted] };
+
+const consentReport: AdminConsentReport = {
+  days: 30,
+  current: { browsers: 10, analytics: 6, marketing: 4, acceptAll: 4, rejectAll: 3, custom: 3, gpc: 1, changedMind: 2, withdrew: 1 },
+  byVersion: [{ version: 2, browsers: 9 }, { version: 1, browsers: 1 }],
+  bySource: [{ source: "banner", browsers: 8 }, { source: "settings", browsers: 2 }],
+  inWindow: { accept_all: 4, reject_all: 3, custom: 3 },
+  timeline: [{ date: "2026-10-10", accept_all: 1, reject_all: 0, custom: 0 }],
+};
+const consentPage: AdminConsentPage = { items: [rejected, accepted], pagination: { page: 1, limit: 25, total: 2, totalPages: 1 } };
+const consentHistory: AdminConsentHistory = {
+  consentId: accepted.consentId, current: rejected, firstSeenAt: accepted.createdAt, decisions: [accepted, rejected], users: [{ id: "u1", name: "Asha Rao", email: "asha@x.dev" }],
 };
 
 const point = { t: "2026-10-11T12:00:00Z", requests: 5, errors: 0, clientErrors: 1, avgMs: 12 };
@@ -142,8 +164,16 @@ beforeEach(() => {
     }),
     http.get(`${API}/admin/:section`, ({ params, request }) => {
       requested.push(new URL(request.url).pathname + new URL(request.url).search);
-      const map: Record<string, unknown> = { overview, users: usersPage, traffic, system, storage, "plan-requests": planRequests };
+      const map: Record<string, unknown> = { overview, users: usersPage, traffic, system, storage, "plan-requests": planRequests, consent: consentReport };
       return ok(map[params.section as string]);
+    }),
+    http.get(`${API}/admin/consent/records`, ({ request }) => {
+      requested.push(new URL(request.url).pathname + new URL(request.url).search);
+      return ok(consentPage);
+    }),
+    http.get(`${API}/admin/consent/records/:consentId`, ({ params }) => {
+      requested.push(`history:${params.consentId}`);
+      return ok(consentHistory);
     }),
     http.get(`${API}/admin/users/:userId`, ({ params }) =>
       params.userId === "u1" ? ok(userDetail) : HttpResponse.json({ message: "Not found" }, { status: 404 })
@@ -303,6 +333,36 @@ describe("Admin dashboard", () => {
     await userEvent.click(screen.getByRole("button", { name: "closed" }));
     expect(screen.getByText(/filters changed/i)).toBeInTheDocument();
     expect(del).toBeDisabled();
+  });
+
+  it("consent tab: breakdowns, a searchable/filterable log, and a browser's full history", async () => {
+    renderAdmin("/admin?tab=consent");
+    expect(await screen.findByText("v2 · current")).toBeInTheDocument();
+    expect(screen.getByText("v1 · re-asked on next visit")).toBeInTheDocument();
+    expect(screen.getByText("Withdrew analytics")).toBeInTheDocument();
+    expect(await screen.findByText("2 decisions")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Search consent log"), "asha");
+    await waitFor(() => expect(requested.some((r) => r.includes("/admin/consent/records") && r.includes("search=asha"))).toBe(true));
+    await userEvent.click(within(screen.getByRole("group", { name: "Filter by decision" })).getByRole("button", { name: "Rejected all" }));
+    await waitFor(() => expect(requested.some((r) => r.includes("action=reject_all") && r.includes("page=1"))).toBe(true));
+    await userEvent.click(within(screen.getByRole("group", { name: "Filter by analytics" })).getByRole("button", { name: "Denied" }));
+    await waitFor(() => expect(requested.some((r) => r.includes("analytics=false"))).toBe(true));
+
+    await userEvent.click(screen.getByRole("button", { name: "View consent history for asha@x.dev" }));
+    const dialog = await screen.findByRole("dialog", { name: "Consent history" });
+    expect(requested).toContain(`history:${accepted.consentId}`);
+    expect(await within(dialog).findByText("First decision")).toBeInTheDocument();
+    expect(within(dialog).getByText("analytics turned off, campaign turned off")).toBeInTheDocument();
+    expect(within(dialog).getByRole("link", { name: "Asha Rao" })).toHaveAttribute("href", "/admin/users/u1");
+  });
+
+  it("user page shows their cookie consent and opens its history", async () => {
+    renderAdmin("/admin/users/u1");
+    expect(await screen.findByText("Cookie consent")).toBeInTheDocument();
+    expect(screen.getByText("analytics denied")).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole("button", { name: /rejected all/i })[0]!);
+    expect(await screen.findByRole("dialog", { name: "Consent history" })).toBeInTheDocument();
   });
 
   it("system tab flags a degraded check and shows storage usage", async () => {

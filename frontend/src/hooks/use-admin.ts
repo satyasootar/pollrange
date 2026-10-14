@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { adminApi } from "@/api/admin.api";
 import { authApi } from "@/api/auth.api";
-import type { FormCleanupFilter, PlanId, ReportDays, TimelineGranularity, User } from "@/types";
+import type { ConsentRecordFilters, FormCleanupFilter, PlanId, ReportDays, TimelineGranularity, User } from "@/types";
 
 /** Reads the server-computed flag from the ["me"] query ProtectedRoute already loaded. */
 export function useIsAdmin() {
@@ -77,3 +77,19 @@ export const useAdminSiteAnalytics = (days: ReportDays) =>
 
 export const useAdminConsent = (days: ReportDays) =>
   useQuery({ queryKey: ["admin", "consent", days], queryFn: () => adminApi.consent(days), select: (r) => r.data.data, placeholderData: keepPreviousData });
+
+export const useAdminConsentRecords = (page: number, filters: ConsentRecordFilters) =>
+  useQuery({
+    queryKey: ["admin", "consent-records", page, filters],
+    queryFn: () => adminApi.consentRecords({ page, ...filters }),
+    select: (r) => r.data.data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useAdminConsentHistory = (consentId: string | null) =>
+  useQuery({
+    queryKey: ["admin", "consent-history", consentId],
+    queryFn: () => adminApi.consentHistory(consentId!),
+    select: (r) => r.data.data,
+    enabled: !!consentId,
+  });
