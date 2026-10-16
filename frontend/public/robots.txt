@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /dashboard
+Disallow: /polls/
+Disallow: /forms/
+Disallow: /admin
+Disallow: /onboarding
+
+Sitemap: https://kollects.tech/sitemap.xml
