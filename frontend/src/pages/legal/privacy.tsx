@@ -85,7 +85,7 @@ export function PrivacyPage() {
         <ul className="list-disc space-y-1.5 pl-5">
           <li><strong>Cloudinary</strong> stores images and files uploaded to polls and forms.</li>
           <li><strong>Resend</strong> sends account emails, such as verification and password reset links.</li>
-          <li><strong>Google</strong> handles sign-in if you choose to use "Sign in with Google".</li>
+          <li><strong>Google</strong> handles sign-in if you choose to use "Sign in with Google", and measures site usage through Google Analytics if you allow Analytics cookies.</li>
           <li><strong>MongoDB Atlas</strong> hosts our database.</li>
         </ul>
         <p>We may also share information if the law requires it, or to protect the rights and

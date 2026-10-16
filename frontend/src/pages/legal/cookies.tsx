@@ -102,8 +102,9 @@ export function CookiePolicyPage() {
 
       <FocusedSection id="third-parties" title="Third parties">
         <p>
-          We don't use advertising networks, social media pixels, or third-party analytics
-          tools, so no other company sets tracking cookies through Kollects.
+          We don't use advertising networks or social media pixels. If you turn on
+          Analytics, we also use <strong>Google Analytics</strong>, which sets its own{" "}
+          <code>_ga</code> cookies; with Analytics off, it isn't loaded at all.
         </p>
         <p>
           If you choose <strong>Sign in with Google</strong>, you're briefly sent to Google, and
