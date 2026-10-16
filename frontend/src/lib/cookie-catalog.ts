@@ -34,6 +34,7 @@ export const COOKIE_CATEGORIES: { id: CookieCategory; title: string; description
     entries: [
       { name: "kl_vid", purpose: "Random, anonymous ID that recognises a returning browser", duration: "13 months", kind: "Cookie" },
       { name: "kl_sid", purpose: "Groups page views into one visit", duration: "30 minutes of inactivity", kind: "Cookie" },
+      { name: "_ga, _ga_*", purpose: "Google Analytics: recognises a returning browser and groups its visits (data processed by Google)", duration: "2 years", kind: "Cookie" },
     ],
   },
   {

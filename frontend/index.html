@@ -44,7 +44,44 @@
     <meta name="application-name" content="Kollects" />
     <link rel="apple-touch-icon" href="/logo/logo1.png" />
 
-    
+    <!-- Google Analytics: loaded only once the visitor allows Analytics cookies (see src/lib/consent.ts). -->
+    <script>
+      (function () {
+        var GA_ID = "G-9Y8VLS12M4";
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () { dataLayer.push(arguments); };
+        gtag("consent", "default", { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+        var loaded = false;
+        function apply(c) {
+          var on = !!(c && c.analytics && c.v === 2); // keep in sync with CONSENT_VERSION
+          if (on && !loaded) {
+            loaded = true;
+            gtag("consent", "update", { analytics_storage: "granted" });
+            gtag("js", new Date());
+            gtag("config", GA_ID);
+            var s = document.createElement("script");
+            s.async = true;
+            s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
+            document.head.appendChild(s);
+          } else if (!on && loaded) {
+            gtag("consent", "update", { analytics_storage: "denied" });
+            document.cookie.split("; ").forEach(function (kv) {
+              var name = kv.split("=")[0];
+              if (name.indexOf("_ga") !== 0) return;
+              var host = location.hostname.replace(/^www\./, "");
+              ["", "; domain=" + host, "; domain=." + host].forEach(function (d) {
+                document.cookie = name + "=; Max-Age=0; Path=/" + d;
+              });
+            });
+          }
+        }
+        try {
+          var raw = document.cookie.split("; ").find(function (c) { return c.indexOf("kollects_consent=") === 0; });
+          if (raw) apply(JSON.parse(decodeURIComponent(raw.slice(17))));
+        } catch (e) {}
+        window.addEventListener("kollects:consent", function (e) { apply(e.detail); });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
