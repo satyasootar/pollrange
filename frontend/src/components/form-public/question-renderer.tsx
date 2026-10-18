@@ -1,4 +1,4 @@
-import { Star, Upload, Loader2, X, FileText } from "lucide-react";
+import { Star, Upload, Loader2, X, FileText, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formPublicApi } from "@/api/form-public.api";
@@ -151,10 +151,15 @@ export function QuestionRenderer({ formId, question: q, value, onChange, preview
               >
                 <span
                   className={`flex h-4 w-4 shrink-0 items-center justify-center border-2 ${multi ? "rounded" : "rounded-full"} ${
-                    selected ? "border-primary" : "border-muted-foreground/40"
+                    selected ? `border-primary ${multi ? "bg-primary" : ""}` : "border-muted-foreground/40"
                   }`}
                 >
-                  {selected && <span className={`h-2 w-2 ${multi ? "rounded-sm" : "rounded-full"} bg-primary`} />}
+                  {selected &&
+                    (multi ? (
+                      <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
+                    ) : (
+                      <span className="h-2 w-2 rounded-full bg-primary" />
+                    ))}
                 </span>
                 <span className="flex-1">{opt.text}</span>
                 {payment && (
@@ -284,10 +289,15 @@ export function QuestionRenderer({ formId, question: q, value, onChange, preview
                         type="button"
                         onClick={() => setGrid(row, col, multi)}
                         className={`mx-auto flex h-5 w-5 items-center justify-center border-2 ${multi ? "rounded" : "rounded-full"} ${
-                          gridSelected(row, col) ? "border-primary" : "border-muted-foreground/40"
+                          gridSelected(row, col) ? `border-primary ${multi ? "bg-primary" : ""}` : "border-muted-foreground/40"
                         }`}
                       >
-                        {gridSelected(row, col) && <span className={`h-2.5 w-2.5 ${multi ? "rounded-sm" : "rounded-full"} bg-primary`} />}
+                        {gridSelected(row, col) &&
+                          (multi ? (
+                            <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
+                          ) : (
+                            <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                          ))}
                       </button>
                     </td>
                   ))}

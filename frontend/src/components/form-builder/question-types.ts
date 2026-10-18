@@ -23,15 +23,15 @@ export interface QuestionTypeMeta {
 export const QUESTION_TYPE_META: QuestionTypeMeta[] = [
   { type: "short_answer", label: "Short answer", icon: Type },
   { type: "paragraph", label: "Paragraph", icon: AlignLeft },
-  { type: "multiple_choice", label: "Multiple choice", icon: CircleDot },
-  { type: "checkboxes", label: "Checkboxes", icon: CheckSquare },
+  { type: "multiple_choice", label: "Single choice", icon: CircleDot },
+  { type: "checkboxes", label: "Multiple choice (checkboxes)", icon: CheckSquare },
   { type: "dropdown", label: "Dropdown", icon: ChevronDownSquare },
   { type: "linear_scale", label: "Linear scale", icon: SlidersHorizontal },
   { type: "rating", label: "Rating", icon: Star },
   { type: "date", label: "Date", icon: Calendar },
   { type: "time", label: "Time", icon: Clock },
-  { type: "multiple_choice_grid", label: "Multiple choice grid", icon: Grid3x3 },
-  { type: "checkbox_grid", label: "Checkbox grid", icon: LayoutGrid },
+  { type: "multiple_choice_grid", label: "Single choice grid", icon: Grid3x3 },
+  { type: "checkbox_grid", label: "Multiple choice grid (checkboxes)", icon: LayoutGrid },
   { type: "file_upload", label: "File upload", icon: Upload },
 ];
 
