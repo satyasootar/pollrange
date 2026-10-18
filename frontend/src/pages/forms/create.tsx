@@ -9,6 +9,7 @@ import { StepFormQuestions } from "@/components/form-builder/step-form-questions
 import { StepFormReview } from "@/components/form-builder/step-form-review";
 import { StepFormSuccess } from "@/components/form-builder/step-form-success";
 import { BuilderChatDock } from "@/components/ai/builder-chat-dock";
+import { ImportFormDialog } from "@/components/form-builder/import-form-dialog";
 import { slideInRight } from "@/lib/animations";
 import { config } from "@/config/config";
 import { applyFormActions, formBuilderState } from "@/lib/ai-builder-actions";
@@ -47,6 +48,7 @@ export function CreateFormPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-xl font-semibold tracking-tight">Create Form</h1>
+          <ImportFormDialog />
         </div>
         <div className="flex items-center gap-0">
           {STEPS.map((s, i) => (
