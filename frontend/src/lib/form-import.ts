@@ -80,6 +80,7 @@ export const formImportSchema = z
         showProgressBar: z.boolean(),
         shuffleQuestions: z.boolean(),
         releaseScoreImmediately: z.boolean(),
+        autoPublishResults: z.boolean(),
         confirmationMessage: z.string().max(500),
       })
       .partial()
@@ -256,7 +257,8 @@ TOP LEVEL
     "allowResponseEdit": boolean,      // default false
     "showProgressBar": boolean,        // default true
     "shuffleQuestions": boolean,       // default false
-    "releaseScoreImmediately": boolean,// quiz only, default true
+    "releaseScoreImmediately": boolean,// quiz only, default true: show each respondent their score right after submitting
+    "autoPublishResults": boolean,     // quiz only, default false: publish the leaderboard automatically when the quiz timer ends (the timer itself is set in the builder)
     "confirmationMessage": string      // shown after submit
   },
   "sections": [ SECTION, ... ]     // use "sections" for multi-page forms...

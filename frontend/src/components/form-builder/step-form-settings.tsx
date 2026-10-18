@@ -6,15 +6,24 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { hasFileUpload, useFormBuilderStore } from "@/store/use-form-builder-store";
 import { formsApi } from "@/api/forms.api";
-import { toLocalDatetimeInput, toastApiError } from "@/lib/utils";
+import { formatDatetime, toLocalDatetimeInput, toastApiError } from "@/lib/utils";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, X, Lock } from "lucide-react";
+import { ImagePlus, Loader2, X, Lock, Timer, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCanUse } from "@/hooks/use-plan";
 import { FormBrandingCard } from "./form-branding-card";
 import type { FormSettings } from "@/types";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
+
+const TIMER_PRESETS = [5, 10, 15, 30, 60];
+/** datetime-local value for `minutes` from now (called from click handlers, never during render). */
+const endIn = (minutes: number) => toLocalDatetimeInput(new Date(Date.now() + minutes * 60_000));
+
+const RESULT_RELEASE = [
+  { auto: false, label: "I'll publish manually", hint: "Publish from the quiz's Leaderboard tab whenever you're ready." },
+  { auto: true, label: "When the timer ends", hint: "The leaderboard goes live the moment time runs out." },
+];
 
 const SETTING_TOGGLES: { key: keyof FormSettings; label: string; hint: string }[] = [
   { key: "collectEmail", label: "Collect email addresses", hint: "Ask respondents for their email" },
@@ -240,27 +249,110 @@ export function StepFormSettings({ formId }: { formId?: string }) {
         )}
       </div>
 
-      {/* Expiry */}
+      {/* Expiry — for a quiz this is the quiz timer */}
       <div className="space-y-4 border border-border bg-muted/30 p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <Label>Set expiry date & time</Label>
-            <p className="text-xs text-muted-foreground">Automatically close the form at a specific time.</p>
+            <Label htmlFor="expiry-toggle" className="flex items-center gap-2">
+              {form.isQuiz && <Timer className="h-4 w-4 text-primary" />}
+              {form.isQuiz ? "Quiz timer" : "Set expiry date & time"}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {form.isQuiz
+                ? "Everyone sees a live countdown. At zero the quiz closes and unfinished attempts are submitted with the answers so far."
+                : "Automatically close the form at a specific time."}
+            </p>
           </div>
           <Switch
+            id="expiry-toggle"
             checked={!!form.expiresAt}
-            onCheckedChange={(v) => updateMeta({ expiresAt: v ? minDatetime : "" })}
+            onCheckedChange={(v) => updateMeta({ expiresAt: v ? (form.isQuiz ? endIn(30) : minDatetime) : "" })}
           />
         </div>
         {!!form.expiresAt && (
-          <Input
-            type="datetime-local"
-            min={minDatetime}
-            value={form.expiresAt}
-            onChange={(e) => updateMeta({ expiresAt: e.target.value })}
-          />
+          <div className="space-y-3">
+            {form.isQuiz && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">Ends in</span>
+                {TIMER_PRESETS.map((min) => (
+                  <button
+                    key={min}
+                    type="button"
+                    onClick={() => updateMeta({ expiresAt: endIn(min) })}
+                    className="border border-border bg-background px-2.5 py-1 text-xs transition-colors hover:border-primary hover:text-primary"
+                  >
+                    {min < 60 ? `${min} min` : `${min / 60} hour`}
+                  </button>
+                ))}
+              </div>
+            )}
+            <Input
+              type="datetime-local"
+              min={minDatetime}
+              value={form.expiresAt}
+              aria-label={form.isQuiz ? "Quiz end time" : "Expiry date and time"}
+              onChange={(e) => updateMeta({ expiresAt: e.target.value })}
+            />
+            {form.isQuiz && (
+              <p className="text-xs text-muted-foreground">
+                Quiz ends <span className="font-medium text-foreground">{formatDatetime(form.expiresAt)}</span>. The timer runs from when the
+                form is live, so set this just before you share the link.
+              </p>
+            )}
+          </div>
         )}
       </div>
+
+      {/* Quiz results release */}
+      {form.isQuiz && (
+        <div className="space-y-4 border border-border p-4">
+          <div className="space-y-0.5">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Trophy className="h-4 w-4 text-amber-500" /> Results & leaderboard
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Once published, the quiz link shows the leaderboard, each person's rank and the correct answers.
+            </p>
+          </div>
+          <div role="radiogroup" aria-label="Publish results" className="grid gap-3 sm:grid-cols-2">
+            {RESULT_RELEASE.map((opt) => {
+              const selected = opt.auto === (form.settings.autoPublishResults && !!form.expiresAt);
+              return (
+                <button
+                  key={opt.label}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  disabled={opt.auto && !form.expiresAt}
+                  onClick={() => updateSettings({ autoPublishResults: opt.auto })}
+                  className={`border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                    selected ? "border-primary bg-primary/10" : "border-border hover:border-foreground/30"
+                  }`}
+                >
+                  <p className="text-sm font-medium">{opt.label}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{opt.hint}</p>
+                </button>
+              );
+            })}
+          </div>
+          {!form.expiresAt && (
+            <p className="text-xs text-muted-foreground">Turn on the quiz timer to publish automatically.</p>
+          )}
+          <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="releaseScore" className="cursor-pointer text-sm font-normal">
+                Show score right after submitting
+              </Label>
+              <p className="text-xs text-muted-foreground">Respondents see their own score immediately. Correct answers stay hidden until you publish.</p>
+            </div>
+            <Switch
+              id="releaseScore"
+              checked={form.settings.releaseScoreImmediately}
+              onCheckedChange={(v) => updateSettings({ releaseScoreImmediately: v })}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Settings toggles */}
       <div className="space-y-3 border border-border p-4">
@@ -280,21 +372,6 @@ export function StepFormSettings({ formId }: { formId?: string }) {
             />
           </div>
         ))}
-        {form.isQuiz && (
-          <div className="flex items-center justify-between border-t border-border pt-3">
-            <div className="space-y-0.5">
-              <Label htmlFor="releaseScore" className="cursor-pointer text-sm font-normal">
-                Release score immediately
-              </Label>
-              <p className="text-xs text-muted-foreground">Show respondents their score right after submitting.</p>
-            </div>
-            <Switch
-              id="releaseScore"
-              checked={form.settings.releaseScoreImmediately}
-              onCheckedChange={(v) => updateSettings({ releaseScoreImmediately: v })}
-            />
-          </div>
-        )}
       </div>
 
       {/* Confirmation message */}

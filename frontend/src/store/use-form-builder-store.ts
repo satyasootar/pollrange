@@ -62,6 +62,7 @@ const defaultSettings: FormBuilderForm["settings"] = {
   showProgressBar: true,
   shuffleQuestions: false,
   releaseScoreImmediately: true,
+  autoPublishResults: false,
   confirmationMessage: "Your response has been recorded.",
 };
 

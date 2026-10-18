@@ -502,6 +502,8 @@ export interface FormSettings {
   shuffleQuestions: boolean;
   confirmationMessage?: string;
   releaseScoreImmediately: boolean;
+  /** Quiz: publish the leaderboard automatically when the timer (expiresAt) ends. */
+  autoPublishResults: boolean;
 }
 
 export interface Form {
@@ -541,6 +543,8 @@ export interface PublicForm {
   alreadyResponded: boolean;
   showPoweredBy?: boolean;
   brand?: PublicBrand | null;
+  /** Server clock at fetch time — countdowns use it to correct device clock skew. */
+  serverTime?: string;
   settings: FormSettings;
   sections: FormSection[];
 }
@@ -573,6 +577,10 @@ export interface FormAnswerPayload {
 export interface SubmitFormResponsePayload {
   sessionToken: string;
   respondentEmail?: string;
+  /** Leaderboard name for a signed-out quiz taker. */
+  respondentName?: string;
+  /** The quiz timer ran out: submit what was answered. */
+  timedOut?: boolean;
   answers: FormAnswerPayload[];
   isComplete: boolean;
 }
@@ -591,6 +599,58 @@ export interface SubmitFormResult {
   score?: number;
   totalPoints?: number;
   payment?: SubmitPaymentDue;
+}
+
+// ─── Quiz results & leaderboard ─────────────────────────────────────────────────
+export interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  score: number;
+  totalPoints: number;
+  submittedAt: string;
+  /** Public board: marks the viewer's own row. */
+  isMe?: boolean;
+  /** Creator board only. */
+  responseId?: string;
+  email?: string | null;
+}
+
+export interface QuizReviewItem {
+  questionId: string;
+  title: string;
+  points: number;
+  pointsEarned: number;
+  isCorrect: boolean;
+  yourAnswer: string[];
+  correctAnswer: string[];
+  feedback?: string;
+}
+
+export interface QuizResults {
+  formId: string;
+  title: string;
+  status: string;
+  expiresAt?: string;
+  serverTime: string;
+  autoPublishResults: boolean;
+  resultsPublished: boolean;
+  resultsPublishedAt?: string;
+  maxPoints: number;
+  /** Null when this viewer never submitted. Score is absent until it's released. */
+  me: { name: string; submittedAt: string; score?: number; totalPoints?: number; rank?: number } | null;
+  leaderboard: { participants: number; maxPoints: number; entries: LeaderboardEntry[] } | null;
+  review: QuizReviewItem[] | null;
+}
+
+export interface CreatorLeaderboard {
+  status: string;
+  expiresAt?: string;
+  autoPublishResults: boolean;
+  resultsPublished: boolean;
+  resultsPublishedAt?: string;
+  maxPoints: number;
+  participants: number;
+  entries: LeaderboardEntry[];
 }
 
 // ─── Form analytics ─────────────────────────────────────────────────────────────

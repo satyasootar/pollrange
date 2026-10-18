@@ -64,6 +64,7 @@ export function formEntityToBuilder(form: Form): FormBuilderForm {
       showProgressBar: form.settings.showProgressBar,
       shuffleQuestions: form.settings.shuffleQuestions,
       releaseScoreImmediately: form.settings.releaseScoreImmediately,
+      autoPublishResults: form.settings.autoPublishResults ?? false,
       confirmationMessage: form.settings.confirmationMessage ?? "Your response has been recorded.",
     },
     sections,

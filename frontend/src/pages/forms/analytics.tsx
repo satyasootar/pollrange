@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TimelineChart } from "@/components/analytics/timeline-chart";
 import { QuestionSummaryCard } from "@/components/form-analytics/question-summary-card";
-import { useForm } from "@/hooks/use-forms";
+import { formKeys, useForm } from "@/hooks/use-forms";
+import { LeaderboardPanel } from "@/components/quiz-results/leaderboard-panel";
 import { useFormSummary, useFormTimeline, useFormQuestionSummaries, useFormResponses, formAnalyticsKeys } from "@/hooks/use-form-analytics";
 import { useFormSocket } from "@/hooks/use-form-socket";
 import { useSendReceipt } from "@/hooks/use-send-receipt";
@@ -243,6 +244,12 @@ export function FormAnalyticsPage() {
       qc.invalidateQueries({ queryKey: ["form-analytics", "timeline", formId!] });
       qc.invalidateQueries({ queryKey: formAnalyticsKeys.questions(formId!) });
       qc.invalidateQueries({ queryKey: ["form-analytics", "responses", formId!] });
+      qc.invalidateQueries({ queryKey: formKeys.leaderboard(formId!) });
+    },
+    // Timer ended / auto-published / published elsewhere.
+    onStatusChange: () => {
+      qc.invalidateQueries({ queryKey: formKeys.detail(formId!) });
+      qc.invalidateQueries({ queryKey: formKeys.leaderboard(formId!) });
     },
   });
 
@@ -304,6 +311,7 @@ export function FormAnalyticsPage() {
               <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="individual">Individual</TabsTrigger>
               <TabsTrigger value="table">Table</TabsTrigger>
+              {form.isQuiz && <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>}
             </TabsList>
             <Button variant="outline" size="sm" className="gap-2" onClick={handleExport}>
               <Download className="h-4 w-4" /> Export CSV
@@ -338,6 +346,12 @@ export function FormAnalyticsPage() {
           <TabsContent value="individual">
             <IndividualResponses formId={formId!} form={form} receiptFilter={receiptFilter} onReceiptFilter={setReceiptFilter} />
           </TabsContent>
+
+          {form.isQuiz && (
+            <TabsContent value="leaderboard">
+              <LeaderboardPanel form={form} />
+            </TabsContent>
+          )}
 
           <TabsContent value="table">
             <ResponsesTable formId={formId!} form={form} receiptFilter={receiptFilter} onReceiptFilter={setReceiptFilter} />

@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw";
 import {
   makePublicForm,
   makePublicPoll,
+  makeQuizResults,
   makeDashboardOverview,
   makeForm,
   makePlanCatalog,
@@ -11,6 +12,7 @@ import {
 import type {
   PublicForm,
   PublicPoll,
+  QuizResults,
   DashboardOverview,
   PlanRequest,
   PlanState,
@@ -28,6 +30,7 @@ const API = "http://localhost:3030/api";
  */
 export const testState = {
   publicForm: makePublicForm() as PublicForm,
+  quizResults: makeQuizResults() as QuizResults,
   publicPoll: makePublicPoll() as PublicPoll,
   overview: makeDashboardOverview() as DashboardOverview,
   submittedForm: null as SubmitFormResponsePayload | null,
@@ -50,6 +53,7 @@ export const testState = {
 
 export function resetTestState() {
   testState.publicForm = makePublicForm();
+  testState.quizResults = makeQuizResults();
   testState.publicPoll = makePublicPoll();
   testState.overview = makeDashboardOverview();
   testState.submittedForm = null;
@@ -97,6 +101,7 @@ export const handlers = [
 
   // ─── Public forms ─────────────────────────────────────────────────────────
   http.get(`${API}/public/forms/:shareToken`, () => ok(testState.publicForm)),
+  http.get(`${API}/public/forms/:shareToken/results`, () => ok(testState.quizResults)),
 
   http.post(`${API}/form-responses/:formId`, async ({ request }) => {
     testState.submittedForm = (await request.json()) as SubmitFormResponsePayload;

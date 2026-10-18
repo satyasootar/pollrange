@@ -12,6 +12,8 @@ import {
   makePublicForm,
   makeSection,
   makeFormQuestion,
+  makeChoiceQuestion,
+  makeQuizResults,
   defaultFormSettings,
 } from "@/test/msw/factories";
 
@@ -195,5 +197,84 @@ describe("PublicFormPage", () => {
     renderPage();
     await screen.findByPlaceholderText("Your answer");
     expect(screen.queryByText(/made with/i)).not.toBeInTheDocument();
+  });
+
+  describe("quiz", () => {
+    const quiz = (o: Parameters<typeof makePublicForm>[0] = {}) =>
+      makePublicForm({ isQuiz: true, sections: [makeSection([makeChoiceQuestion({ isRequired: true, points: 5 })])], ...o });
+
+    it("requires a leaderboard name from signed-out takers", async () => {
+      testState.publicForm = quiz();
+      renderPage();
+      await userEvent.click(await screen.findByText("Alpha"));
+      await userEvent.click(screen.getByRole("button", { name: /submit/i }));
+      await waitFor(() => expect(testState.submittedForm).toBeNull());
+    });
+
+    it("does not ask for a name on a sign-in-required quiz (the account name is used)", async () => {
+      testState.publicForm = quiz({ responseMode: "authenticated" });
+      renderPage();
+      await screen.findByText("Alpha");
+      expect(screen.queryByLabelText(/your name/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/leaderboard/i)).not.toBeInTheDocument();
+    });
+
+    it("submits the name and shows the score on the same link while results are pending", async () => {
+      testState.publicForm = quiz();
+      renderPage();
+      await userEvent.type(await screen.findByLabelText(/your name/i), "Ada");
+      await userEvent.click(screen.getByText("Alpha"));
+      await userEvent.click(screen.getByRole("button", { name: /submit/i }));
+
+      expect(await screen.findByText(/your score/i)).toBeInTheDocument();
+      expect(testState.submittedForm!.respondentName).toBe("Ada");
+      expect(screen.getByText(/waiting for the organizer/i)).toBeInTheDocument();
+      expect(screen.queryByText(/leaderboard/i)).not.toBeInTheDocument();
+    });
+
+    it("shows the published leaderboard with the viewer's own row and rank on revisit", async () => {
+      testState.publicForm = quiz({ alreadyResponded: true, status: "published" });
+      testState.quizResults = makeQuizResults({
+        status: "published",
+        resultsPublished: true,
+        me: { name: "Ada", submittedAt: "2026-10-18T10:00:00Z", score: 4, totalPoints: 5, rank: 2 },
+        leaderboard: {
+          participants: 3,
+          maxPoints: 5,
+          entries: [
+            { rank: 1, name: "Grace Hopper", score: 5, totalPoints: 5, submittedAt: "2026-10-18T10:00:00Z" },
+            { rank: 2, name: "Ada", score: 4, totalPoints: 5, submittedAt: "2026-10-18T10:01:00Z", isMe: true },
+            { rank: 3, name: "Alan Turing", score: 2, totalPoints: 5, submittedAt: "2026-10-18T10:02:00Z" },
+          ],
+        },
+        review: [
+          { questionId: "q", title: "Pick one", points: 5, pointsEarned: 0, isCorrect: false, yourAnswer: ["Beta"], correctAnswer: ["Alpha"] },
+        ],
+      });
+      renderPage();
+
+      expect(await screen.findByRole("heading", { name: /leaderboard/i })).toBeInTheDocument();
+      expect(screen.getByLabelText(/1st place: Grace Hopper/i)).toBeInTheDocument();
+      expect(screen.getByText("#2")).toBeInTheDocument();
+      expect(screen.getByText("You")).toBeInTheDocument();
+      expect(screen.getByText(/0 of 1 correct/i)).toBeInTheDocument();
+    });
+
+    it("auto-submits the answers so far when the timer runs out", async () => {
+      const now = Date.now();
+      testState.publicForm = quiz({
+        expiresAt: new Date(now + 1500).toISOString(),
+        serverTime: new Date(now).toISOString(),
+        sections: [makeSection([makeChoiceQuestion({ isRequired: true, points: 5 }), makeFormQuestion({ isRequired: true })])],
+      });
+      renderPage();
+      expect(await screen.findByRole("timer")).toBeInTheDocument();
+      await userEvent.type(screen.getByLabelText(/your name/i), "Ada");
+      await userEvent.click(screen.getByText("Alpha"));
+
+      await waitFor(() => expect(testState.submittedForm).not.toBeNull(), { timeout: 4000 });
+      expect(testState.submittedForm!.timedOut).toBe(true);
+      expect(await screen.findByText(/time ran out/i)).toBeInTheDocument();
+    });
   });
 });

@@ -9,6 +9,7 @@ export const formKeys = {
   all: ["forms"] as const,
   list: (filters: FormFilters) => ["forms", "list", filters] as const,
   detail: (id: string) => ["forms", "detail", id] as const,
+  leaderboard: (id: string) => ["forms", "leaderboard", id] as const,
 };
 
 export function useForms(filters: FormFilters = {}) {
@@ -101,6 +102,44 @@ export function useReopenForm(formId: string) {
       qc.invalidateQueries({ queryKey: formKeys.detail(formId) });
       qc.invalidateQueries({ queryKey: formKeys.all });
       toast.success("Form reopened!");
+    },
+    onError: (err) => toastApiError(err),
+  });
+}
+
+export function useFormLeaderboard(formId: string, enabled = true) {
+  return useQuery({
+    queryKey: formKeys.leaderboard(formId),
+    queryFn: () => formsApi.leaderboard(formId),
+    select: (res) => res.data.data,
+    enabled: !!formId && enabled,
+  });
+}
+
+/** Publishing closes the quiz and reveals the leaderboard + answer review on the share link. */
+export function usePublishResults(formId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => formsApi.publish(formId, "permanent"),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: formKeys.detail(formId) });
+      qc.invalidateQueries({ queryKey: formKeys.leaderboard(formId) });
+      qc.invalidateQueries({ queryKey: formKeys.all });
+      toast.success("Results published. The leaderboard is live on your quiz link.");
+    },
+    onError: (err) => toastApiError(err),
+  });
+}
+
+export function useUnpublishResults(formId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => formsApi.unpublish(formId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: formKeys.detail(formId) });
+      qc.invalidateQueries({ queryKey: formKeys.leaderboard(formId) });
+      qc.invalidateQueries({ queryKey: formKeys.all });
+      toast.success("Results hidden from respondents.");
     },
     onError: (err) => toastApiError(err),
   });

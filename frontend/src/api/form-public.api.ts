@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { PublicForm, SubmitFormResponsePayload, SubmitFormResult, FormFileValue } from "@/types";
+import type { PublicForm, SubmitFormResponsePayload, SubmitFormResult, FormFileValue, QuizResults } from "@/types";
 
 export const formPublicApi = {
   get: (shareToken: string, sessionToken?: string) =>
@@ -12,6 +12,11 @@ export const formPublicApi = {
       `/public/forms/${shareToken}/status`,
       { params: sessionToken ? { sessionToken } : {} }
     ),
+
+  results: (shareToken: string, sessionToken?: string) =>
+    api.get<{ data: QuizResults }>(`/public/forms/${shareToken}/results`, {
+      params: sessionToken ? { sessionToken } : {},
+    }),
 
   submit: (formId: string, payload: SubmitFormResponsePayload) =>
     api.post<{ data: SubmitFormResult }>(`/form-responses/${formId}`, payload),

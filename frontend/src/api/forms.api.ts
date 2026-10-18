@@ -5,6 +5,7 @@ import type {
   FormFilters,
   FormBuilderForm,
   BuilderFormQuestion,
+  CreatorLeaderboard,
   PaginationMeta,
 } from "@/types";
 
@@ -79,6 +80,10 @@ export const formsApi = {
 
   publish: (formId: string, mode: "live" | "permanent" = "permanent") =>
     api.post<{ data: Form }>(`/forms/${formId}/publish`, { mode }),
+
+  unpublish: (formId: string) => api.post<{ data: Form }>(`/forms/${formId}/unpublish`),
+
+  leaderboard: (formId: string) => api.get<{ data: CreatorLeaderboard }>(`/forms/${formId}/leaderboard`),
 
   close: (formId: string) => api.patch<{ data: Form }>(`/forms/${formId}/close`),
 

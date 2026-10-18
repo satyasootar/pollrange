@@ -1,6 +1,6 @@
 // Factories for backend-shaped mock data used by MSW handlers and tests.
 // Every builder takes an overrides object so tests can express edge cases tersely.
-import type { PublicForm, FormSection, FormQuestion, FormSettings, PublicPoll, PublicPollQuestion, DashboardOverview, Form, PlanCatalogEntry, PlanState } from "@/types";
+import type { QuizResults, PublicForm, FormSection, FormQuestion, FormSettings, PublicPoll, PublicPollQuestion, DashboardOverview, Form, PlanCatalogEntry, PlanState } from "@/types";
 
 let seq = 0;
 export const oid = (prefix = "id") => `${prefix}${(++seq).toString().padStart(6, "0")}`;
@@ -12,6 +12,7 @@ export const defaultFormSettings = (o: Partial<FormSettings> = {}): FormSettings
   showProgressBar: true,
   shuffleQuestions: false,
   releaseScoreImmediately: true,
+  autoPublishResults: false,
   confirmationMessage: "Your response has been recorded.",
   ...o,
 });
@@ -60,6 +61,20 @@ export const makePublicForm = (o: Partial<PublicForm> = {}): PublicForm => {
     settings: defaultFormSettings(settings),
   };
 };
+
+export const makeQuizResults = (o: Partial<QuizResults> = {}): QuizResults => ({
+  formId: oid("form"),
+  title: "Quiz",
+  status: "active",
+  serverTime: new Date().toISOString(),
+  autoPublishResults: false,
+  resultsPublished: false,
+  maxPoints: 5,
+  me: { name: "Ada", submittedAt: new Date().toISOString(), score: 3, totalPoints: 5 },
+  leaderboard: null,
+  review: null,
+  ...o,
+});
 
 export const makeForm = (o: Partial<Form> = {}): Form => {
   const { settings, ...rest } = o;
