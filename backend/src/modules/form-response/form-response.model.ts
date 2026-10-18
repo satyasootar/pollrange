@@ -23,6 +23,8 @@ const formResponseSchema = new Schema<IFormResponse>(
     respondentId: { type: Schema.Types.ObjectId, ref: "User" },
     sessionToken: { type: String, required: true },
     respondentEmail: String,
+    // Display name typed by a signed-out quiz taker (leaderboard); signed-in users use their account name.
+    respondentName: String,
     ipHash: String,
     userAgent: String,
     answers: [answerSchema],
@@ -46,6 +48,8 @@ const formResponseSchema = new Schema<IFormResponse>(
 );
 
 formResponseSchema.index({ formId: 1, submittedAt: -1 });
+// Quiz leaderboard: top scores, earliest submission first on ties.
+formResponseSchema.index({ formId: 1, score: -1, submittedAt: 1 });
 
 // One response per identity per form — race-safe dedup backstop.
 formResponseSchema.index({ formId: 1, sessionToken: 1 }, { unique: true });

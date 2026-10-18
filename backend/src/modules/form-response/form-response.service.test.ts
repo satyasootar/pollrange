@@ -117,3 +117,45 @@ describe("submitResponse payment", () => {
     expect(consume).not.toHaveBeenCalled();
   });
 });
+
+describe("submitResponse quiz timer", () => {
+  const [mcId, saId, right, wrong] = [oid(), oid(), oid(), oid()];
+  const quiz = (expiresAt: Date) => ({
+    _id: oid(),
+    creatorId: "creator1",
+    status: "active",
+    responseMode: "anonymous",
+    settings: { releaseScoreImmediately: true },
+    isQuiz: true,
+    expiresAt,
+    sections: [
+      {
+        questions: [
+          { _id: new mongoose.Types.ObjectId(mcId), type: "multiple_choice", title: "Pick", isRequired: true, points: 2,
+            options: [{ _id: right, text: "Right" }, { _id: wrong, text: "Wrong" }], answerKey: { correctOptionIds: [right] } },
+          { _id: new mongoose.Types.ObjectId(saId), type: "short_answer", title: "Type", isRequired: true, points: 1,
+            answerKey: { correctText: "yes" } },
+        ],
+      },
+    ],
+  });
+  const partial = (extra: Record<string, unknown> = {}) => ({
+    sessionToken: "s1",
+    isComplete: true,
+    respondentName: "  Ada  ",
+    answers: [{ questionId: mcId, selectedOptionIds: [right], skipped: false, gridValues: [], fileUrls: [] }],
+    ...extra,
+  });
+
+  it("accepts a timed-out partial attempt at the deadline and scores it against the full quiz", async () => {
+    m(Form.findOne).mockResolvedValue(quiz(new Date(Date.now() - 2_000)));
+    const result = await submitResponse("f1", partial({ timedOut: true }) as any, meta);
+    expect(result).toMatchObject({ score: 2, totalPoints: 3 });
+    expect(m(FormResponse.create).mock.calls[0]![0]).toMatchObject({ score: 2, totalPoints: 3, respondentName: "Ada" });
+  });
+
+  it("still enforces required questions when the timer is nowhere near done", async () => {
+    m(Form.findOne).mockResolvedValue(quiz(new Date(Date.now() + 10 * 60_000)));
+    await expect(submitResponse("f1", partial({ timedOut: true }) as any, meta)).rejects.toThrow(/required question/);
+  });
+});

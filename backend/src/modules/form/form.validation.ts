@@ -126,6 +126,8 @@ const formSettingsZodSchema = z.object({
   shuffleQuestions: z.boolean().default(false),
   confirmationMessage: z.string().optional(),
   releaseScoreImmediately: z.boolean().default(true),
+  // Quiz: release the leaderboard automatically when the timer (expiresAt) runs out.
+  autoPublishResults: z.boolean().default(false),
 });
 
 export const formZodSchema = z.object({

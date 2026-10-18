@@ -17,6 +17,8 @@ router.post("/:formId/duplicate", FormController.duplicateForm);
 router.patch("/:formId/close", FormController.closeForm);
 router.patch("/:formId/reopen", FormController.reopenForm);
 router.post("/:formId/publish", FormController.publishForm);
+router.post("/:formId/unpublish", FormController.unpublishForm);
+router.get("/:formId/leaderboard", FormController.getLeaderboard);
 router.post("/:formId/regenerate-token", FormController.regenerateToken);
 // Image upload returns a Cloudinary URL only (never touches a form doc), so it
 // needs no formId — this lets the create flow set a cover before the form exists.

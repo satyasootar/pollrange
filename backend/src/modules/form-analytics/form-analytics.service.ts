@@ -166,7 +166,7 @@ export async function getIndividualResponses(formId: string, page = 1, limit = 2
 
   const items = responses.map((r: any) => ({
     responseId: r._id,
-    name: r.respondentId?.name ?? "Anonymous",
+    name: r.respondentId?.name ?? r.respondentName ?? "Anonymous",
     email: r.respondentId?.email ?? r.respondentEmail ?? null,
     submittedAt: r.submittedAt,
     isComplete: r.isComplete,
@@ -237,7 +237,7 @@ export async function resendFormReceipt(formId: string, responseId: string) {
   if (!form || !r) throw new ApiError(404, "Response not found");
   const to = r.respondentId?.email ?? r.respondentEmail;
   if (!to) throw new ApiError(400, "This respondent has no email address");
-  return sendSubmissionCopy(to, buildFormReceipt(form, r, r.respondentId?.name), { model: FormResponse, id: r._id }, "manual");
+  return sendSubmissionCopy(to, buildFormReceipt(form, r, r.respondentId?.name ?? r.respondentName), { model: FormResponse, id: r._id }, "manual");
 }
 
 /** Builds a CSV: one row per response, one column per question. */
@@ -261,7 +261,7 @@ export async function exportCsv(formId: string): Promise<string> {
     const answersById = new Map(r.answers.map((a: any) => [a.questionId.toString(), a]));
     const row = [
       new Date(r.submittedAt).toISOString(),
-      r.respondentId?.name ?? "Anonymous",
+      r.respondentId?.name ?? r.respondentName ?? "Anonymous",
       r.respondentId?.email ?? r.respondentEmail ?? "",
       ...questions.map((q: any) => formatFormAnswer(q, answersById.get(q._id.toString()))),
     ];

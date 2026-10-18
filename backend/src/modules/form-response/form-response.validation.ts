@@ -45,6 +45,7 @@ export const formResponseZodSchema = z.object({
   respondentId: z.custom<mongoose.Types.ObjectId>().optional(),
   sessionToken: z.string(),
   respondentEmail: z.string().optional(),
+  respondentName: z.string().optional(),
   ipHash: z.string().optional(),
   userAgent: z.string().optional(),
   answers: z.array(formAnswerZodSchema),
@@ -76,6 +77,9 @@ const submitAnswerSchema = z.object({
 export const submitFormResponseSchema = z.object({
   sessionToken: z.string().min(1),
   respondentEmail: z.string().email().optional(),
+  respondentName: z.string().trim().max(60).optional(),
+  // Sent by the client when the quiz timer ran out mid-attempt: submit whatever was answered.
+  timedOut: z.boolean().optional(),
   answers: z.array(submitAnswerSchema).min(1),
   isComplete: z.boolean().default(true),
 });

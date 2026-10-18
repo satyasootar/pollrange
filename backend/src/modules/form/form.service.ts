@@ -8,6 +8,7 @@ import { emitFormStatusChange } from "../../socket/index.js";
 import { assertFeature, assertLiveCapacity, hasFeature } from "../billing/billing.service.js";
 import { resolveBrand } from "../branding/branding.service.js";
 import type { FormBranding } from "../branding/branding.validation.js";
+import { settleExpiredForm } from "./form-results.service.js";
 
 /**
  * Validates branching + quiz integrity before persisting. Throws ApiError(400) on
@@ -242,12 +243,7 @@ export async function getPublicForm(
   const form = await Form.findOne({ shareToken, isDeleted: false });
   if (!form) throw new ApiError(404, "Form not found");
 
-  if (form.status === "active" && form.expiresAt && form.expiresAt < new Date()) {
-    form.status = "closed";
-    form.closedAt = new Date();
-    await form.save();
-  }
-
+  await settleExpiredForm(form);
   if (form.status === "draft") throw new ApiError(404, "Form not found");
 
   let alreadyResponded = false;
@@ -260,6 +256,10 @@ export async function getPublicForm(
 
   const sanitized = sanitizeForTaking(form);
   sanitized.alreadyResponded = alreadyResponded;
+  // Past the deadline but still inside the submit grace window: new visitors see it as ended.
+  if (sanitized.status === "active" && form.expiresAt && form.expiresAt < new Date()) sanitized.status = "closed";
+  // Lets the client run its countdown on server time rather than a possibly-skewed device clock.
+  sanitized.serverTime = new Date();
   sanitized.brand = await resolveBrand(form.creatorId, form.branding as FormBranding | undefined);
   sanitized.showPoweredBy = !sanitized.brand && !(await hasFeature(form.creatorId, "branding"));
   return sanitized;
@@ -288,6 +288,19 @@ export async function publishFormResults(
     reason: mode === "permanent" ? "published" : "results-live",
   });
 
+  return form;
+}
+
+/** Hides published results again; a published form falls back to closed. */
+export async function unpublishFormResults(userId: string, formId: string) {
+  const form = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false });
+  if (!form) throw new ApiError(404, "Form not found or unauthorized");
+  form.isResultsPublic = false;
+  form.resultsPublishedAt = undefined;
+  if (form.status === "published") form.status = "closed";
+  await form.save();
+
+  emitFormStatusChange(form._id.toString(), { status: form.status, closedAt: form.closedAt, reason: "results-hidden" });
   return form;
 }
 

@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import * as FormService from "./form.service.js";
+import * as FormResultsService from "./form-results.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { createFormSchema, updateFormSchema, publishFormSchema, reopenFormSchema } from "./form.validation.js";
 import { uploadBufferToCloudinary } from "../../config/cloudinary.js";
@@ -71,6 +72,18 @@ export async function publishForm(req: Request, res: Response) {
   return res.status(200).json(new ApiResponse(200, form, "Form results published successfully"));
 }
 
+export async function unpublishForm(req: Request, res: Response) {
+  const user = (req as any).user;
+  const form = await FormService.unpublishFormResults(user._id.toString(), req.params.formId as string);
+  return res.status(200).json(new ApiResponse(200, form, "Form results hidden"));
+}
+
+export async function getLeaderboard(req: Request, res: Response) {
+  const user = (req as any).user;
+  const board = await FormResultsService.getCreatorLeaderboard(user._id.toString(), req.params.formId as string);
+  return res.status(200).json(new ApiResponse(200, board, "Leaderboard fetched successfully"));
+}
+
 export async function closeForm(req: Request, res: Response) {
   const user = (req as any).user;
   const { formId } = req.params;
@@ -103,6 +116,15 @@ export async function getPublicForm(req: Request, res: Response) {
     userId: user?._id?.toString(),
   });
   return res.status(200).json(new ApiResponse(200, form, "Public form fetched successfully"));
+}
+
+export async function getPublicResults(req: Request, res: Response) {
+  const user = (req as any).user;
+  const results = await FormResultsService.getPublicResults(req.params.shareToken as string, {
+    sessionToken: req.query.sessionToken as string | undefined,
+    userId: user?._id?.toString(),
+  });
+  return res.status(200).json(new ApiResponse(200, results, "Quiz results fetched successfully"));
 }
 
 export async function getFormStatus(req: Request, res: Response) {

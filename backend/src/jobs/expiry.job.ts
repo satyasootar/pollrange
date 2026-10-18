@@ -1,5 +1,7 @@
 import { Poll } from "../modules/poll/poll.model.js";
 import { emitPollStatusChange } from "../socket/index.js";
+import { Form } from "../modules/form/form.model.js";
+import { settleExpiredForm, SUBMIT_GRACE_MS } from "../modules/form/form-results.service.js";
 
 /** Last-run info surfaced on the admin system page. */
 export const expiryJobStatus: { lastRunAt: string | null; lastError: string | null; totalClosed: number } = {
@@ -24,6 +26,8 @@ export async function watchPollExpiry() {
             { _id: 1 }
         );
 
+        await settleExpiredForms(now);
+
         if (expiredPolls.length === 0) return;
 
         const closedAt = new Date();
@@ -47,6 +51,22 @@ export async function watchPollExpiry() {
     } catch (error) {
         expiryJobStatus.lastError = error instanceof Error ? error.message : String(error);
         console.error("[ExpiryJob] Error while closing expired polls:", error);
+    }
+}
+
+/** Closes expired forms; quizzes set to auto-publish release their leaderboard here. */
+async function settleExpiredForms(now: Date) {
+    const expired = await Form.find(
+        { status: "active", isDeleted: false, expiresAt: { $lt: new Date(now.getTime() - SUBMIT_GRACE_MS) } },
+        { _id: 1, status: 1, expiresAt: 1, isQuiz: 1, settings: 1 }
+    ).lean();
+    for (const form of expired) {
+        try {
+            await settleExpiredForm(form, now);
+            expiryJobStatus.totalClosed += 1;
+        } catch (error) {
+            console.error(`[ExpiryJob] Could not settle form ${form._id}:`, error);
+        }
     }
 }
 

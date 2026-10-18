@@ -9,6 +9,7 @@ import { calculatePayment } from "../form/payment.util.js";
 import { consume, refund } from "../billing/billing.service.js";
 import { buildFormReceipt } from "../form-analytics/form-analytics.service.js";
 import { sendSubmissionCopy } from "../../utils/receipt.js";
+import { pointsOf, settleExpiredForm } from "../form/form-results.service.js";
 
 /** Flattens every question across all sections into one list. */
 function allQuestions(form: any): any[] {
@@ -93,12 +94,10 @@ export async function submitResponse(
   const form = await Form.findOne({ _id: formId, isDeleted: false, status: "active" });
   if (!form) throw new ApiError(404, "Form not found or not active");
 
-  if (form.expiresAt && form.expiresAt < new Date()) {
-    form.status = "closed";
-    form.closedAt = new Date();
-    await form.save();
-    throw new ApiError(410, "This form has expired");
-  }
+  await settleExpiredForm(form);
+  if (form.status !== "active") throw new ApiError(410, "This form has expired");
+  // Only honoured at the deadline: lets a quiz timer flush partial answers past required/validation rules.
+  const timedOut = !!data.timedOut && !!form.expiresAt && Date.now() >= form.expiresAt.getTime() - 5_000;
 
   if (form.responseMode === "authenticated" && !meta.respondentId) {
     throw new ApiError(401, "Authentication is required to submit this form");
@@ -112,7 +111,7 @@ export async function submitResponse(
   const answersById = new Map<string, ISubmitAnswer>(data.answers.map((a) => [a.questionId, a]));
 
   // Required-question enforcement over linearly-reachable sections.
-  for (const q of linearlyReachableQuestions(form)) {
+  for (const q of timedOut ? [] : linearlyReachableQuestions(form)) {
     if (!q.isRequired) continue;
     const a = answersById.get(q._id.toString());
     if (!a || !hasValue(a)) {
@@ -123,7 +122,7 @@ export async function submitResponse(
   // Per-answer validation rules.
   for (const a of data.answers) {
     const q = questionsById.get(a.questionId);
-    if (q && !a.skipped) enforceValidation(q, a);
+    if (q && !a.skipped && !timedOut) enforceValidation(q, a);
   }
 
   // Dedup pre-check (unique indexes are the race-safe backstop below).
@@ -134,14 +133,20 @@ export async function submitResponse(
     throw new ApiError(403, "You have already submitted a response to this form");
   }
 
-  // Grade the quiz + snapshot titles.
+  // Grade the quiz + snapshot titles. The total covers every question on the respondent's
+  // path (not just the ones they answered) so skipping or timing out can't inflate a percentage.
   let score = 0;
   let totalPoints = 0;
+  if (form.isQuiz) {
+    const onPath = new Map<string, any>(linearlyReachableQuestions(form).map((q) => [q._id.toString(), q]));
+    for (const a of data.answers) if (questionsById.has(a.questionId)) onPath.set(a.questionId, questionsById.get(a.questionId));
+    for (const q of onPath.values()) totalPoints += pointsOf(q);
+  }
+  const respondentName = meta.userName || data.respondentName?.trim() || undefined;
   const answers = data.answers.map((a) => {
     const q = questionsById.get(a.questionId);
     const base: any = { ...a, questionTitleSnapshot: q?.title };
     if (form.isQuiz && q) {
-      totalPoints += q.points ?? 0;
       const graded = gradeAnswer(q, a);
       base.isCorrect = graded.isCorrect;
       base.pointsEarned = graded.pointsEarned;
@@ -171,7 +176,7 @@ export async function submitResponse(
   // Pre-generate the id so the payment note can reference it in a single write.
   const responseId = new mongoose.Types.ObjectId();
   const paymentSnapshot = paymentQuestionAnswer && paymentQuestion
-    ? calculatePayment(paymentQuestion, paymentQuestionAnswer.selectedOptionIds ?? [], responseId.toString(), meta.userName)
+    ? calculatePayment(paymentQuestion, paymentQuestionAnswer.selectedOptionIds ?? [], responseId.toString(), respondentName)
     : null;
   await consume(form.creatorId, "responses", "respondent");
   let response: any;
@@ -182,6 +187,7 @@ export async function submitResponse(
       respondentId: meta.respondentId,
       sessionToken: data.sessionToken,
       respondentEmail: data.respondentEmail,
+      ...(!meta.respondentId && respondentName ? { respondentName } : {}),
       ipHash: meta.ipHash,
       userAgent: meta.userAgent,
       answers,
@@ -231,7 +237,7 @@ export async function submitResponse(
   // Signed-in account email, else the address typed on a "collect email" form.
   void sendSubmissionCopy(
     meta.respondentId ? meta.userEmail : data.respondentEmail,
-    buildFormReceipt(form, { answers: data.answers, score, totalPoints, payment: paymentSnapshot }, meta.userName),
+    buildFormReceipt(form, { answers: data.answers, score, totalPoints, payment: paymentSnapshot }, respondentName),
     { model: FormResponse, id: response._id },
     "auto"
   );

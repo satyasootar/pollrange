@@ -97,6 +97,7 @@ const formSchema = new Schema<IForm>(
       shuffleQuestions: { type: Boolean, default: false },
       confirmationMessage: String,
       releaseScoreImmediately: { type: Boolean, default: true },
+      autoPublishResults: { type: Boolean, default: false },
     },
     sections: [sectionSchema],
   },
