@@ -107,6 +107,19 @@ export function useReopenForm(formId: string) {
   });
 }
 
+export function useRegenerateFormToken(formId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => formsApi.regenerateToken(formId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: formKeys.detail(formId) });
+      qc.invalidateQueries({ queryKey: formKeys.all });
+      toast.success("New share link generated.");
+    },
+    onError: (err) => toastApiError(err),
+  });
+}
+
 export function useFormLeaderboard(formId: string, enabled = true) {
   return useQuery({
     queryKey: formKeys.leaderboard(formId),

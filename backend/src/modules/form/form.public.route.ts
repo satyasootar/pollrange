@@ -7,5 +7,6 @@ const router = Router();
 router.get("/:shareToken", FormController.getPublicForm);
 router.get("/:shareToken/status", FormController.getFormStatus);
 router.get("/:shareToken/results", FormController.getPublicResults);
+router.get("/:shareToken/leaderboard", FormController.getPublicLeaderboard);
 
 export default router;

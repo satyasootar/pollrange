@@ -638,8 +638,33 @@ export interface QuizResults {
   maxPoints: number;
   /** Null when this viewer never submitted. Score is absent until it's released. */
   me: { name: string; submittedAt: string; score?: number; totalPoints?: number; rank?: number } | null;
-  leaderboard: { participants: number; maxPoints: number; entries: LeaderboardEntry[] } | null;
+  leaderboard: {
+    participants: number;
+    maxPoints: number;
+    pageSize: number;
+    /** First page of the board (ranks 1…pageSize). */
+    entries: LeaderboardEntry[];
+    stats: QuizScoreStats;
+    /** The viewer's 0-based index in board order, for "jump to me". */
+    myPosition?: number;
+  } | null;
   review: QuizReviewItem[] | null;
+}
+
+export interface QuizScoreStats {
+  average: number;
+  median: number;
+  /** Respondent counts in equal-width buckets over 0…maxPoints. */
+  histogram: number[];
+  myBin?: number;
+  /** The next rank above the viewer and the points needed to tie it. */
+  nextUp?: { rank: number; gap: number };
+}
+
+export interface QuizLeaderboardPage {
+  participants: number;
+  offset: number;
+  entries: LeaderboardEntry[];
 }
 
 export interface CreatorLeaderboard {

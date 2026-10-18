@@ -18,9 +18,10 @@ interface ReopenPollDialogProps {
   /** expiresAt: ISO string for a deadline, or null for "open forever". */
   onConfirm: (expiresAt: string | null) => void
   isPending?: boolean
+  noun?: "poll" | "form" | "quiz"
 }
 
-export function ReopenPollDialog({ open, onOpenChange, onConfirm, isPending }: ReopenPollDialogProps) {
+export function ReopenPollDialog({ open, onOpenChange, onConfirm, isPending, noun = "poll" }: ReopenPollDialogProps) {
   const [mode, setMode] = useState<"forever" | "deadline">("forever")
   const [deadline, setDeadline] = useState("")
   // Lazy init so Date.now() isn't called during render (React purity).
@@ -47,8 +48,8 @@ export function ReopenPollDialog({ open, onOpenChange, onConfirm, isPending }: R
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reopen poll</DialogTitle>
-          <DialogDescription>Choose how long this poll stays open.</DialogDescription>
+          <DialogTitle>Reopen {noun}</DialogTitle>
+          <DialogDescription>Choose how long this {noun} stays open.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">

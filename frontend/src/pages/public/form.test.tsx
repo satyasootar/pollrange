@@ -241,6 +241,9 @@ describe("PublicFormPage", () => {
         leaderboard: {
           participants: 3,
           maxPoints: 5,
+          pageSize: 10,
+          myPosition: 1,
+          stats: { average: 3.7, median: 4, histogram: [0, 0, 1, 0, 1, 1], myBin: 4, nextUp: { rank: 1, gap: 1 } },
           entries: [
             { rank: 1, name: "Grace Hopper", score: 5, totalPoints: 5, submittedAt: "2026-10-18T10:00:00Z" },
             { rank: 2, name: "Ada", score: 4, totalPoints: 5, submittedAt: "2026-10-18T10:01:00Z", isMe: true },
@@ -254,9 +257,10 @@ describe("PublicFormPage", () => {
       renderPage();
 
       expect(await screen.findByRole("heading", { name: /leaderboard/i })).toBeInTheDocument();
-      expect(screen.getByLabelText(/1st place: Grace Hopper/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Rank 1: Grace Hopper/i)).toBeInTheDocument();
       expect(screen.getByText("#2")).toBeInTheDocument();
       expect(screen.getByText("You")).toBeInTheDocument();
+      expect(screen.getByText(/1 more point would have tied #1/i)).toBeInTheDocument();
       expect(screen.getByText(/0 of 1 correct/i)).toBeInTheDocument();
     });
 

@@ -306,9 +306,9 @@ export function AnalyticsPage() {
 
       {isQRCardOpen && (
         <QRCardDialog
-          pollId={pollId!}
-          shareToken={poll.shareToken}
-          pollTitle={poll.title}
+          id={pollId!}
+          shareUrl={shareUrl}
+          title={poll.title}
           defaultBranding={user?.branding}
           open={isQRCardOpen}
           onOpenChange={setIsQRCardOpen}

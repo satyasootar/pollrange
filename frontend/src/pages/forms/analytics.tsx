@@ -1,12 +1,39 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pencil, ExternalLink, Copy, Download, AlertCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Pencil,
+  ExternalLink,
+  Copy,
+  Download,
+  AlertCircle,
+  MoreVertical,
+  QrCode,
+  Camera,
+  RefreshCcw,
+  Lock,
+  Unlock,
+  Trophy,
+  Files,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TimelineChart } from "@/components/analytics/timeline-chart";
+import { SnapshotDialog, type SnapshotData } from "@/components/analytics/snapshot-dialog";
+import { QRCardDialog } from "@/components/analytics/qr-card-dialog";
+import { ReopenPollDialog } from "@/components/analytics/reopen-poll-dialog";
 import { QuestionSummaryCard } from "@/components/form-analytics/question-summary-card";
-import { formKeys, useForm } from "@/hooks/use-forms";
+import { formKeys, useForm, useCloseForm, useReopenForm, useRegenerateFormToken, useDuplicateForm } from "@/hooks/use-forms";
+import { useAuthStore } from "@/store/use-auth-store";
+import { isFormLocked } from "@/lib/form-mappers";
 import { LeaderboardPanel } from "@/components/quiz-results/leaderboard-panel";
 import { useFormSummary, useFormTimeline, useFormQuestionSummaries, useFormResponses, formAnalyticsKeys } from "@/hooks/use-form-analytics";
 import { useFormSocket } from "@/hooks/use-form-socket";
@@ -16,7 +43,36 @@ import { formAnalyticsApi } from "@/api/form-analytics.api";
 import { buildFormShareUrl, copyToClipboard, formatDatetime, downloadBlob, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatInr } from "@/lib/upi-payment";
-import type { Form, FormQuestion, IndividualFormResponse, FormAnswerPayload, ReceiptFilter, TimelineGranularity } from "@/types";
+import type {
+  Form,
+  FormQuestion,
+  FormSummary,
+  FormQuestionSummary,
+  IndividualFormResponse,
+  FormAnswerPayload,
+  ReceiptFilter,
+  TimelineGranularity,
+} from "@/types";
+
+/** The snapshot card only shows aggregate bars: choice and scale questions (no free text, files or grids). */
+function toSnapshot(form: Form, summary: FormSummary, questions: FormQuestionSummary[]): SnapshotData {
+  const pct = (count: number, total: number) => (total > 0 ? Math.round((count / total) * 100) : 0);
+  return {
+    pollId: form._id,
+    pollTitle: form.title,
+    totalResponses: summary.totalResponses,
+    completionRate: Math.round(summary.completionRate),
+    questions: questions.flatMap((q) => {
+      const options =
+        q.options?.map((o) => ({ ...o, percentage: pct(o.count, q.responseCount) })) ??
+        (q.distribution &&
+          Object.entries(q.distribution)
+            .sort((a, b) => Number(a[0]) - Number(b[0]))
+            .map(([value, count]) => ({ optionId: value, optionText: value, count, percentage: pct(count, q.responseCount) })));
+      return options ? [{ questionId: q.questionId, questionText: q.title, type: "single_choice" as const, options }] : [];
+    }),
+  };
+}
 
 /** Renders a single answer value in human-readable form. */
 function AnswerValue({
@@ -230,6 +286,15 @@ export function FormAnalyticsPage() {
   const { formId } = useParams<{ formId: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuthStore();
+  const [tab, setTab] = useState("summary");
+  const [isQROpen, setIsQROpen] = useState(false);
+  const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
+  const [isReopenOpen, setIsReopenOpen] = useState(false);
+  const close = useCloseForm(formId!);
+  const reopen = useReopenForm(formId!);
+  const regenerateToken = useRegenerateFormToken(formId!);
+  const duplicate = useDuplicateForm();
   const { data: form, isLoading } = useForm(formId!);
   const { data: summary } = useFormSummary(formId!);
   const { data: questionSummaries } = useFormQuestionSummaries(formId!);
@@ -275,7 +340,8 @@ export function FormAnalyticsPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-3 md:h-20 md:px-8">
+      {/* Mobile first: title row, then actions; side by side from sm. */}
+      <div className="flex shrink-0 flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 md:h-20 md:px-8 md:py-0">
         <div className="flex min-w-0 items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/forms")}>
             <ArrowLeft className="h-4 w-4" />
@@ -288,7 +354,7 @@ export function FormAnalyticsPage() {
             </p>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:shrink-0">
           <Button variant="ghost" size="icon" title="Copy share link" onClick={async () => {
             await copyToClipboard(shareUrl);
             toast.success("Share link copied!");
@@ -298,24 +364,84 @@ export function FormAnalyticsPage() {
           <Button variant="ghost" size="icon" title="Open form" onClick={() => window.open(`/f/${form.shareToken}`, "_blank")}>
             <ExternalLink className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/forms/${form._id}/edit`)}>
-            <Pencil className="h-4 w-4" /> Edit
-          </Button>
+          {!isFormLocked(form) && (
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/forms/${form._id}/edit`)}>
+              <Pencil className="h-4 w-4" /> Edit
+            </Button>
+          )}
+          {/* Publish / hide (with its confirm + confetti) lives on the Leaderboard tab. */}
+          {form.isQuiz && (
+            <Button size="sm" className="gap-1.5" onClick={() => setTab("leaderboard")}>
+              <Trophy className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{form.isResultsPublic ? "Results Published" : "Publish Results"}</span>
+              <span className="sm:hidden">{form.isResultsPublic ? "Published" : "Publish"}</span>
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon-sm" title="More actions" aria-label="More actions">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setIsQROpen(true)}>
+                <QrCode className="mr-2 h-4 w-4" /> QR Code
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsSnapshotOpen(true)} disabled={!summary || !questionSummaries}>
+                <Camera className="mr-2 h-4 w-4" /> Take Snapshot
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExport}>
+                <Download className="mr-2 h-4 w-4" /> Export CSV
+              </DropdownMenuItem>
+              {isFormLocked(form) && (
+                <DropdownMenuItem
+                  disabled={duplicate.isPending}
+                  onClick={() =>
+                    duplicate.mutate(form._id, { onSuccess: (res) => navigate(`/forms/${res.data.data._id}/edit`) })
+                  }
+                >
+                  <Files className="mr-2 h-4 w-4" /> Duplicate &amp; Edit
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={regenerateToken.isPending}
+                onClick={() => {
+                  if (confirm("Generate a new share link? The current link (including any custom slug) will stop working."))
+                    regenerateToken.mutate();
+                }}
+              >
+                <RefreshCcw className={cn("mr-2 h-4 w-4", regenerateToken.isPending && "animate-spin")} /> Regenerate Link
+              </DropdownMenuItem>
+              {form.status === "active" && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => {
+                    if (confirm("Close this form? It will stop accepting responses.")) close.mutate();
+                  }}
+                >
+                  <Lock className="mr-2 h-4 w-4" /> Close {form.isQuiz ? "Quiz" : "Form"}
+                </DropdownMenuItem>
+              )}
+              {form.status === "closed" && (
+                <DropdownMenuItem onClick={() => setIsReopenOpen(true)}>
+                  <Unlock className="mr-2 h-4 w-4" /> Reopen {form.isQuiz ? "Quiz" : "Form"}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-6 md:px-8">
-        <Tabs defaultValue="summary">
-          <div className="mb-6 flex items-center justify-between">
+        <Tabs value={tab} onValueChange={setTab}>
+          <div className="-mx-4 mb-6 overflow-x-auto px-4 md:mx-0 md:px-0">
             <TabsList>
               <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="individual">Individual</TabsTrigger>
               <TabsTrigger value="table">Table</TabsTrigger>
               {form.isQuiz && <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>}
             </TabsList>
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleExport}>
-              <Download className="h-4 w-4" /> Export CSV
-            </Button>
           </div>
 
           <TabsContent value="summary" className="space-y-6">
@@ -358,6 +484,34 @@ export function FormAnalyticsPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {summary && questionSummaries && (
+        <SnapshotDialog
+          isOpen={isSnapshotOpen}
+          onClose={() => setIsSnapshotOpen(false)}
+          analytics={toSnapshot(form, summary, questionSummaries)}
+          shareUrl={shareUrl}
+        />
+      )}
+
+      <ReopenPollDialog
+        noun={form.isQuiz ? "quiz" : "form"}
+        open={isReopenOpen}
+        onOpenChange={setIsReopenOpen}
+        isPending={reopen.isPending}
+        onConfirm={(expiresAt) => reopen.mutate(expiresAt, { onSuccess: () => setIsReopenOpen(false) })}
+      />
+
+      {isQROpen && (
+        <QRCardDialog
+          id={form._id}
+          shareUrl={shareUrl}
+          title={form.title}
+          defaultBranding={user?.branding}
+          open={isQROpen}
+          onOpenChange={setIsQROpen}
+        />
+      )}
     </div>
   );
 }

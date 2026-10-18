@@ -7,7 +7,7 @@ vi.mock("../../socket/index.js", () => ({ emitFormStatusChange: vi.fn() }));
 
 import { Form } from "./form.model.js";
 import { emitFormStatusChange } from "../../socket/index.js";
-import { assignRanks, buildReview, maxPointsOf, settleExpiredForm, SUBMIT_GRACE_MS } from "./form-results.service.js";
+import { assignRanks, buildReview, maxPointsOf, rankIn, scoreStats, settleExpiredForm, SUBMIT_GRACE_MS } from "./form-results.service.js";
 
 const m = (fn: unknown) => fn as ReturnType<typeof vi.fn>;
 const oid = () => new mongoose.Types.ObjectId();
@@ -20,6 +20,34 @@ describe("assignRanks", () => {
 
   it("handles an empty board", () => {
     expect(assignRanks([])).toEqual([]);
+  });
+});
+
+describe("rankIn / scoreStats", () => {
+  const scores = [36, 30, 30, 28, 20, 10, 0]; // high → low
+
+  it("ranks with ties sharing a place, at any position", () => {
+    expect(rankIn(scores, 36)).toBe(1);
+    expect(rankIn(scores, 30)).toBe(2);
+    expect(rankIn(scores, 28)).toBe(4);
+    expect(rankIn(scores, 0)).toBe(7);
+  });
+
+  it("computes average, median, a histogram over 0..max and the next rank to beat", () => {
+    const s = scoreStats(scores, 36, 28);
+    expect(s.average).toBe(22);
+    expect(s.median).toBe(28);
+    expect(s.histogram).toHaveLength(10);
+    expect(s.histogram.reduce((a, b) => a + b, 0)).toBe(scores.length);
+    expect(s.histogram[9]).toBe(1); // 36 lands in the top bin
+    expect(s.myBin).toBe(7);
+    expect(s.nextUp).toEqual({ rank: 2, gap: 2 });
+  });
+
+  it("has no next rank for the leader and copes with an empty board", () => {
+    expect(scoreStats(scores, 36, 36).nextUp).toBeUndefined();
+    expect(scoreStats([], 10)).toMatchObject({ average: 0, median: 0 });
+    expect(scoreStats([4, 2], 10).median).toBe(3);
   });
 });
 

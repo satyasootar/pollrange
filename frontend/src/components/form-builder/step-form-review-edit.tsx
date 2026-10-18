@@ -4,7 +4,7 @@ import { useFormBuilderStore } from "@/store/use-form-builder-store";
 import { useUpdateForm } from "@/hooks/use-forms";
 import { FormPreview } from "./form-preview";
 
-export function StepFormReviewEdit({ formId, hasResponses }: { formId: string; hasResponses: boolean }) {
+export function StepFormReviewEdit({ formId }: { formId: string }) {
   const { form, prevStep, reset } = useFormBuilderStore();
   const updateForm = useUpdateForm(formId);
   const navigate = useNavigate();
@@ -24,13 +24,6 @@ export function StepFormReviewEdit({ formId, hasResponses }: { formId: string; h
         <h2 className="text-lg font-semibold">Review Changes</h2>
         <p className="text-sm text-muted-foreground">Verify your changes before saving.</p>
       </div>
-
-      {hasResponses && (
-        <div className="mb-5 border border-amber-400/40 bg-amber-400/10 p-3 text-xs text-amber-700 dark:text-amber-400">
-          This form already has responses. If you delete or reorder questions, old answers may no
-          longer line up. Those answers will keep their original question title so you can still read them.
-        </div>
-      )}
 
       <div className="space-y-4">
         <div className="border border-border p-5">

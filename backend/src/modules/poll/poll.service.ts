@@ -191,6 +191,9 @@ export async function publishPollResults(userId: string, pollId: string, mode: "
     if (!poll) {
         throw new ApiError(404, "Poll not found or unauthorized");
     }
+    if (poll.status === "draft") {
+        throw new ApiError(400, "A draft has no results to publish");
+    }
 
     if (mode === "permanent") {
         poll.status = "published";
@@ -244,8 +247,9 @@ export async function closePoll(userId: string, pollId: string) {
         throw new ApiError(404, "Poll not found or unauthorized");
     }
 
-    if (poll.status === "closed") {
-        throw new ApiError(400, "Poll is already closed");
+    // Closing a published poll would demote it and hide its public results (closed → 410).
+    if (poll.status !== "active") {
+        throw new ApiError(400, "Only active polls can be closed");
     }
 
     poll.status = "closed";

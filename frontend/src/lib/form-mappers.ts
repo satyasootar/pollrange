@@ -121,3 +121,10 @@ export function builderToPreviewForm(form: FormBuilderForm): PreviewForm {
     sections,
   };
 }
+
+/**
+ * Responses, scores and analytics reference a form's questions by id, so the server
+ * refuses edits once anyone has responded or quiz results are out. Mirror that in the UI.
+ */
+export const isFormLocked = (form: Pick<Form, "status" | "totalResponses">) =>
+  form.status === "published" || form.totalResponses > 0;

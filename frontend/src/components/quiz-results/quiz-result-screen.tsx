@@ -1,43 +1,42 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, Hourglass, XCircle, ChevronDown, Loader2 } from "lucide-react";
+import { CheckCircle2, Clock, Hourglass, Loader2 } from "lucide-react";
 import { useQuizResults } from "@/hooks/use-public-form";
 import { useCountdown } from "@/hooks/use-countdown";
 import { BrandFooter, BrandHeader } from "@/components/brand/brand-chrome";
 import { PoweredBy } from "@/components/billing/powered-by";
 import { cn, formatCountdown } from "@/lib/utils";
 import { fadeUp, stagger } from "@/lib/animations";
-import { Leaderboard } from "./leaderboard";
+import { PublicLeaderboard } from "./public-leaderboard";
 import { ConfettiBurst } from "./confetti-burst";
-import type { PublicForm, QuizResults, QuizReviewItem } from "@/types";
+import type { PublicForm, QuizResults, QuizReviewItem, QuizScoreStats } from "@/types";
 
-function ScoreRing({ pct }: { pct: number }) {
-  const r = 34;
-  const c = 2 * Math.PI * r;
+function Stat({ label, value, of }: { label: string; value: string | number; of?: string | number }) {
   return (
-    <div className="relative h-24 w-24 shrink-0">
-      <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90" aria-hidden>
-        <circle cx="40" cy="40" r={r} fill="none" strokeWidth="8" className="stroke-border" />
-        <motion.circle
-          cx="40"
-          cy="40"
-          r={r}
-          fill="none"
-          strokeWidth="8"
-          className="stroke-primary"
-          strokeDasharray={c}
-          initial={{ strokeDashoffset: c }}
-          animate={{ strokeDashoffset: c * (1 - pct / 100) }}
-          transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-        />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-lg font-bold tabular-nums">{pct}%</span>
+    <div className="flex min-w-0 flex-col gap-1 bg-card p-3 sm:p-3.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="truncate text-lg font-bold tabular-nums sm:text-xl">
+        {value}
+        {of !== undefined && <span className="text-sm font-medium text-muted-foreground">/{of}</span>}
+      </span>
     </div>
   );
 }
 
+/** One line of context under the rank: distance from the average and from the next place up. */
+function insight(score: number, stats: QuizScoreStats | undefined) {
+  if (!stats) return null;
+  const diff = Math.round((score - stats.average) * 10) / 10;
+  const vsAvg = diff === 0 ? "Right on the average." : `${Math.abs(diff)} pts ${diff > 0 ? "above" : "below"} the average.`;
+  const next = stats.nextUp
+    ? ` ${stats.nextUp.gap} more ${stats.nextUp.gap === 1 ? "point" : "points"} would have tied #${stats.nextUp.rank}.`
+    : "";
+  return vsAvg + next;
+}
+
 function MyResultCard({ results, timedOut }: { results: QuizResults; timedOut: boolean }) {
   const me = results.me!;
-  const participants = results.leaderboard?.participants;
+  const board = results.leaderboard;
   if (me.score === undefined) {
     return (
       <motion.section variants={fadeUp} className="flex items-start gap-4 border border-border bg-card p-5">
@@ -52,29 +51,96 @@ function MyResultCard({ results, timedOut }: { results: QuizResults; timedOut: b
   }
   const total = me.totalPoints ?? results.maxPoints;
   const pct = total > 0 ? Math.round((me.score / total) * 100) : 0;
-  const podium = me.rank !== undefined && me.rank <= 3;
+  const participants = board?.participants ?? 0;
+  const rank = board ? me.rank : undefined;
+  const winner = rank === 1 && participants > 1;
+  const topPct = rank !== undefined ? Math.max(1, Math.ceil((rank / participants) * 100)) : 0;
+  const correct = results.review ? results.review.filter((r) => r.isCorrect).length : undefined;
+  const line = insight(me.score, board?.stats);
+
   return (
-    <motion.section variants={fadeUp} aria-label="Your result" className="relative border-2 border-primary/40 bg-card p-5 sm:p-6">
-      {podium && <ConfettiBurst scale={1.1} delay={0.6} />}
-      <div className="flex items-center gap-5">
-        <ScoreRing pct={pct} />
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Your score</p>
-          <p className="text-3xl font-bold tabular-nums sm:text-4xl">
-            {me.score}
-            <span className="text-lg font-medium text-muted-foreground"> / {total}</span>
+    <motion.section
+      variants={fadeUp}
+      aria-label="Your result"
+      className={cn("relative flex flex-col gap-5 border bg-card p-5 sm:p-6", winner ? "border-amber-400" : "border-primary")}
+    >
+      {rank !== undefined && rank <= 3 && <ConfettiBurst scale={1.1} delay={0.6} />}
+      <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {rank !== undefined ? "Your rank" : "Your score"}
+          </span>
+          <p className="flex items-baseline gap-2">
+            <span className={cn("text-5xl font-bold leading-none tabular-nums sm:text-6xl", winner ? "text-amber-500" : "text-primary")}>
+              {rank !== undefined ? `#${rank}` : me.score}
+            </span>
+            <span className="text-sm text-muted-foreground">{rank !== undefined ? `of ${participants}` : `/ ${total} pts`}</span>
           </p>
-          <p className="truncate text-sm text-muted-foreground">{me.name}</p>
         </div>
-        {me.rank !== undefined && (
-          <div className="shrink-0 border-l border-border pl-5 text-right">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Rank</p>
-            <p className={cn("text-3xl font-bold tabular-nums sm:text-4xl", podium && "text-amber-500")}>#{me.rank}</p>
-            {participants !== undefined && <p className="text-xs text-muted-foreground">of {participants}</p>}
-          </div>
+        {winner ? (
+          <span className="bg-amber-400 px-2.5 py-1 text-sm font-bold text-amber-950">Winner</span>
+        ) : (
+          rank !== undefined &&
+          participants >= 10 && <span className="bg-primary px-2.5 py-1 text-sm font-bold text-primary-foreground">Top {topPct}%</span>
         )}
       </div>
-      {timedOut && <p className="mt-4 text-xs text-amber-600">Time ran out, so we submitted the answers you had.</p>}
+
+      <div className="h-2 bg-muted" role="img" aria-label={`Scored ${pct}% of the available points`}>
+        <motion.div
+          className={cn("h-full", winner ? "bg-amber-400" : "bg-primary")}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-px border border-border bg-border">
+        {rank !== undefined ? <Stat label="Score" value={me.score} of={total} /> : <Stat label="Percent" value={`${pct}%`} />}
+        {correct !== undefined ? <Stat label="Correct" value={correct} of={results.review!.length} /> : <Stat label="Percent" value={`${pct}%`} />}
+        {board ? <Stat label="Average" value={board.stats.average} /> : <Stat label="Name" value={me.name} />}
+      </div>
+
+      {line && <p className="text-sm leading-relaxed text-muted-foreground">{line}</p>}
+      {timedOut && <p className="text-xs text-amber-600">Time ran out, so we submitted the answers you had.</p>}
+    </motion.section>
+  );
+}
+
+/** Histogram of everyone's scores with the viewer's bucket highlighted. Only meaningful with a crowd. */
+function ScoreDistribution({ stats, maxPoints }: { stats: QuizScoreStats; maxPoints: number }) {
+  const peak = Math.max(1, ...stats.histogram);
+  return (
+    <motion.section variants={fadeUp} aria-labelledby="dist-heading" className="flex flex-col gap-4 border border-border bg-card p-5 sm:p-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="dist-heading" className="text-base font-bold">
+          Where you stand
+        </h2>
+        <span className="text-xs text-muted-foreground">
+          Avg {stats.average} · Median {stats.median}
+        </span>
+      </div>
+      <div className="flex h-32 items-end gap-1 border-b border-border" role="img" aria-label="Score distribution of all participants">
+        {stats.histogram.map((count, i) => {
+          const mine = i === stats.myBin;
+          return (
+            <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${count} ${count === 1 ? "person" : "people"}`}>
+              {mine && <span className="text-[10px] font-bold text-primary">YOU</span>}
+              <motion.div
+                className={cn("w-full", mine ? "bg-primary" : "bg-muted-foreground/30")}
+                initial={{ height: 0 }}
+                // The highlighted bar leaves room for its "YOU" label.
+                animate={{ height: `${(count / peak) * (mine ? 82 : 100)}%` }}
+                transition={{ duration: 0.6, delay: 0.03 * i }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="-mt-2 flex justify-between text-[10px] tabular-nums text-muted-foreground">
+        <span>0</span>
+        <span>{Math.round(maxPoints / 2)}</span>
+        <span>{maxPoints} pts</span>
+      </div>
     </motion.section>
   );
 }
@@ -118,57 +184,94 @@ function PendingBanner({ results }: { results: QuizResults }) {
   );
 }
 
+type ReviewFilter = "all" | "wrong" | "correct";
+
 function Review({ items }: { items: QuizReviewItem[] }) {
   const correct = items.filter((i) => i.isCorrect).length;
+  const wrong = items.length - correct;
+  // Open on the mistakes; that's what people come back for.
+  const [filter, setFilter] = useState<ReviewFilter>(wrong > 0 ? "wrong" : "all");
+  const shown = items
+    .map((item, i) => ({ item, n: i + 1 }))
+    .filter(({ item }) => filter === "all" || (filter === "correct") === item.isCorrect);
+  const chips: [ReviewFilter, string][] = [
+    ["all", `All ${items.length}`],
+    ["wrong", `Wrong ${wrong}`],
+    ["correct", `Correct ${correct}`],
+  ];
+
   return (
-    <motion.details variants={fadeUp} className="group border border-border bg-card">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-        <span className="font-semibold">Review your answers</span>
-        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+    <motion.section variants={fadeUp} aria-labelledby="review-heading" className="border border-border bg-card">
+      <div className="flex items-baseline justify-between gap-3 p-5 pb-3 sm:px-6">
+        <h2 id="review-heading" className="text-base font-bold">
+          Review your answers
+        </h2>
+        <span className="text-xs text-muted-foreground">
           {correct} of {items.length} correct
-          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
         </span>
-      </summary>
-      <ol className="space-y-3 border-t border-border p-4">
+      </div>
+
+      <div className="grid grid-cols-8 gap-1 px-5 pb-4 sm:px-6">
         {items.map((item, i) => (
-          <li
+          <a
             key={item.questionId}
-            className={cn("border-l-4 bg-muted/30 p-3", item.isCorrect ? "border-l-emerald-500" : "border-l-destructive")}
+            href={`#review-q-${i + 1}`}
+            onClick={() => setFilter("all")}
+            aria-label={`Question ${i + 1}: ${item.isCorrect ? "correct" : "incorrect"}`}
+            className={cn(
+              "flex h-8 items-center justify-center text-[11px] font-semibold tabular-nums",
+              item.isCorrect ? "bg-muted text-foreground" : "bg-orange-500 text-orange-950"
+            )}
           >
-            <div className="flex items-start justify-between gap-3">
-              <p className="flex items-start gap-2 text-sm font-medium">
-                {item.isCorrect ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-label="Correct" />
-                ) : (
-                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-label="Incorrect" />
-                )}
-                <span>
-                  {i + 1}. {item.title}
-                </span>
-              </p>
-              <span className="shrink-0 text-xs font-semibold tabular-nums text-muted-foreground">
-                {item.pointsEarned}/{item.points} pts
+            {i + 1}
+          </a>
+        ))}
+      </div>
+
+      <div role="group" aria-label="Filter questions" className="flex flex-wrap gap-2 px-5 pb-4 sm:px-6">
+        {chips.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={filter === key}
+            onClick={() => setFilter(key)}
+            className={cn(
+              "h-9 border px-3 text-xs font-semibold",
+              filter === key ? "border-foreground bg-foreground text-background" : "border-border hover:bg-muted"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <ol className="divide-y divide-border border-t border-border">
+        {shown.map(({ item, n }) => (
+          <li key={item.questionId} id={`review-q-${n}`} className="scroll-mt-4 space-y-2.5 p-5 sm:px-6">
+            <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+              <span>
+                Question {n} · {item.pointsEarned}/{item.points} pts
+              </span>
+              <span className={cn("font-semibold", item.isCorrect ? "text-primary" : "text-orange-500")}>
+                {item.isCorrect ? "Correct" : "Incorrect"}
               </span>
             </div>
-            <dl className="mt-2 space-y-1 pl-6 text-sm">
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="text-muted-foreground">Your answer:</dt>
-                <dd className={item.isCorrect ? "text-emerald-600" : "text-destructive"}>
-                  {item.yourAnswer.length ? item.yourAnswer.join(", ") : <em>No answer</em>}
-                </dd>
-              </div>
-              {!item.isCorrect && (
-                <div className="flex flex-wrap gap-x-2">
-                  <dt className="text-muted-foreground">Correct answer:</dt>
-                  <dd className="text-emerald-600">{item.correctAnswer.join(", ")}</dd>
-                </div>
-              )}
-            </dl>
-            {item.feedback && <p className="mt-2 pl-6 text-xs text-muted-foreground">{item.feedback}</p>}
+            <p className="text-sm font-semibold leading-snug">{item.title}</p>
+            <p className={cn("border px-3 py-2 text-sm", item.isCorrect ? "border-primary/60" : "border-orange-500/70")}>
+              <span className="text-muted-foreground">Your answer: </span>
+              {item.yourAnswer.length ? item.yourAnswer.join(", ") : <em>No answer</em>}
+            </p>
+            {!item.isCorrect && (
+              <p className="border border-primary/60 px-3 py-2 text-sm">
+                <span className="text-muted-foreground">Correct: </span>
+                {item.correctAnswer.join(", ")}
+              </p>
+            )}
+            {item.feedback && <p className="text-xs text-muted-foreground">{item.feedback}</p>}
           </li>
         ))}
       </ol>
-    </motion.details>
+    </motion.section>
   );
 }
 
@@ -191,17 +294,27 @@ export function QuizResultScreen({
   timedOut?: boolean;
 }) {
   const { data: results, isLoading, isError } = useQuizResults(shareToken, sessionToken);
+  const board = results?.leaderboard;
+  const review = results?.review?.length ? results.review : null;
 
   return (
-    <div className="min-h-screen bg-background px-4 py-10 sm:py-12">
-      <motion.div variants={stagger} initial="hidden" animate="visible" className="mx-auto max-w-2xl space-y-6">
+    <div className="min-h-screen bg-background px-4 py-8 sm:py-12">
+      {/* Two columns on desktop once there's a leaderboard to put beside the personal result. */}
+      <motion.div variants={stagger} initial="hidden" animate="visible" className={cn("mx-auto space-y-6", board ? "max-w-6xl" : "max-w-2xl")}>
         <BrandHeader brand={form.brand} />
-        <motion.header variants={fadeUp}>
-          <span className="mb-2 inline-block border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs text-primary">Quiz results</span>
-          <h1 className="text-2xl font-bold leading-tight">{form.title}</h1>
-          {confirmationMessage && <p className="mt-1 text-sm text-muted-foreground">{confirmationMessage}</p>}
+        <motion.header variants={fadeUp} className="space-y-1.5">
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+            {results?.resultsPublished ? "Final results" : "Quiz results"}
+          </span>
+          <h1 className="text-2xl font-extrabold leading-tight tracking-tight sm:text-4xl">{form.title}</h1>
+          {board && (
+            <p className="text-sm text-muted-foreground">
+              {board.participants} {board.participants === 1 ? "participant" : "participants"}
+            </p>
+          )}
+          {confirmationMessage && <p className="text-sm text-muted-foreground">{confirmationMessage}</p>}
           {results && !results.me && (
-            <p className="mt-1 text-sm text-muted-foreground">This quiz has ended{results.resultsPublished ? ". Here's how everyone did." : "."}</p>
+            <p className="text-sm text-muted-foreground">This quiz has ended{results.resultsPublished ? ". Here's how everyone did." : "."}</p>
           )}
         </motion.header>
 
@@ -213,26 +326,31 @@ export function QuizResultScreen({
         {isError && <p className="text-sm text-destructive">Couldn't load results. Refresh to try again.</p>}
 
         {results && (
-          <>
-            {results.me && <MyResultCard results={results} timedOut={timedOut} />}
-            {!results.resultsPublished && <PendingBanner results={results} />}
-            {results.leaderboard && (
-              <motion.div variants={fadeUp} className="border border-border bg-card p-4 sm:p-6">
-                <Leaderboard
-                  entries={results.leaderboard.entries}
-                  participants={results.leaderboard.participants}
-                  maxPoints={results.leaderboard.maxPoints}
-                  celebrate
-                  me={
-                    results.me?.rank !== undefined
-                      ? { name: results.me.name, score: results.me.score ?? 0, rank: results.me.rank }
-                      : null
-                  }
-                />
+          // Phones stack result → board → review; desktop puts the board in a right column beside both.
+          <div
+            className={cn(
+              "flex flex-col gap-6",
+              board && "lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_1fr] lg:items-start"
+            )}
+          >
+            <div className="flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-start-1">
+              {results.me && <MyResultCard results={results} timedOut={timedOut} />}
+              {!results.resultsPublished && <PendingBanner results={results} />}
+              {board && board.participants >= 10 && board.maxPoints > 0 && (
+                <ScoreDistribution stats={board.stats} maxPoints={board.maxPoints} />
+              )}
+            </div>
+            {board && (
+              <motion.div variants={fadeUp} className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+                <PublicLeaderboard board={board} shareToken={shareToken} sessionToken={sessionToken} celebrate />
               </motion.div>
             )}
-            {results.review && results.review.length > 0 && <Review items={results.review} />}
-          </>
+            {review && (
+              <div className="min-w-0 lg:col-start-1 lg:row-start-2">
+                <Review items={review} />
+              </div>
+            )}
+          </div>
         )}
 
         <BrandFooter brand={form.brand} />

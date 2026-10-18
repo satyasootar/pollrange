@@ -144,33 +144,44 @@ export async function listFormsByCreator(
   };
 }
 
+const LOCKED_MESSAGE = "This form already has responses or published results, so it can't be edited. Duplicate it to make changes.";
+
 /**
- * Updates a form. Unlike polls, editing is allowed anytime, even after responses
- * exist — the client warns that removing a question orphans answers.
+ * Updates a form — only while nobody has responded and results aren't out. Responses,
+ * scores, the leaderboard, answer reviews and analytics all reference the questions and
+ * options by id (and were graded against the answer key), so editing after that corrupts them.
  */
 export async function updateForm(userId: string, formId: string, updateData: IUpdateForm) {
+  const current = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false })
+    .select("branding shareToken status totalResponses")
+    .lean();
+  if (!current) throw new ApiError(404, "Form not found or unauthorized");
+  // The responses check also covers a submit that's saved but hasn't bumped totalResponses yet.
+  if (current.status === "published" || (current.totalResponses ?? 0) > 0 || (await FormResponse.exists({ formId }))) {
+    throw new ApiError(409, LOCKED_MESSAGE);
+  }
+
   if (updateData.sections) {
     validateFormStructure(updateData.sections, updateData.isQuiz ?? false);
     if (hasFileUpload(updateData.sections)) updateData = { ...updateData, responseMode: "authenticated" };
   }
   const { slug, ...persistedUpdateData } = updateData;
-  if (updateData.branding) {
-    const current = await Form.findOne({ _id: formId, creatorId: userId }).select("branding").lean();
-    if (brandingChanged(current?.branding as FormBranding | undefined, updateData.branding)) await assertFeature(userId, "branding");
+  if (updateData.branding && brandingChanged(current.branding as FormBranding | undefined, updateData.branding)) {
+    await assertFeature(userId, "branding");
   }
   if (slug !== undefined) {
     // Only a *changed* link needs the plan feature; editors resend the current one on every save.
-    const current = await Form.findOne({ _id: formId, creatorId: userId }).select("shareToken").lean();
-    if (current && current.shareToken !== slug) await assertFeature(userId, "customSlug");
+    if (current.shareToken !== slug) await assertFeature(userId, "customSlug");
     const existing = await Form.findOne({ shareToken: slug, _id: { $ne: formId }, isDeleted: false }).select("_id");
     if (existing) throw new ApiError(409, "That form slug is already in use. Choose another slug.");
   }
+  // Re-check the lock atomically: a response may have landed since the read above.
   const form = await Form.findOneAndUpdate(
-    { _id: formId, creatorId: userId, isDeleted: false },
+    { _id: formId, creatorId: userId, isDeleted: false, totalResponses: 0, status: { $ne: "published" } },
     { $set: { ...persistedUpdateData, ...(slug !== undefined ? { shareToken: slug } : {}) } },
     { returnDocument: "after" }
   );
-  if (!form) throw new ApiError(404, "Form not found or unauthorized");
+  if (!form) throw new ApiError(409, LOCKED_MESSAGE);
   return form;
 }
 
@@ -272,6 +283,8 @@ export async function publishFormResults(
 ) {
   const form = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false });
   if (!form) throw new ApiError(404, "Form not found or unauthorized");
+  if (!form.isQuiz) throw new ApiError(400, "Only quizzes have results to publish");
+  if (form.status === "draft") throw new ApiError(400, "A draft has no results to publish");
 
   if (mode === "permanent") {
     form.status = "published";
@@ -307,7 +320,8 @@ export async function unpublishFormResults(userId: string, formId: string) {
 export async function closeForm(userId: string, formId: string) {
   const form = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false });
   if (!form) throw new ApiError(404, "Form not found or unauthorized");
-  if (form.status === "closed") throw new ApiError(400, "Form is already closed");
+  // Closing a published quiz would silently demote it and leave its results half-hidden.
+  if (form.status !== "active") throw new ApiError(400, "Only active forms can be closed");
 
   form.status = "closed";
   form.closedAt = new Date();

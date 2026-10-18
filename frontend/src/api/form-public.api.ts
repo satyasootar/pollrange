@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { PublicForm, SubmitFormResponsePayload, SubmitFormResult, FormFileValue, QuizResults } from "@/types";
+import type { PublicForm, SubmitFormResponsePayload, SubmitFormResult, FormFileValue, QuizResults, QuizLeaderboardPage } from "@/types";
 
 export const formPublicApi = {
   get: (shareToken: string, sessionToken?: string) =>
@@ -16,6 +16,11 @@ export const formPublicApi = {
   results: (shareToken: string, sessionToken?: string) =>
     api.get<{ data: QuizResults }>(`/public/forms/${shareToken}/results`, {
       params: sessionToken ? { sessionToken } : {},
+    }),
+
+  leaderboard: (shareToken: string, offset: number, limit: number, sessionToken?: string) =>
+    api.get<{ data: QuizLeaderboardPage }>(`/public/forms/${shareToken}/leaderboard`, {
+      params: { offset, limit, ...(sessionToken ? { sessionToken } : {}) },
     }),
 
   submit: (formId: string, payload: SubmitFormResponsePayload) =>

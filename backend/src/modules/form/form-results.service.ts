@@ -7,8 +7,10 @@ import { GRADABLE_TYPES } from "./form.validation.js";
 
 /** A submit that was in flight when the timer hit zero still counts for this long after the deadline. */
 export const SUBMIT_GRACE_MS = 15_000;
-/** How many leaderboard rows the public results page shows. */
-export const PUBLIC_LEADERBOARD_LIMIT = 50;
+/** Public leaderboard page size; larger pages are capped at PUBLIC_PAGE_MAX. */
+export const PUBLIC_PAGE_SIZE = 10;
+const PUBLIC_PAGE_MAX = 50;
+const HISTOGRAM_MAX_BINS = 10;
 const CREATOR_LEADERBOARD_LIMIT = 200;
 
 export const isResultsPublished = (form: { isResultsPublic?: boolean; status?: string }) =>
@@ -75,27 +77,97 @@ export function assignRanks<T extends { score: number }>(rows: T[]): (T & { rank
 
 const displayName = (r: any): string => r.respondentId?.name || r.respondentName || "Anonymous";
 
-async function topRows(formId: Types.ObjectId, limit: number, withEmail: boolean): Promise<(LeaderboardRow & { rank: number })[]> {
-  const rows = await FormResponse.find({ formId, score: { $exists: true } })
-    .sort({ score: -1, submittedAt: 1 })
-    .limit(limit)
-    .select("score totalPoints submittedAt respondentName respondentEmail respondentId")
-    .populate("respondentId", withEmail ? "name email" : "name")
-    .lean();
-  return assignRanks(
-    rows.map((r: any) => ({
-      responseId: String(r._id),
-      name: displayName(r),
-      ...(withEmail ? { email: r.respondentId?.email ?? r.respondentEmail ?? null } : {}),
-      score: r.score ?? 0,
-      totalPoints: r.totalPoints ?? 0,
-      submittedAt: r.submittedAt,
-    }))
-  );
+const ROW_FIELDS = "score totalPoints submittedAt respondentName respondentEmail respondentId";
+
+function toRow(r: any, withEmail: boolean): LeaderboardRow {
+  return {
+    responseId: String(r._id),
+    name: displayName(r),
+    ...(withEmail ? { email: r.respondentId?.email ?? r.respondentEmail ?? null } : {}),
+    score: r.score ?? 0,
+    totalPoints: r.totalPoints ?? 0,
+    submittedAt: r.submittedAt,
+  };
 }
 
-const rankOf = async (formId: Types.ObjectId, score: number) =>
-  (await FormResponse.countDocuments({ formId, score: { $gt: score } })) + 1;
+/** Board order: best score first; within a tie, earliest submission first. Served by the (formId, score, submittedAt) index. */
+const boardQuery = (formId: Types.ObjectId) =>
+  FormResponse.find({ formId, score: { $exists: true } }).sort({ score: -1, submittedAt: 1 });
+
+async function topRows(formId: Types.ObjectId, limit: number, withEmail: boolean): Promise<(LeaderboardRow & { rank: number })[]> {
+  const rows = await boardQuery(formId)
+    .limit(limit)
+    .select(ROW_FIELDS)
+    .populate("respondentId", withEmail ? "name email" : "name")
+    .lean();
+  return assignRanks(rows.map((r: any) => toRow(r, withEmail)));
+}
+
+/** Every score on the board, high to low. Index-covered (no documents fetched). */
+async function allScores(formId: Types.ObjectId): Promise<number[]> {
+  const rows = await boardQuery(formId).select({ score: 1, _id: 0 }).lean();
+  return rows.map((r: any) => r.score ?? 0);
+}
+
+/** Competition rank of a score within a high→low score list (ties share the rank). */
+export const rankIn = (scoresDesc: number[], score: number) => {
+  const i = scoresDesc.findIndex((s) => s <= score);
+  return (i === -1 ? scoresDesc.length : i) + 1;
+};
+
+/**
+ * Aggregates for the results page, from every score sorted high to low: average,
+ * median, a histogram over 0…maxPoints, and how far the viewer is from the next rank up.
+ */
+export function scoreStats(scoresDesc: number[], maxPoints: number, myScore?: number) {
+  const n = scoresDesc.length;
+  const bins = maxPoints > 0 ? Math.min(HISTOGRAM_MAX_BINS, Math.ceil(maxPoints) + 1) : 1;
+  const binOf = (s: number) => Math.min(bins - 1, Math.max(0, Math.floor((s / maxPoints) * bins)));
+  const histogram = new Array<number>(bins).fill(0);
+  for (const s of scoresDesc) histogram[maxPoints > 0 ? binOf(s) : 0]!++;
+  const mid = Math.floor(n / 2);
+  const median = n === 0 ? 0 : n % 2 ? scoresDesc[mid]! : (scoresDesc[mid - 1]! + scoresDesc[mid]!) / 2;
+  const average = n === 0 ? 0 : scoresDesc.reduce((a, b) => a + b, 0) / n;
+
+  let nextUp: { rank: number; gap: number } | undefined;
+  if (myScore !== undefined) {
+    // The lowest score above mine is the next rank to beat.
+    const above = scoresDesc.filter((s) => s > myScore);
+    const target = above[above.length - 1];
+    if (target !== undefined) nextUp = { rank: rankIn(scoresDesc, target), gap: Math.round((target - myScore) * 100) / 100 };
+  }
+
+  return {
+    average: Math.round(average * 10) / 10,
+    median: Math.round(median * 10) / 10,
+    histogram,
+    ...(myScore !== undefined && maxPoints > 0 ? { myBin: binOf(myScore) } : {}),
+    ...(nextUp ? { nextUp } : {}),
+  };
+}
+
+/** One page of the board; ranks come from the full score list so they're right at any offset. */
+async function pageRows(formId: Types.ObjectId, scoresDesc: number[], offset: number, limit: number) {
+  const rows = await boardQuery(formId).skip(offset).limit(limit).select(ROW_FIELDS).populate("respondentId", "name").lean();
+  return rows.map((r: any) => ({ ...toRow(r, false), rank: rankIn(scoresDesc, r.score ?? 0) }));
+}
+
+/** 0-based position of a response on the board (its index in board order). */
+async function positionOf(formId: Types.ObjectId, scoresDesc: number[], mine: any) {
+  const myScore = mine.score ?? 0;
+  const sameScoreEarlier = await FormResponse.countDocuments({ formId, score: myScore, submittedAt: { $lt: mine.submittedAt } });
+  return rankIn(scoresDesc, myScore) - 1 + sameScoreEarlier;
+}
+
+/** The viewer's own response (signed-in account or this browser's session token). */
+async function findMine(formId: Types.ObjectId, viewer: Viewer) {
+  const identity: Record<string, unknown>[] = [];
+  if (viewer.userId) identity.push({ formId, respondentId: viewer.userId });
+  if (viewer.sessionToken) identity.push({ formId, sessionToken: viewer.sessionToken });
+  return identity.length ? ((await FormResponse.findOne({ $or: identity }).populate("respondentId", "name").lean()) as any) : null;
+}
+
+type Viewer = { sessionToken?: string | undefined; userId?: string | undefined };
 
 const participantsOf = (formId: Types.ObjectId) => FormResponse.countDocuments({ formId, score: { $exists: true } });
 
@@ -123,22 +195,27 @@ export function buildReview(form: any, response: any) {
     });
 }
 
-/**
- * Public results for the quiz link: the viewer's own result (when released), and —
- * once the creator publishes — the leaderboard and their answer review.
- */
-export async function getPublicResults(shareToken: string, viewer: { sessionToken?: string | undefined; userId?: string | undefined }) {
+/** Loads a quiz for its public link; 404 for drafts and non-quiz forms. Settles an expired timer first. */
+async function loadPublicQuiz(shareToken: string) {
   const form = await Form.findOne({ shareToken, isDeleted: false });
   if (!form || form.status === "draft" || !form.isQuiz) throw new ApiError(404, "Quiz not found");
   await settleExpiredForm(form);
+  return form;
+}
 
+// responseId stays server-side; the client only needs to know which row is theirs.
+const markMine = (rows: (LeaderboardRow & { rank: number })[], mine: any) =>
+  rows.map(({ responseId, ...row }) => ({ ...row, isMe: !!mine && responseId === String(mine._id) }));
+
+/**
+ * Public results for the quiz link: the viewer's own result (when released), and —
+ * once the creator publishes — the first leaderboard page, score stats, the viewer's
+ * board position (for "jump to me") and their answer review.
+ */
+export async function getPublicResults(shareToken: string, viewer: Viewer) {
+  const form = await loadPublicQuiz(shareToken);
   const published = isResultsPublished(form);
-  const identity: Record<string, unknown>[] = [];
-  if (viewer.userId) identity.push({ formId: form._id, respondentId: viewer.userId });
-  if (viewer.sessionToken) identity.push({ formId: form._id, sessionToken: viewer.sessionToken });
-  const mine: any = identity.length
-    ? await FormResponse.findOne({ $or: identity }).populate("respondentId", "name").lean()
-    : null;
+  const mine = await findMine(form._id, viewer);
 
   const showScore = !!mine && (published || !!form.settings?.releaseScoreImmediately);
   const myScore = mine?.score ?? 0;
@@ -147,17 +224,21 @@ export async function getPublicResults(shareToken: string, viewer: { sessionToke
   let leaderboard = null;
   let myRank: number | undefined;
   if (published) {
-    const [rows, participants, rank] = await Promise.all([
-      topRows(form._id, PUBLIC_LEADERBOARD_LIMIT, false),
-      participantsOf(form._id),
-      mine ? rankOf(form._id, myScore) : undefined,
+    // ponytail: loads every score per request (index-covered, ~10 bytes each); fine into the tens of
+    // thousands of responses. Cache per form if a single quiz grows past that.
+    const scores = await allScores(form._id);
+    const [rows, position] = await Promise.all([
+      pageRows(form._id, scores, 0, PUBLIC_PAGE_SIZE),
+      mine ? positionOf(form._id, scores, mine) : undefined,
     ]);
-    myRank = rank;
+    if (mine) myRank = rankIn(scores, myScore);
     leaderboard = {
-      participants,
+      participants: scores.length,
       maxPoints,
-      // responseId stays server-side; the client only needs to know which row is theirs.
-      entries: rows.map(({ responseId, ...row }) => ({ ...row, isMe: !!mine && responseId === String(mine._id) })),
+      pageSize: PUBLIC_PAGE_SIZE,
+      entries: markMine(rows, mine),
+      stats: scoreStats(scores, maxPoints, mine ? myScore : undefined),
+      ...(position !== undefined ? { myPosition: position } : {}),
     };
   }
 
@@ -183,6 +264,17 @@ export async function getPublicResults(shareToken: string, viewer: { sessionToke
     // Answer keys stay secret until results are out and the quiz no longer takes answers.
     review: published && form.status !== "active" && mine ? buildReview(form, mine) : null,
   };
+}
+
+/** Any page of the published leaderboard (offset into board order). */
+export async function getPublicLeaderboardPage(shareToken: string, viewer: Viewer, offset: number, limit: number) {
+  const form = await loadPublicQuiz(shareToken);
+  if (!isResultsPublished(form)) throw new ApiError(403, "Results are not published yet");
+  const safeLimit = Math.min(Math.max(1, Math.floor(limit) || PUBLIC_PAGE_SIZE), PUBLIC_PAGE_MAX);
+  const safeOffset = Math.max(0, Math.floor(offset) || 0);
+  const [scores, mine] = await Promise.all([allScores(form._id), findMine(form._id, viewer)]);
+  const rows = await pageRows(form._id, scores, safeOffset, safeLimit);
+  return { participants: scores.length, offset: safeOffset, entries: markMine(rows, mine) };
 }
 
 /** Creator view: the full ranking (with emails) regardless of publish state. */

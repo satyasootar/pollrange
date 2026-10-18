@@ -21,7 +21,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import type { FullAnalytics } from "@/types";
+import type { FullAnalytics, QuestionStat } from "@/types";
 import { cn } from "@/lib/utils";
 
 function TwitterIcon({ className }: { className?: string }) {
@@ -56,10 +56,15 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
+/** The subset of poll analytics the card renders — forms map their summaries into this too. */
+export type SnapshotData = Pick<FullAnalytics, "pollId" | "pollTitle" | "totalResponses" | "completionRate"> & {
+  questions: Pick<QuestionStat, "questionId" | "questionText" | "type" | "options" | "wordCloudData">[];
+};
+
 interface SnapshotDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  analytics: FullAnalytics;
+  analytics: SnapshotData;
   shareUrl: string;
 }
 
@@ -350,7 +355,7 @@ export function SnapshotDialog({
               </div>
               <DialogTitle className="text-2xl font-black uppercase tracking-tight">Share Your Impact</DialogTitle>
               <DialogDescription className="text-sm font-medium">
-                Customize and share your poll results across your professional networks.
+                Customize and share your results across your professional networks.
               </DialogDescription>
             </DialogHeader>
 

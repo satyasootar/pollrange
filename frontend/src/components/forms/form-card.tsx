@@ -25,6 +25,7 @@ import type { Form, PollStatus } from "@/types";
 import { buildFormShareUrl, copyToClipboard, formatDate } from "@/lib/utils";
 import { useDeleteForm, useDuplicateForm, useCloseForm, useReopenForm } from "@/hooks/use-forms";
 import { toast } from "sonner";
+import { isFormLocked } from "@/lib/form-mappers";
 import { cardHover } from "@/lib/animations";
 
 const STATUS_CONFIG: Record<PollStatus, { label: string; className: string }> = {
@@ -95,9 +96,11 @@ export function FormCard({ form }: { form: Form }) {
                 <DropdownMenuItem onClick={() => window.open(`/f/${form.shareToken}`, "_blank")}>
                   <ExternalLink className="mr-2 h-4 w-4" /> Open Form
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(`/forms/${form._id}/edit`)}>
-                  <Pencil className="mr-2 h-4 w-4" /> Edit
-                </DropdownMenuItem>
+                {!isFormLocked(form) && (
+                  <DropdownMenuItem onClick={() => navigate(`/forms/${form._id}/edit`)}>
+                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => duplicateForm.mutate(form._id)}>
                   <Files className="mr-2 h-4 w-4" /> Duplicate
                 </DropdownMenuItem>

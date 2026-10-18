@@ -25,21 +25,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { buildShareUrl } from "@/lib/utils";
 import { QR_CIRCLE_LOGO } from "@/lib/brand";
 import type { UserBranding } from "@/types";
 
 interface QRCardDialogProps {
-  pollId: string;
-  shareToken: string;
-  pollTitle: string;
+  /** Poll or form id — only used to name the downloaded PNG. */
+  id: string;
+  shareUrl: string;
+  title: string;
   defaultBranding?: UserBranding;
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-export function QRCardDialog({ pollId, shareToken, pollTitle, defaultBranding, trigger, open, onOpenChange }: QRCardDialogProps) {
+export function QRCardDialog({ id, shareUrl: pollUrl, title: pollTitle, defaultBranding, trigger, open, onOpenChange }: QRCardDialogProps) {
   const [branding, setBranding] = useState({
     companyName: defaultBranding?.companyName || "",
     businessDetails: defaultBranding?.businessDetails || "",
@@ -59,14 +59,13 @@ export function QRCardDialog({ pollId, shareToken, pollTitle, defaultBranding, t
 
   const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const pollUrl = buildShareUrl(shareToken);
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
     try {
       const dataUrl = await toPng(cardRef.current, { cacheBust: true, quality: 1, pixelRatio: 2 });
       const link = document.createElement("a");
-      link.download = `poll-qr-${pollId}.png`;
+      link.download = `qr-${id}.png`;
       link.href = dataUrl;
       link.click();
       toast.success("QR Card downloaded!");

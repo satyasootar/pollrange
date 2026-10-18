@@ -127,6 +127,17 @@ export async function getPublicResults(req: Request, res: Response) {
   return res.status(200).json(new ApiResponse(200, results, "Quiz results fetched successfully"));
 }
 
+export async function getPublicLeaderboard(req: Request, res: Response) {
+  const user = (req as any).user;
+  const page = await FormResultsService.getPublicLeaderboardPage(
+    req.params.shareToken as string,
+    { sessionToken: req.query.sessionToken as string | undefined, userId: user?._id?.toString() },
+    Number(req.query.offset ?? 0),
+    Number(req.query.limit ?? FormResultsService.PUBLIC_PAGE_SIZE)
+  );
+  return res.status(200).json(new ApiResponse(200, page, "Leaderboard page fetched successfully"));
+}
+
 export async function getFormStatus(req: Request, res: Response) {
   const { shareToken } = req.params;
   const { sessionToken } = req.query;

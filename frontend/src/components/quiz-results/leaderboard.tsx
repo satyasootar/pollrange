@@ -21,7 +21,7 @@ function initials(name: string) {
   );
 }
 
-function Avatar({ name, className }: { name: string; className?: string }) {
+export function Avatar({ name, className }: { name: string; className?: string }) {
   return (
     <span
       aria-hidden
@@ -32,7 +32,7 @@ function Avatar({ name, className }: { name: string; className?: string }) {
   );
 }
 
-function YouBadge() {
+export function YouBadge() {
   return <span className="ml-1.5 border border-primary/40 bg-primary/10 px-1.5 py-px text-[10px] font-semibold uppercase text-primary">You</span>;
 }
 

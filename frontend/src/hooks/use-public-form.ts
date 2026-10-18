@@ -1,6 +1,6 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { formPublicApi } from "@/api/form-public.api";
-import type { SubmitFormResponsePayload } from "@/types";
+import type { SubmitFormResponsePayload, QuizLeaderboardPage } from "@/types";
 
 export function usePublicForm(shareToken: string, sessionToken?: string) {
   return useQuery({
@@ -32,5 +32,22 @@ export function useQuizResults(shareToken: string, sessionToken: string | undefi
     enabled: !!shareToken && enabled,
     retry: false,
     refetchInterval: (query) => (query.state.data?.data.data.resultsPublished ? false : RESULTS_POLL_MS),
+  });
+}
+
+/** A page of the published leaderboard. Page 0 comes with the results payload, so it's seeded, not fetched. */
+export function useQuizLeaderboardPage(
+  shareToken: string,
+  sessionToken: string | undefined,
+  page: number,
+  pageSize: number,
+  firstPage: QuizLeaderboardPage
+) {
+  return useQuery({
+    queryKey: ["quiz-leaderboard", shareToken, sessionToken, page, pageSize],
+    queryFn: () => formPublicApi.leaderboard(shareToken, page * pageSize, pageSize, sessionToken).then((r) => r.data.data),
+    initialData: page === 0 ? firstPage : undefined,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 }

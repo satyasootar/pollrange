@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, AlertCircle } from "lucide-react";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
@@ -8,7 +9,7 @@ import { StepFormSettings } from "@/components/form-builder/step-form-settings";
 import { StepFormQuestions } from "@/components/form-builder/step-form-questions";
 import { StepFormReviewEdit } from "@/components/form-builder/step-form-review-edit";
 import { slideInRight } from "@/lib/animations";
-import { formEntityToBuilder } from "@/lib/form-mappers";
+import { formEntityToBuilder, isFormLocked } from "@/lib/form-mappers";
 
 const STEPS = [
   { num: 1, label: "Settings" },
@@ -19,9 +20,15 @@ const STEPS = [
 export function EditFormPage() {
   const { formId } = useParams<{ formId: string }>();
   const { data: form, isLoading } = useForm(formId!);
+  const navigate = useNavigate();
   const { step, setForm, reset } = useFormBuilderStore();
 
   useEffect(() => {
+    if (form && isFormLocked(form)) {
+      toast.info("This form already has responses, so it can't be edited. Duplicate it to make changes.");
+      navigate(`/forms/${formId}/analytics`, { replace: true });
+      return;
+    }
     if (form) setForm(formEntityToBuilder(form));
     return () => reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -69,7 +76,7 @@ export function EditFormPage() {
           <motion.div key={step} variants={slideInRight} initial="hidden" animate="visible" exit="exit">
             {step === 1 && <StepFormSettings formId={formId} />}
             {step === 2 && <StepFormQuestions />}
-            {step === 3 && <StepFormReviewEdit formId={formId!} hasResponses={form.totalResponses > 0} />}
+            {step === 3 && <StepFormReviewEdit formId={formId!} />}
           </motion.div>
         </AnimatePresence>
       </div>
