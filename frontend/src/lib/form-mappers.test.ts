@@ -110,9 +110,12 @@ describe("formEntityToBuilder", () => {
     expect(grid.rows?.every((r) => typeof r.id === "string" && r.id.length > 0)).toBe(true);
   });
 
-  it("truncates expiresAt to a datetime-local value and defaults description", () => {
-    const b = formEntityToBuilder(entity());
-    expect(b.expiresAt).toBe("2026-08-16T10:30");
+  it("shows expiresAt as a local datetime-local value and defaults description", () => {
+    const e = entity();
+    const b = formEntityToBuilder(e);
+    // The stored instant is UTC; the input shows the creator's own wall-clock time and round-trips exactly.
+    expect(b.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    expect(new Date(b.expiresAt).toISOString()).toBe(new Date(e.expiresAt!).toISOString());
     expect(b.description).toBe("");
     expect(b.coverImageUrl).toBe("https://cdn/x.png");
   });

@@ -1,4 +1,4 @@
-import { newObjectId } from "@/lib/utils";
+import { newObjectId, toLocalDatetimeInput } from "@/lib/utils";
 import type {
   Form,
   FormBuilderForm,
@@ -55,7 +55,7 @@ export function formEntityToBuilder(form: Form): FormBuilderForm {
     coverImageUrl: form.coverImageUrl,
     branding: { ...form.branding, useKit: form.branding?.useKit ?? true },
     isQuiz: form.isQuiz,
-    expiresAt: form.expiresAt ? form.expiresAt.slice(0, 16) : "",
+    expiresAt: form.expiresAt ? toLocalDatetimeInput(new Date(form.expiresAt)) : "",
     responseMode: form.responseMode,
     settings: {
       collectEmail: form.settings.collectEmail,

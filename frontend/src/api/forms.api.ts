@@ -48,7 +48,8 @@ export function toFormPayload(form: FormBuilderForm) {
     branding: form.branding,
     isQuiz: form.isQuiz,
     responseMode: form.responseMode,
-    expiresAt: form.expiresAt || null,
+    // datetime-local is wall-clock time in the creator's zone; send an absolute instant.
+    expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
     settings: form.settings,
     sections: form.sections.map((s, si) => ({
       _id: s.id,

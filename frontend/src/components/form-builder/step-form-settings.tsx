@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { hasFileUpload, useFormBuilderStore } from "@/store/use-form-builder-store";
 import { formsApi } from "@/api/forms.api";
-import { toastApiError } from "@/lib/utils";
+import { toLocalDatetimeInput, toastApiError } from "@/lib/utils";
 import { toast } from "sonner";
 import { ImagePlus, Loader2, X, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -30,7 +30,7 @@ export function StepFormSettings({ formId }: { formId?: string }) {
   const canSlug = useCanUse("customSlug");
   const fileUploadLocked = hasFileUpload(form);
   // Lazy state init keeps the impure Date.now() call out of render.
-  const [minDatetime] = useState(() => new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16));
+  const [minDatetime] = useState(() => toLocalDatetimeInput(new Date(Date.now() + 5 * 60 * 1000)));
 
   const checkSlug = async () => {
     const slug = form.slug.trim();
