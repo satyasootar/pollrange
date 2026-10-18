@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useFormBuilderStore } from "@/store/use-form-builder-store";
+import { hasFileUpload, useFormBuilderStore } from "@/store/use-form-builder-store";
 import { formsApi } from "@/api/forms.api";
 import { toastApiError } from "@/lib/utils";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ export function StepFormSettings({ formId }: { formId?: string }) {
   const [uploading, setUploading] = useState(false);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
   const canSlug = useCanUse("customSlug");
+  const fileUploadLocked = hasFileUpload(form);
   // Lazy state init keeps the impure Date.now() call out of render.
   const [minDatetime] = useState(() => new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16));
 
@@ -219,8 +220,9 @@ export function StepFormSettings({ formId }: { formId?: string }) {
             <button
               key={mode}
               type="button"
+              disabled={mode === "anonymous" && fileUploadLocked}
               onClick={() => updateMeta({ responseMode: mode })}
-              className={`border p-4 text-left transition-colors ${
+              className={`border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 form.responseMode === mode ? "border-primary bg-primary/10" : "border-border hover:border-foreground/30"
               }`}
             >
@@ -231,6 +233,11 @@ export function StepFormSettings({ formId }: { formId?: string }) {
             </button>
           ))}
         </div>
+        {fileUploadLocked && (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Lock className="h-3 w-3" /> This form has a file upload question, so respondents must sign in to upload files.
+          </p>
+        )}
       </div>
 
       {/* Expiry */}

@@ -83,8 +83,12 @@ function brandingChanged(current: FormBranding | undefined, next: FormBranding |
   );
 }
 
+/** Respondents must sign in to upload files, so any file question forces sign-in mode. */
+const hasFileUpload = (sections: ICreateSection[]) => sections.some((s) => s.questions.some((q) => q.type === "file_upload"));
+
 export async function createForm(userId: string, formData: ICreateForm) {
   validateFormStructure(formData.sections, formData.isQuiz ?? false);
+  if (hasFileUpload(formData.sections)) formData = { ...formData, responseMode: "authenticated" };
   const { slug, ...persistedFormData } = formData;
   if (slug) await assertFeature(userId, "customSlug");
   if (brandingChanged(undefined, formData.branding)) await assertFeature(userId, "branding");
@@ -146,6 +150,7 @@ export async function listFormsByCreator(
 export async function updateForm(userId: string, formId: string, updateData: IUpdateForm) {
   if (updateData.sections) {
     validateFormStructure(updateData.sections, updateData.isQuiz ?? false);
+    if (hasFileUpload(updateData.sections)) updateData = { ...updateData, responseMode: "authenticated" };
   }
   const { slug, ...persistedUpdateData } = updateData;
   if (updateData.branding) {

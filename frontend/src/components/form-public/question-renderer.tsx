@@ -37,9 +37,11 @@ interface Props {
   onChange: AnswerChange;
   /** Preview mode (Review step): render inputs but disable the live file upload. */
   preview?: boolean;
+  /** Set when the respondent isn't signed in: picking a file calls this instead (uploads need sign-in). */
+  onUploadNeedsAuth?: (() => void) | undefined;
 }
 
-export function QuestionRenderer({ formId, question: q, value, onChange, preview }: Props) {
+export function QuestionRenderer({ formId, question: q, value, onChange, preview, onUploadNeedsAuth }: Props) {
   const toggleOption = (optionId: string, multi: boolean) => {
     const current = value.selectedOptionIds ?? [];
     const next = multi
@@ -358,6 +360,11 @@ export function QuestionRenderer({ formId, question: q, value, onChange, preview
                 multiple={max > 1}
                 className="hidden"
                 disabled={preview}
+                onClick={(e) => {
+                  if (!onUploadNeedsAuth) return;
+                  e.preventDefault();
+                  onUploadNeedsAuth();
+                }}
                 onChange={(e) => e.target.files?.length && handleFiles(e.target.files)}
               />
             </label>

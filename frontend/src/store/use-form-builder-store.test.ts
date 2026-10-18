@@ -153,4 +153,14 @@ describe("useFormBuilderStore", () => {
     store().updateOption(sid, q.id, opt.id, "Renamed");
     expect(firstQuestion().options[0]).toMatchObject({ text: "Renamed", amount: 150 });
   });
+
+  it("forces sign-in mode when a file upload question is added or switched to", () => {
+    expect(store().form.responseMode).toBe("anonymous");
+    store().addQuestion(firstSection().id, "file_upload");
+    expect(store().form.responseMode).toBe("authenticated");
+
+    store().reset();
+    store().changeQuestionType(firstSection().id, firstQuestion().id, "file_upload");
+    expect(store().form.responseMode).toBe("authenticated");
+  });
 });

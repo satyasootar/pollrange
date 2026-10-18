@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { toast } from "sonner";
 import { newObjectId } from "@/lib/utils";
 import type {
   BuilderFormOption,
@@ -125,6 +126,16 @@ function patchQuestion(
   };
 }
 
+/** Respondents must sign in to upload files, so a file question locks the form to sign-in mode. */
+export const hasFileUpload = (form: FormBuilderForm) =>
+  form.sections.some((s) => s.questions.some((q) => q.type === "file_upload"));
+
+function requireAuthForUploads(form: FormBuilderForm, notify = true): FormBuilderForm {
+  if (form.responseMode === "authenticated" || !hasFileUpload(form)) return form;
+  if (notify) toast.info("Sign-in turned on: respondents must sign in to upload files.");
+  return { ...form, responseMode: "authenticated" };
+}
+
 export const useFormBuilderStore = create<FormBuilderState>()((set) => ({
   step: 1,
   form: defaultForm(),
@@ -138,7 +149,7 @@ export const useFormBuilderStore = create<FormBuilderState>()((set) => ({
   updateMeta: (patch) => set((s) => ({ form: { ...s.form, ...patch } })),
   updateSettings: (patch) =>
     set((s) => ({ form: { ...s.form, settings: { ...s.form.settings, ...patch } } })),
-  setForm: (form) => set((s) => ({ form: { ...s.form, ...form } })),
+  setForm: (form) => set((s) => ({ form: requireAuthForUploads({ ...s.form, ...form }, false) })),
 
   addSection: () =>
     set((s) => ({ form: { ...s.form, sections: [...s.form.sections, makeSection()] } })),
@@ -172,12 +183,12 @@ export const useFormBuilderStore = create<FormBuilderState>()((set) => ({
 
   addQuestion: (sectionId, type = "short_answer") =>
     set((s) => ({
-      form: {
+      form: requireAuthForUploads({
         ...s.form,
         sections: s.form.sections.map((sec) =>
           sec.id === sectionId ? { ...sec, questions: [...sec.questions, makeQuestion(type)] } : sec
         ),
-      },
+      }),
     })),
 
   duplicateQuestion: (sectionId, questionId) =>
@@ -221,7 +232,7 @@ export const useFormBuilderStore = create<FormBuilderState>()((set) => ({
 
   changeQuestionType: (sectionId, questionId, type) =>
     set((s) => ({
-      form: patchQuestion(s.form, sectionId, questionId, (q) => ({
+      form: requireAuthForUploads(patchQuestion(s.form, sectionId, questionId, (q) => ({
         ...q,
         type,
         // clear type-specific fields then apply the new type's defaults
@@ -235,7 +246,7 @@ export const useFormBuilderStore = create<FormBuilderState>()((set) => ({
         optionNavigation: undefined,
         payment: undefined,
         ...typeDefaults(type),
-      })),
+      }))),
     })),
 
   reorderQuestions: (sectionId, questions) =>

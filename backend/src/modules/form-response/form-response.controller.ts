@@ -32,6 +32,7 @@ export async function submitResponse(req: Request, res: Response) {
 export async function uploadResponseFile(req: Request, res: Response) {
   const file = (req as any).file;
   if (!file) throw new ApiError(400, "No file provided");
+  if (!(req as any).user) throw new ApiError(401, "Sign in to upload files");
   // Uploads must target a live form; its owner's plan pays for the storage.
   const form = mongoose.isValidObjectId(req.params.formId)
     ? await Form.findOne({ _id: req.params.formId, isDeleted: false, status: "active" }).select("creatorId")

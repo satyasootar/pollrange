@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse, delay } from "msw";
@@ -6,6 +6,8 @@ import { PublicFormPage } from "./form";
 import { renderAtRoute } from "@/test/utils";
 import { server } from "@/test/msw/server";
 import { testState } from "@/test/msw/handlers";
+import { useAuthStore } from "@/store/use-auth-store";
+import type { User } from "@/types";
 import {
   makePublicForm,
   makeSection,
@@ -17,6 +19,18 @@ const API = "http://localhost:3030/api";
 const renderPage = () => renderAtRoute(<PublicFormPage />, { path: "/f/:shareToken", route: "/f/tok123" });
 
 describe("PublicFormPage", () => {
+  afterEach(() => useAuthStore.setState({ user: null }));
+
+  it("asks a signed-out respondent to sign in before picking a file", async () => {
+    testState.publicForm = makePublicForm({
+      sections: [makeSection([makeFormQuestion({ type: "file_upload", title: "Attachment", fileConfig: { maxFiles: 1, maxSizeMb: 5, allowedTypes: [] } })])],
+    });
+    renderPage();
+    await screen.findByText("Attachment");
+    await userEvent.click(document.querySelector('input[type="file"]') as HTMLInputElement);
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
   it("submits a valid response and shows the thank-you screen", async () => {
     renderPage();
     const input = await screen.findByPlaceholderText("Your answer");
@@ -73,6 +87,7 @@ describe("PublicFormPage", () => {
     testState.publicForm = makePublicForm({
       sections: [makeSection([makeFormQuestion({ type: "file_upload", isRequired: true, title: "Attachment", fileConfig: { maxFiles: 1, maxSizeMb: 5, allowedTypes: [] } })])],
     });
+    useAuthStore.setState({ user: { _id: "u1", name: "Asha", email: "a@x.dev" } as User });
     // Slow upload so we can observe the gated state deterministically.
     server.use(
       http.post(`${API}/form-responses/:formId/upload`, async () => {

@@ -442,6 +442,9 @@ export function FormQuestionEditor({
 
         {/* File upload config */}
         {q.type === "file_upload" && (
+          <p className="text-xs text-muted-foreground">Respondents must sign in to upload files, so this form requires sign-in.</p>
+        )}
+        {q.type === "file_upload" && (
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Max files</Label>

@@ -70,6 +70,8 @@ export function PublicFormPage() {
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<SubmitFormResult | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
+  // The sign-in gate opens either at submit (then submits) or on a file pick (then lets them pick again).
+  const submitAfterAuth = useRef(true);
   const visitedRef = useRef<Set<string>>(new Set());
   const pendingKey = `kollects_form_pending_${shareToken}`;
   const resumedRef = useRef(false);
@@ -230,6 +232,7 @@ export function PublicFormPage() {
     const next = computeNext();
     if (next === "submit") {
       if (form.responseMode === "authenticated" && !user) {
+        submitAfterAuth.current = true;
         setAuthOpen(true);
         return;
       }
@@ -307,6 +310,14 @@ export function PublicFormPage() {
                   formId={form.formId}
                   question={q}
                   value={answers[q._id] ?? {}}
+                  onUploadNeedsAuth={
+                    user
+                      ? undefined
+                      : () => {
+                          submitAfterAuth.current = false;
+                          setAuthOpen(true);
+                        }
+                  }
                   onChange={(patch) =>
                     setAnswers((prev) => {
                       const cur = prev[q._id] ?? {};
@@ -348,7 +359,7 @@ export function PublicFormPage() {
       <AuthGateDialog
         open={authOpen}
         onOpenChange={setAuthOpen}
-        onAuthenticated={() => doSubmit()}
+        onAuthenticated={() => submitAfterAuth.current && doSubmit()}
         googleRedirect={`/f/${shareToken}`}
         onBeforeGoogle={savePending}
       />
