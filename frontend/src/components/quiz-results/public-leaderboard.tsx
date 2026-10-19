@@ -155,7 +155,7 @@ export function PublicLeaderboard({
         aria-label="Leaderboard pages"
         className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5"
       >
-        <span className="text-xs text-muted-foreground">Ties share a rank · earlier submissions first</span>
+        <span className="text-xs text-muted-foreground">Same score? The faster time ranks higher</span>
         {pages > 1 && (
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" aria-label="Previous page" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>

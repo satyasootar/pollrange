@@ -1,16 +1,17 @@
 import mongoose, { Schema, type Types } from "mongoose";
 
 /**
- * A per-person quiz timer: created when the taker presses Start, so refreshing or opening a
- * second tab resumes the same deadline, and the server can enforce it on submit.
+ * A taker's server-side quiz start: created when they press Start (every quiz except a live one,
+ * which starts at the host's Start). Refreshing or opening a second tab resumes it, so time taken
+ * (the leaderboard tie-break) and any per-person deadline are measured on server clocks only.
  */
 export interface IQuizAttempt {
   formId: Types.ObjectId;
   sessionToken: string;
   respondentId?: Types.ObjectId;
   startedAt: Date;
-  /** startedAt + the time limit, capped at the quiz's own close time. */
-  endsAt: Date;
+  /** Per-person: startedAt + the time limit, capped at the quiz's close time. Untimed: the close time, if any. */
+  endsAt?: Date;
 }
 
 const quizAttemptSchema = new Schema<IQuizAttempt>(
@@ -19,7 +20,7 @@ const quizAttemptSchema = new Schema<IQuizAttempt>(
     sessionToken: { type: String, required: true },
     respondentId: { type: Schema.Types.ObjectId, ref: "User" },
     startedAt: { type: Date, required: true },
-    endsAt: { type: Date, required: true },
+    endsAt: Date,
   },
   { timestamps: true }
 );

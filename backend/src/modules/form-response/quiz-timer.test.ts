@@ -96,6 +96,23 @@ describe("submitResponse: per-person timer", () => {
   });
 });
 
+describe("submitResponse: untimed quiz", () => {
+  it("refuses a submit without pressing Start, so nobody dodges the time tie-break", async () => {
+    m(Form.findOne).mockResolvedValue(quiz());
+    attemptIs(null);
+    await expect(submitResponse("f", body() as any, meta)).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  it("records time taken from the server-side Start", async () => {
+    m(Form.findOne).mockResolvedValue(quiz());
+    attemptIs({ startedAt: new Date(Date.now() - 2 * MIN) });
+    await submitResponse("f", body() as any, meta);
+    const doc = m(FormResponse.create).mock.calls[0]![0];
+    expect(doc.timeTakenMs).toBeGreaterThanOrEqual(2 * MIN);
+    expect(doc.timeTakenMs).toBeLessThan(2 * MIN + 5_000);
+  });
+});
+
 describe("startQuizAttempt", () => {
   const formId = oid();
   const perPerson = (o: Record<string, unknown> = {}) => quiz({ _id: formId, quizTimer: { mode: "per_person", durationMinutes: 10 }, ...o });
@@ -117,6 +134,25 @@ describe("startQuizAttempt", () => {
     m(QuizAttempt.create).mockImplementation(async (doc: any) => doc);
     const res = await startQuizAttempt(String(formId), "s1");
     expect(res.endsAt.getTime()).toBe(closesAt.getTime());
+  });
+
+  it("starts an untimed quiz with no deadline, or the quiz's close time", async () => {
+    m(FormResponse.exists).mockResolvedValue(null);
+    m(QuizAttempt.create).mockImplementation(async (doc: any) => doc);
+    attemptIs(null);
+    m(Form.findOne).mockResolvedValue(quiz({ _id: formId }));
+    const open = await startQuizAttempt(String(formId), "s1");
+    expect(open.endsAt).toBeNull();
+    expect(open.startedAt.getTime()).toBeLessThanOrEqual(Date.now());
+
+    const closesAt = new Date(Date.now() + 30 * MIN);
+    m(Form.findOne).mockResolvedValue(quiz({ _id: formId, expiresAt: closesAt }));
+    expect((await startQuizAttempt(String(formId), "s2")).endsAt?.getTime()).toBe(closesAt.getTime());
+  });
+
+  it("refuses a live quiz: it starts at the host's Start", async () => {
+    m(Form.findOne).mockResolvedValue(quiz({ _id: formId, quizTimer: { mode: "live", durationMinutes: 5 } }));
+    await expect(startQuizAttempt(String(formId), "s1")).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it("refuses someone who already submitted", async () => {

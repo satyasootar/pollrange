@@ -69,15 +69,11 @@ export interface LeaderboardRow {
 }
 
 /**
- * Competition ranking ("1, 1, 3"): equal scores share a rank. Rows must already be
- * sorted by score desc (then submission time, which only orders rows within a tie).
+ * Unique ranks: a row's rank is its board position. Rows must already be in board order
+ * (score desc, then server-measured time taken, then submission), so equal scores rank by speed.
  */
-export function assignRanks<T extends { score: number }>(rows: T[]): (T & { rank: number })[] {
-  let rank = 0;
-  return rows.map((row, i) => {
-    if (i === 0 || row.score !== rows[i - 1]!.score) rank = i + 1;
-    return { ...row, rank };
-  });
+export function assignRanks<T>(rows: T[]): (T & { rank: number })[] {
+  return rows.map((row, i) => ({ ...row, rank: i + 1 }));
 }
 
 const displayName = (r: any): string => r.respondentId?.name || r.respondentName || "Anonymous";
@@ -97,12 +93,13 @@ function toRow(r: any, withEmail: boolean): LeaderboardRow {
 }
 
 /**
- * Board order: best score first; within a tie the fastest time, then the earliest submission
- * (untimed responses have no timeTakenMs and fall back to submission order).
- * Served by the (formId, score, timeTakenMs, submittedAt) index.
+ * Board order: best score first; within a tie the fastest time taken (start and submit are both
+ * server times), then the earliest submission, then _id so the order is total.
+ * Responses from before time was recorded have no timeTakenMs and fall back to submission order.
+ * Served by the (formId, score, timeTakenMs, submittedAt, _id) index.
  */
 const boardQuery = (formId: Types.ObjectId) =>
-  FormResponse.find({ formId, score: { $exists: true } }).sort({ score: -1, timeTakenMs: 1, submittedAt: 1 });
+  FormResponse.find({ formId, score: { $exists: true } }).sort({ score: -1, timeTakenMs: 1, submittedAt: 1, _id: 1 });
 
 async function topRows(formId: Types.ObjectId, limit: number, withEmail: boolean): Promise<(LeaderboardRow & { rank: number })[]> {
   const rows = await boardQuery(formId)
@@ -157,15 +154,16 @@ export function scoreStats(scoresDesc: number[], maxPoints: number, myScore?: nu
 }
 
 /** One page of the board; ranks come from the full score list so they're right at any offset. */
-async function pageRows(formId: Types.ObjectId, scoresDesc: number[], offset: number, limit: number) {
+async function pageRows(formId: Types.ObjectId, offset: number, limit: number) {
   const rows = await boardQuery(formId).skip(offset).limit(limit).select(ROW_FIELDS).populate("respondentId", "name").lean();
-  return rows.map((r: any) => ({ ...toRow(r, false), rank: rankIn(scoresDesc, r.score ?? 0) }));
+  return rows.map((r: any, i: number) => ({ ...toRow(r, false), rank: offset + i + 1 }));
 }
 
 /** 0-based position of a response on the board (its index in board order). */
 async function positionOf(formId: Types.ObjectId, scoresDesc: number[], mine: any) {
   const myScore = mine.score ?? 0;
-  const earlier = { submittedAt: { $lt: mine.submittedAt } };
+  // Same submission time: the smaller _id is ahead (boardQuery's last tie-break).
+  const earlier = { $or: [{ submittedAt: { $lt: mine.submittedAt } }, { submittedAt: mine.submittedAt, _id: { $lt: mine._id } }] };
   // Mirrors boardQuery's tie order; a missing timeTakenMs sorts before any value (MongoDB null order).
   const tieAhead =
     mine.timeTakenMs == null
@@ -244,10 +242,10 @@ export async function getPublicResults(shareToken: string, viewer: Viewer) {
     // thousands of responses. Cache per form if a single quiz grows past that.
     const scores = await allScores(form._id);
     const [rows, position] = await Promise.all([
-      pageRows(form._id, scores, 0, PUBLIC_PAGE_SIZE),
+      pageRows(form._id, 0, PUBLIC_PAGE_SIZE),
       mine ? positionOf(form._id, scores, mine) : undefined,
     ]);
-    if (mine) myRank = rankIn(scores, myScore);
+    if (position !== undefined) myRank = position + 1;
     leaderboard = {
       participants: scores.length,
       maxPoints,
@@ -290,7 +288,7 @@ export async function getPublicLeaderboardPage(shareToken: string, viewer: Viewe
   const safeLimit = Math.min(Math.max(1, Math.floor(limit) || PUBLIC_PAGE_SIZE), PUBLIC_PAGE_MAX);
   const safeOffset = Math.max(0, Math.floor(offset) || 0);
   const [scores, mine] = await Promise.all([allScores(form._id), findMine(form._id, viewer)]);
-  const rows = await pageRows(form._id, scores, safeOffset, safeLimit);
+  const rows = await pageRows(form._id, safeOffset, safeLimit);
   return { participants: scores.length, offset: safeOffset, entries: markMine(rows, mine) };
 }
 

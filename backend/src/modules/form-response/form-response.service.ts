@@ -12,7 +12,7 @@ import { sendSubmissionCopy } from "../../utils/receipt.js";
 import { pointsOf, settleExpiredForm, SUBMIT_GRACE_MS } from "../form/form-results.service.js";
 import { QuizAttempt } from "./quiz-attempt.model.js";
 
-/** This taker's per-person attempt (signed-in account or this browser's session token). */
+/** This taker's quiz attempt (signed-in account or this browser's session token). */
 function findAttempt(formId: unknown, sessionToken: string | undefined, respondentId: string | undefined) {
   const identity: Record<string, unknown>[] = [];
   if (respondentId) identity.push({ formId, respondentId });
@@ -21,22 +21,21 @@ function findAttempt(formId: unknown, sessionToken: string | undefined, responde
 }
 
 /**
- * Whose clock a timed quiz submission runs on: the host's live start, or the taker's own
- * attempt (whose deadline is enforced here). Null for untimed forms.
+ * Whose clock a quiz submission runs on: the host's live start, or the taker's own Start press
+ * (whose per-person deadline is enforced here). Both are server times, so time taken can't be faked.
+ * Null for forms that aren't quizzes.
  */
 async function quizClock(form: any, sessionToken: string, respondentId: string | undefined): Promise<{ startedAt: Date; endsAt: Date | undefined } | null> {
-  const mode = form.isQuiz ? form.quizTimer?.mode : undefined;
-  if (mode === "live") {
+  if (!form.isQuiz) return null;
+  if (form.quizTimer?.mode === "live") {
     if (!form.liveStartedAt) throw new ApiError(403, "The quiz hasn't started yet. Wait for the host to start it.");
     return { startedAt: form.liveStartedAt, endsAt: form.expiresAt ?? undefined };
   }
-  if (mode === "per_person") {
-    const attempt = await findAttempt(form._id, sessionToken, respondentId);
-    if (!attempt) throw new ApiError(403, "Press Start on the quiz before submitting.");
-    if (Date.now() > attempt.endsAt.getTime() + SUBMIT_GRACE_MS) throw new ApiError(410, "Your time for this quiz is up.");
-    return { startedAt: attempt.startedAt, endsAt: attempt.endsAt };
-  }
-  return null;
+  // Required even without a time limit: skipping Start would leave no time taken and dodge the tie-break.
+  const attempt = await findAttempt(form._id, sessionToken, respondentId);
+  if (!attempt) throw new ApiError(403, "Press Start on the quiz before submitting.");
+  if (attempt.endsAt && Date.now() > attempt.endsAt.getTime() + SUBMIT_GRACE_MS) throw new ApiError(410, "Your time for this quiz is up.");
+  return { startedAt: attempt.startedAt, endsAt: attempt.endsAt ?? undefined };
 }
 
 /** Time from the taker's start to submit, never more than their allowed time (grace submits count as on time). */
@@ -46,21 +45,28 @@ function timeTaken(clock: { startedAt: Date; endsAt: Date | undefined }, submitt
 }
 
 /**
- * Per-person timer: starts (or resumes) this taker's attempt. Idempotent: a refresh or a
- * second tab gets the same deadline back, so pressing Start twice never resets the clock.
+ * Starts (or resumes) this taker's attempt on a non-live quiz: the server-side start of their time
+ * taken, plus the deadline for a per-person limit. Idempotent: a refresh or a second tab gets the
+ * same start back, so pressing Start twice never resets the clock.
  */
 export async function startQuizAttempt(formId: string, sessionToken: string, respondentId?: string) {
   if (!mongoose.isValidObjectId(formId)) throw new ApiError(404, "Quiz not found");
   const form = await Form.findOne({ _id: formId, isDeleted: false });
   if (!form || !form.isQuiz) throw new ApiError(404, "Quiz not found");
-  const minutes = form.quizTimer?.mode === "per_person" ? form.quizTimer.durationMinutes : undefined;
-  if (!minutes) throw new ApiError(400, "This quiz has no per-person time limit");
+  const mode = form.quizTimer?.mode ?? "none";
+  if (mode === "live") throw new ApiError(400, "A live quiz starts when the host starts it");
+  const minutes = mode === "per_person" ? form.quizTimer?.durationMinutes : undefined;
+  if (mode === "per_person" && !minutes) throw new ApiError(400, "This quiz has no time limit set");
   await settleExpiredForm(form);
   const now = new Date();
   if (form.status !== "active" || (form.expiresAt && form.expiresAt <= now)) throw new ApiError(410, "This quiz has closed");
   if (form.responseMode === "authenticated" && !respondentId) throw new ApiError(401, "Sign in to start this quiz");
 
-  const shape = (a: { startedAt: Date; endsAt: Date }) => ({ startedAt: a.startedAt, endsAt: a.endsAt, serverTime: new Date() });
+  const shape = (a: { startedAt: Date; endsAt?: Date | null | undefined }) => ({
+    startedAt: a.startedAt,
+    endsAt: a.endsAt ?? null,
+    serverTime: new Date(),
+  });
   const existing = await findAttempt(form._id, sessionToken, respondentId);
   if (existing) return shape(existing);
 
@@ -69,11 +75,17 @@ export async function startQuizAttempt(formId: string, sessionToken: string, res
   });
   if (responded) throw new ApiError(403, "You have already submitted this quiz");
 
-  const limit = now.getTime() + minutes * 60_000;
   // The quiz's own close time still wins: nobody gets to answer after it shuts.
-  const endsAt = new Date(form.expiresAt ? Math.min(limit, form.expiresAt.getTime()) : limit);
+  const limit = minutes ? now.getTime() + minutes * 60_000 : Infinity;
+  const end = Math.min(limit, form.expiresAt?.getTime() ?? Infinity);
   try {
-    const attempt = await QuizAttempt.create({ formId: form._id, sessionToken, ...(respondentId ? { respondentId } : {}), startedAt: now, endsAt });
+    const attempt = await QuizAttempt.create({
+      formId: form._id,
+      sessionToken,
+      ...(respondentId ? { respondentId } : {}),
+      startedAt: now,
+      ...(Number.isFinite(end) ? { endsAt: new Date(end) } : {}),
+    });
     return shape(attempt);
   } catch (err: any) {
     // Two Start presses raced: return the one that won.

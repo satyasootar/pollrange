@@ -13,9 +13,9 @@ const m = (fn: unknown) => fn as ReturnType<typeof vi.fn>;
 const oid = () => new mongoose.Types.ObjectId();
 
 describe("assignRanks", () => {
-  it("uses competition ranking: ties share a rank and the next rank skips", () => {
-    const ranked = assignRanks([{ score: 9 }, { score: 7 }, { score: 7 }, { score: 4 }]);
-    expect(ranked.map((r) => r.rank)).toEqual([1, 2, 2, 4]);
+  it("gives unique ranks in board order: equal scores are already ordered by time taken", () => {
+    const ranked = assignRanks([{ score: 9 }, { score: 7, timeTakenMs: 40_000 }, { score: 7, timeTakenMs: 55_000 }, { score: 4 }]);
+    expect(ranked.map((r) => r.rank)).toEqual([1, 2, 3, 4]);
   });
 
   it("handles an empty board", () => {

@@ -251,6 +251,8 @@ describe("PublicFormPage", () => {
       await userEvent.click(screen.getByRole("button", { name: /start quiz/i }));
       expect(await screen.findByText("Alpha")).toBeInTheDocument();
       expect(screen.getAllByText(/question 1 of 1/i).length).toBeGreaterThan(0);
+      // Untimed too: the start is recorded on the server, so time taken (the tie-break) never trusts the browser.
+      expect(testState.attemptStarts).toBe(1);
     });
 
     it("does not ask for a name on a sign-in-required quiz (the account name is used)", async () => {
@@ -316,7 +318,7 @@ describe("PublicFormPage", () => {
       expect(screen.getByLabelText(/Rank 1: Grace Hopper/i)).toBeInTheDocument();
       expect(screen.getByText("#2")).toBeInTheDocument();
       expect(screen.getByText("You")).toBeInTheDocument();
-      expect(screen.getByText(/1 more point would have tied #1/i)).toBeInTheDocument();
+      expect(screen.getByText(/1 more point would have matched #1's score/i)).toBeInTheDocument();
       expect(screen.getByText(/0 of 1 correct/i)).toBeInTheDocument();
     });
 

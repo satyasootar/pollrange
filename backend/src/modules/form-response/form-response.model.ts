@@ -51,8 +51,8 @@ const formResponseSchema = new Schema<IFormResponse>(
 );
 
 formResponseSchema.index({ formId: 1, submittedAt: -1 });
-// Quiz leaderboard: top scores; ties go to the fastest time, then the earliest submission.
-formResponseSchema.index({ formId: 1, score: -1, timeTakenMs: 1, submittedAt: 1 });
+// Quiz leaderboard: top scores; ties go to the fastest time, then the earliest submission (_id makes it total).
+formResponseSchema.index({ formId: 1, score: -1, timeTakenMs: 1, submittedAt: 1, _id: 1 });
 
 // One response per identity per form — race-safe dedup backstop.
 formResponseSchema.index({ formId: 1, sessionToken: 1 }, { unique: true });

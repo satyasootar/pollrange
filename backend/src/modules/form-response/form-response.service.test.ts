@@ -6,6 +6,10 @@ vi.mock("../form/form.model.js", () => ({ Form: { findOne: vi.fn(), updateOne: v
 vi.mock("./form-response.model.js", () => ({ FormResponse: { findOne: vi.fn(), create: vi.fn(), updateOne: vi.fn() } }));
 vi.mock("../../socket/index.js", () => ({ emitFormAnalyticsUpdate: vi.fn() }));
 vi.mock("../billing/billing.service.js", () => ({ consume: vi.fn(), refund: vi.fn() }));
+// Every quiz taker has pressed Start (a server-side attempt) before submitting.
+vi.mock("./quiz-attempt.model.js", () => ({
+  QuizAttempt: { findOne: vi.fn(() => ({ lean: async () => ({ startedAt: new Date(Date.now() - 60_000) }) })) },
+}));
 
 import { Form } from "../form/form.model.js";
 import { FormResponse } from "./form-response.model.js";

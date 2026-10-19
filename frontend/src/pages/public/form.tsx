@@ -460,11 +460,12 @@ export function PublicFormPage() {
       setQueued(true); // the host's Start opens the quiz
       return;
     }
-    if (timerMode === "per_person") {
+    // Every non-live quiz records its start on the server: time taken (the leaderboard tie-break) never trusts this browser.
+    if (timerMode !== "live") {
       setStartingAttempt(true);
       try {
         const { endsAt, serverTime } = (await formPublicApi.startAttempt(form.formId, sessionToken)).data.data;
-        setAttempt({ endsAt, serverTime });
+        if (timerMode === "per_person" && endsAt) setAttempt({ endsAt, serverTime });
       } catch (err) {
         toastApiError(err);
         return;

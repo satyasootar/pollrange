@@ -236,7 +236,8 @@ export function QuizIntro(props: QuizIntroProps) {
             <Step n={++step} title="One attempt, results on this link">
               <Note>
                 {form.settings.releaseScoreImmediately ? "You'll see your score as soon as you submit. " : ""}
-                Come back to this page to see your rank and the leaderboard once results are published.
+                Come back to this page to see your rank and the leaderboard once results are published. Same score? The faster time ranks
+                higher, timed by our server from {timerMode === "live" ? "the host's Start" : "the moment you press Start"}.
               </Note>
             </Step>
           </ol>

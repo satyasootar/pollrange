@@ -29,7 +29,7 @@ function insight(score: number, stats: QuizScoreStats | undefined) {
   const diff = Math.round((score - stats.average) * 10) / 10;
   const vsAvg = diff === 0 ? "Right on the average." : `${Math.abs(diff)} pts ${diff > 0 ? "above" : "below"} the average.`;
   const next = stats.nextUp
-    ? ` ${stats.nextUp.gap} more ${stats.nextUp.gap === 1 ? "point" : "points"} would have tied #${stats.nextUp.rank}.`
+    ? ` ${stats.nextUp.gap} more ${stats.nextUp.gap === 1 ? "point" : "points"} would have matched #${stats.nextUp.rank}'s score.`
     : "";
   return vsAvg + next;
 }
