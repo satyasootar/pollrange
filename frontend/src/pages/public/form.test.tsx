@@ -319,7 +319,11 @@ describe("PublicFormPage", () => {
       expect(screen.getByText("#2")).toBeInTheDocument();
       expect(screen.getByText("You")).toBeInTheDocument();
       expect(screen.getByText(/1 more point would have matched #1's score/i)).toBeInTheDocument();
-      expect(screen.getByText(/0 of 1 correct/i)).toBeInTheDocument();
+      // Answer review lives in its own tab, one question at a time.
+      await userEvent.click(screen.getByRole("tab", { name: /review answers/i }));
+      expect(await screen.findByText(/0\/1 correct/i)).toBeInTheDocument();
+      expect(screen.getByText("Correct answer")).toBeInTheDocument();
+      expect(screen.getByText("Alpha")).toBeInTheDocument();
     });
 
     it("auto-submits the answers so far when the timer runs out", async () => {
