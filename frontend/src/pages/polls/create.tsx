@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Check } from "lucide-react";
@@ -8,6 +9,7 @@ import { StepQuestions } from "@/components/poll-builder/step-questions";
 import { StepReview } from "@/components/poll-builder/step-review";
 import { StepSuccess } from "@/components/poll-builder/step-success";
 import { BuilderChatDock } from "@/components/ai/builder-chat-dock";
+import { ImportPollDialog } from "@/components/poll-builder/import-poll-dialog";
 import { slideInRight } from "@/lib/animations";
 import { config } from "@/config/config";
 import { applyPollActions, pollBuilderState } from "@/lib/ai-builder-actions";
@@ -21,6 +23,8 @@ const STEPS = [
 export function CreatePollPage() {
   const { step } = usePollBuilderStore();
   const navigate = useNavigate();
+  // Settings reads the store only on mount (react-hook-form defaults), so remount it after an import.
+  const [imports, setImports] = useState(0);
 
   return (
     <div className="relative flex flex-1 overflow-hidden">
@@ -32,6 +36,7 @@ export function CreatePollPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <h1 className="text-xl font-semibold tracking-tight">Create Poll</h1>
+            {step !== 4 && <ImportPollDialog onImported={() => setImports((n) => n + 1)} />}
           </div>
           {step !== 4 && (
             <div className="flex items-center gap-0">
@@ -65,7 +70,7 @@ export function CreatePollPage() {
         {/* Step content */}
         <div className="flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
-            <motion.div key={step} variants={slideInRight} initial="hidden" animate="visible" exit="exit" className="h-full">
+            <motion.div key={`${step}-${imports}`} variants={slideInRight} initial="hidden" animate="visible" exit="exit" className="h-full">
               {step === 1 && <StepSettings />}
               {step === 2 && <StepQuestions />}
               {step === 3 && <StepReview />}

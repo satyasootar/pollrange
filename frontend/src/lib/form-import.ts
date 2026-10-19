@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeQuestion } from "@/store/use-form-builder-store";
 import { CHOICE_TYPES, GRID_TYPES, GRADABLE_TYPES } from "@/components/form-builder/question-types";
-import { newObjectId } from "@/lib/utils";
+import { newObjectId, toLocalDatetimeInput } from "@/lib/utils";
 import type { BuilderFormQuestion, BuilderFormSection, FormBuilderForm, FormQuestionType } from "@/types";
 
 /**
@@ -22,6 +22,13 @@ const QUESTION_TYPES = [
   "checkbox_grid",
   "file_upload",
 ] as const satisfies readonly FormQuestionType[];
+
+/** Optional close time as the builder's local "YYYY-MM-DDTHH:mm" (any date string Date can read is accepted). */
+export const closesAtSchema = z
+  .string()
+  .refine((v) => !Number.isNaN(new Date(v).getTime()), "closesAt must be a date like 2026-12-31T18:00")
+  .refine((v) => new Date(v).getTime() > Date.now(), "closesAt must be in the future")
+  .transform((v) => toLocalDatetimeInput(new Date(v)));
 
 const goTo = z.union([z.number().int().min(1), z.literal("submit")]);
 
@@ -72,6 +79,7 @@ export const formImportSchema = z
     description: z.string().max(1000).optional(),
     isQuiz: z.boolean().optional(),
     requireSignIn: z.boolean().optional(),
+    closesAt: closesAtSchema.optional(),
     quizTimer: z
       .object({ mode: z.enum(["none", "per_person", "live"]), durationMinutes: z.number().int().min(1).max(600).optional() })
       .refine((t) => t.mode === "none" || t.durationMinutes !== undefined, { message: "quizTimer needs durationMinutes" })
@@ -166,7 +174,7 @@ function describeJsonError(text: string, err: unknown): string {
  * AI chats often wrap JSON in ``` fences and double-escape quotes inside strings (\\" instead of \").
  * Fences are always stripped; the quote repair is only tried when the raw text fails to parse.
  */
-function parseLenient(text: string): unknown {
+export function parseLenient(text: string): unknown {
   const unfenced = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try {
     return JSON.parse(unfenced);
@@ -180,7 +188,7 @@ function parseLenient(text: string): unknown {
 }
 
 /** Pretty-prints import JSON (after the same fence stripping + quote repair). Throws a readable Error if unparseable. */
-export function formatFormJson(text: string): string {
+export function formatImportJson(text: string): string {
   return JSON.stringify(parseLenient(text), null, 2);
 }
 
@@ -191,6 +199,7 @@ export function parseFormImport(text: string, base: FormBuilderForm): FormBuilde
   if (!parsed.success) throw new Error(z.prettifyError(parsed.error));
   const f = parsed.data;
   const isQuiz = f.isQuiz ?? false;
+  const quizTimer = isQuiz && f.quizTimer ? f.quizTimer : { mode: "none" as const };
   const srcSections = f.sections ?? [{ questions: f.questions! }];
 
   const sections: BuilderFormSection[] = srcSections.map((s, si) => ({
@@ -234,13 +243,42 @@ export function parseFormImport(text: string, base: FormBuilderForm): FormBuilde
     description: f.description ?? "",
     isQuiz,
     responseMode: f.requireSignIn ? "authenticated" : "anonymous",
-    quizTimer: isQuiz && f.quizTimer ? f.quizTimer : { mode: "none" },
+    quizTimer,
+    // A live quiz ends when the host says so, never at a fixed time.
+    expiresAt: quizTimer.mode === "live" ? "" : (f.closesAt ?? ""),
     settings: { ...base.settings, ...f.settings },
     sections,
   };
 }
 
-export const FORM_IMPORT_PROMPT = `You are generating a form definition for the Kollects form builder. Output ONLY one JSON object (no markdown fences, no comments, no extra text) that follows this exact structure.
+export const FORM_IMPORT_PROMPT = `You are a friendly helper that builds a form for the Kollects form builder. First you interview the user, then you write the form as JSON that they paste into Kollects.
+
+HOW TO TALK TO THE USER
+- Ask ONE question per message, then stop and wait for the answer. Never put two questions in one message.
+- Use simple, everyday words. Never say JSON, boolean, field, schema, mode or setting names. Say "Should people log in first?", not "requireSignIn".
+- Keep each message short: a progress tag like (3/9), the question, then numbered choices when there are any. Mark the most common choice with "(recommended)".
+- The user can reply with a number, their own words, or "skip". "skip" means: use the recommended choice.
+- If an answer is unclear, ask about that one thing again in different words.
+- Skip questions that don't apply (the quiz-only ones for a normal form) and don't number them.
+- Start with a one-line greeting, then go straight to question 1.
+
+THE INTERVIEW (in this order, settings first, then the topic)
+1. Is this a quiz with right answers and a score, or a normal form (survey, sign-up, feedback, registration)?
+2. Should people log in before filling it? 1) No, anyone with the link (recommended) 2) Yes, they must log in (one answer per account; for a quiz, their account name goes on the leaderboard).
+3. Quiz only: is there a time limit? 1) No time limit (recommended) 2) Each person gets their own timer that starts when they press Start 3) Live: you press Start and everyone's timer runs together. For 2 or 3, ask next how many minutes (1-600).
+4. Quiz only: should each person see their score right after they submit? 1) Yes (recommended) 2) No, only when you publish the results.
+5. Quiz only, and only for a live quiz or a quiz with a closing time: should the results and leaderboard go public automatically when time is up? 1) No, I'll publish them myself (recommended) 2) Yes, automatically.
+6. Should it stop accepting answers on a certain date and time? 1) No (recommended) 2) Yes. Ask for the date and time. Skip this for a live quiz.
+7. Normal form only: should people be limited to one answer each, and should their email be collected? Offer 1) No to both (recommended) 2) One answer each 3) Collect email 4) Both.
+8. What is it about, and who will fill it in? (The topic. Ask for anything that helps: subject, audience, level, purpose.)
+9. How many questions, and any must-have questions or question types? Suggest a number that fits (for example 10 for a quiz). For a quiz also ask the difficulty: easy, medium or hard.
+10. What message should people see after they submit? Offer a suggested message based on the topic as the recommended choice.
+
+AFTER THE INTERVIEW
+- Show a short plain-language summary (type, login, timer, results, closing time, topic, number of questions) and ask "Shall I create it?". Change anything they correct.
+- When they say yes, write the questions yourself from the topic: clear wording, sensible question types, realistic options. For a quiz, every gradable question gets exactly the right "correct" answer(s) and a short "feedback". Use several sections (pages) only for long forms or when the topic splits naturally.
+- Then reply with ONLY the JSON object described below inside one json code block, followed by one line: "Copy this and paste it into Import JSON in Kollects."
+- If they later ask for changes, reply with the complete updated JSON again, never just the changed part.
 
 STRICT JSON RULES (the importer rejects anything else)
 - Must pass JSON.parse as-is: double-quoted keys and strings, no trailing commas, no comments, no single-quoted strings.
@@ -255,9 +293,10 @@ TOP LEVEL
   "title": string,                 // required, max 200 chars
   "description": string,           // optional, max 1000 chars
   "isQuiz": boolean,               // optional, default false. true = graded quiz (see QUIZ below)
-  "requireSignIn": boolean,        // optional, default false. true = respondents must sign in (forced on if any file_upload question exists)
-  "quizTimer": {                   // optional, quizzes only. Omit for no time limit
-    "mode": "none" | "per_person" | "live", // per_person: each taker gets N minutes from pressing Start. live: the host starts one timer for everyone
+  "requireSignIn": boolean,        // optional, default false. true = respondents must sign in (forced on if any file_upload question exists). Sign-in quizzes show account names on the leaderboard; otherwise takers type a display name
+  "closesAt": "YYYY-MM-DDTHH:mm",  // optional, local time in the future. The form stops accepting answers then. Ignored for live quizzes
+  "quizTimer": {                   // optional, quizzes only. Omit for no time limit (see QUIZ TIMER below)
+    "mode": "none" | "per_person" | "live",
     "durationMinutes": number      // 1-600, required unless mode is "none"
   },
   "settings": {                    // optional, every key optional
@@ -267,7 +306,7 @@ TOP LEVEL
     "showProgressBar": boolean,        // default true
     "shuffleQuestions": boolean,       // default false
     "releaseScoreImmediately": boolean,// quiz only, default true: show each respondent their score right after submitting
-    "autoPublishResults": boolean,     // quiz only, default false: publish the leaderboard automatically when the quiz timer ends (the timer itself is set in the builder)
+    "autoPublishResults": boolean,     // quiz only, default false: publish results + leaderboard automatically when a live quiz ends or "closesAt" passes. Otherwise the creator publishes them by hand
     "confirmationMessage": string      // shown after submit
   },
   "sections": [ SECTION, ... ]     // use "sections" for multi-page forms...
@@ -322,6 +361,12 @@ QUIZ (only when "isQuiz": true; applies to multiple_choice, checkboxes, dropdown
 - "feedback": string            // optional explanation shown with the result
 Non-gradable types (paragraph, scales, grids, dates, files) may appear in a quiz but carry no points.
 
+QUIZ TIMER (quizzes only; pick the mode that matches the request)
+- "none"        no time limit. Add "closesAt" if the quiz should stop at a fixed time.
+- "per_person"  each taker gets "durationMinutes" from the moment THEY press Start (a refresh does not reset it). "closesAt" is still an optional hard stop for everyone.
+- "live"        the creator presses Start on the quiz dashboard and everyone's "durationMinutes" timer runs together; people joining late get the time left. Do not set "closesAt".
+When time runs out, answers given so far are submitted automatically. On the leaderboard, equal scores are ordered by the faster time.
+
 EXAMPLE
 {
   "title": "Team Offsite Survey",
@@ -352,6 +397,8 @@ QUIZ EXAMPLE (single page)
 {
   "title": "Geography Quiz",
   "isQuiz": true,
+  "quizTimer": { "mode": "per_person", "durationMinutes": 10 },
+  "settings": { "releaseScoreImmediately": true, "autoPublishResults": false },
   "questions": [
     { "type": "multiple_choice", "title": "Capital of France?", "required": true, "options": ["Paris", "Rome", "Berlin"], "correct": ["Paris"], "points": 2 },
     { "type": "checkboxes", "title": "Which are in Asia?", "options": ["India", "Japan", "Peru"], "correct": ["India", "Japan"] },
@@ -359,7 +406,7 @@ QUIZ EXAMPLE (single page)
   ]
 }
 
-Before answering, re-check the STRICT JSON RULES above, especially: no double quotes inside text values.
+Before writing the JSON, re-check the STRICT JSON RULES above, especially: no double quotes inside text values.
 
-Now create a form for the following request:
+Start now: greet the user in one line and ask question 1.
 `;

@@ -3,21 +3,31 @@ import { FileJson, Copy, Upload, Wand2, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useFormBuilderStore } from "@/store/use-form-builder-store";
-import { FORM_IMPORT_PROMPT, formatFormJson, parseFormImport } from "@/lib/form-import";
+import { formatImportJson } from "@/lib/form-import";
 import { cn } from "@/lib/utils";
 
 /** Pretty-printed when it parses; otherwise left as-is so the user can fix it. */
 const tryFormat = (text: string) => {
   try {
-    return formatFormJson(text);
+    return formatImportJson(text);
   } catch {
     return text;
   }
 };
 
-/** Replace the builder's form with one pasted/uploaded as JSON (typically AI-generated from FORM_IMPORT_PROMPT). */
-export function ImportFormDialog() {
+interface ImportJsonDialogProps {
+  entity: "form" | "poll";
+  /** AI prompt describing the accepted JSON. */
+  prompt: string;
+  /** Apply the JSON to the builder. Throws an Error with a readable message when it's invalid. */
+  onImport: (json: string) => void;
+  placeholder: string;
+  /** The prompt makes the AI interview the user step by step instead of expecting a description up front. */
+  interview?: boolean;
+}
+
+/** Replace a builder's content with JSON pasted/uploaded by the user (typically AI-generated from `prompt`). */
+export function ImportJsonDialog({ entity, prompt, onImport, placeholder, interview = false }: ImportJsonDialogProps) {
   const [open, setOpen] = useState(false);
   const [json, setJson] = useState("");
   const [error, setError] = useState("");
@@ -31,7 +41,7 @@ export function ImportFormDialog() {
 
   const handleFormat = () => {
     try {
-      update(formatFormJson(json));
+      update(formatImportJson(json));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -39,26 +49,28 @@ export function ImportFormDialog() {
 
   const copyPrompt = async () => {
     try {
-      await navigator.clipboard.writeText(FORM_IMPORT_PROMPT);
-      toast.success("Prompt copied. Paste it into any AI chat and add what your form is about.");
+      await navigator.clipboard.writeText(prompt);
+      toast.success(
+        interview
+          ? `Prompt copied. Paste it into any AI chat and answer its questions about your ${entity}.`
+          : `Prompt copied. Paste it into any AI chat and add what your ${entity} is about.`
+      );
     } catch {
       toast.error("Couldn't copy. Select the prompt text and copy it manually.");
     }
   };
 
   const handleImport = () => {
-    const st = useFormBuilderStore.getState();
     try {
-      st.setForm(parseFormImport(json, st.form));
+      onImport(json);
     } catch (e) {
       setError((e as Error).message);
       return;
     }
-    st.setStep(2);
     setOpen(false);
     setJson("");
     setError("");
-    toast.success("Form imported. Review the questions, then continue.");
+    toast.success(`${entity === "form" ? "Form" : "Poll"} imported. Check the settings, then continue to the questions.`);
   };
 
   return (
@@ -69,16 +81,18 @@ export function ImportFormDialog() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Import form from JSON</DialogTitle>
+            <DialogTitle>Import {entity} from JSON</DialogTitle>
             <DialogDescription>
-              Copy the AI prompt, paste it into ChatGPT, Claude or Gemini with a description of your form, then paste the JSON
-              it returns below. Importing replaces everything currently in the builder.
+              {interview
+                ? `Copy the AI prompt and paste it into ChatGPT, Claude or Gemini. The AI asks you a few simple questions one at a time, then writes your ${entity}. Paste the JSON it returns below.`
+                : `Copy the AI prompt, paste it into ChatGPT, Claude or Gemini with a description of your ${entity}, then paste the JSON it returns below.`}{" "}
+              Importing replaces everything currently in the builder.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2 border border-border bg-muted/30 p-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">1. AI prompt (describes the accepted format)</p>
+              <p className="text-sm font-medium">1. AI prompt</p>
               <Button variant="outline" size="sm" onClick={copyPrompt}>
                 <Copy className="h-4 w-4" /> Copy prompt
               </Button>
@@ -86,7 +100,7 @@ export function ImportFormDialog() {
             <details className="text-xs">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Show prompt</summary>
               <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap border border-border bg-background p-2 font-mono text-[11px]">
-                {FORM_IMPORT_PROMPT}
+                {prompt}
               </pre>
             </details>
           </div>
@@ -157,7 +171,7 @@ export function ImportFormDialog() {
                 autoCapitalize="off"
                 autoCorrect="off"
                 autoComplete="off"
-                placeholder={'{\n  "title": "My form",\n  "questions": [ ... ]\n}'}
+                placeholder={placeholder}
                 aria-invalid={!!error}
                 aria-describedby={error ? "import-json-error" : undefined}
                 className="min-w-0 flex-1 resize-none overflow-auto whitespace-pre bg-transparent px-3 py-3 outline-none [tab-size:2] placeholder:text-muted-foreground/70"

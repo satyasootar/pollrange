@@ -24,10 +24,10 @@ export function CreateFormPage() {
   const { step, successData, reset } = useFormBuilderStore();
   const navigate = useNavigate();
 
-  // Start a fresh builder whenever the create page mounts.
+  // Keep an unpublished draft across remounts (back/forward, hot reload); only clear one that was already published.
+  // The edit page clears its own state on the way out.
   useEffect(() => {
-    reset();
-    return () => reset();
+    if (useFormBuilderStore.getState().successData) reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

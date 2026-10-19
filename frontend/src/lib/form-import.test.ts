@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
-import { FORM_IMPORT_PROMPT, formatFormJson, parseFormImport } from "./form-import";
+import { FORM_IMPORT_PROMPT, formatImportJson, parseFormImport } from "./form-import";
 
 const base = () => useFormBuilderStore.getState().form;
 const parse = (obj: unknown) => parseFormImport(JSON.stringify(obj), base());
@@ -41,6 +41,16 @@ describe("parseFormImport", () => {
     expect(sa!.answerKey).toEqual({ correctText: "Pacific", feedback: "The Pacific covers about a third of Earth." });
   });
 
+  it("maps the quiz timer and close time; a live quiz ignores closesAt", () => {
+    const f = parseFormImport(promptExamples()[1]!, base());
+    expect(f.quizTimer).toEqual({ mode: "per_person", durationMinutes: 10 });
+    const q = [{ type: "paragraph", title: "Why?" }];
+    expect(parse({ title: "x", closesAt: "2099-01-31T18:30", questions: q }).expiresAt).toBe("2099-01-31T18:30");
+    const live = parse({ title: "x", isQuiz: true, closesAt: "2099-01-31T18:30", quizTimer: { mode: "live", durationMinutes: 5 }, questions: q });
+    expect(live.expiresAt).toBe("");
+    expect(() => parse({ title: "x", closesAt: "2000-01-01T00:00", questions: q })).toThrow(/future/);
+  });
+
   it("repairs AI-style double-escaped quotes and strips ``` fences", () => {
     // Raw text as AI chats emit it: \\" inside strings, wrapped in a json fence.
     const text = String.raw`${"```"}json
@@ -53,10 +63,10 @@ ${"```"}`;
   });
 
   it("pretty-prints minified, double-escaped AI output for the editor", () => {
-    const pretty = formatFormJson(String.raw`{"title":"JS \\"quiz\\"","questions":[{"type":"paragraph","title":"Why?"}]}`);
+    const pretty = formatImportJson(String.raw`{"title":"JS \\"quiz\\"","questions":[{"type":"paragraph","title":"Why?"}]}`);
     expect(pretty.split("\n").length).toBeGreaterThan(5);
     expect(JSON.parse(pretty).title).toBe('JS "quiz"');
-    expect(() => formatFormJson("{ nope")).toThrow(/valid JSON/);
+    expect(() => formatImportJson("{ nope")).toThrow(/valid JSON/);
   });
 
   it("rejects bad input with readable errors", () => {
