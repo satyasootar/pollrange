@@ -39,6 +39,9 @@ const formResponseSchema = new Schema<IFormResponse>(
       },
     score: Number,
     totalPoints: Number,
+    // Timed quizzes: when this taker's clock started (their Start, or the host's live start) and how long they took.
+    startedAt: Date,
+    timeTakenMs: Number,
     isComplete: { type: Boolean, required: true },
     receipt: receiptStatusSchema,
     receiptHistory: { type: [receiptStatusSchema], default: undefined },
@@ -48,8 +51,8 @@ const formResponseSchema = new Schema<IFormResponse>(
 );
 
 formResponseSchema.index({ formId: 1, submittedAt: -1 });
-// Quiz leaderboard: top scores, earliest submission first on ties.
-formResponseSchema.index({ formId: 1, score: -1, submittedAt: 1 });
+// Quiz leaderboard: top scores; ties go to the fastest time, then the earliest submission.
+formResponseSchema.index({ formId: 1, score: -1, timeTakenMs: 1, submittedAt: 1 });
 
 // One response per identity per form — race-safe dedup backstop.
 formResponseSchema.index({ formId: 1, sessionToken: 1 }, { unique: true });

@@ -73,6 +73,7 @@ function defaultForm(): FormBuilderForm {
     slug: "",
     branding: { useKit: true },
     isQuiz: false,
+    quizTimer: { mode: "none" },
     expiresAt: "",
     responseMode: "anonymous",
     settings: { ...defaultSettings },

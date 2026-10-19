@@ -23,6 +23,10 @@ export const formPublicApi = {
       params: { offset, limit, ...(sessionToken ? { sessionToken } : {}) },
     }),
 
+  /** Per-person timer: start (or resume) this taker's attempt. */
+  startAttempt: (formId: string, sessionToken: string) =>
+    api.post<{ data: { startedAt: string; endsAt: string; serverTime: string } }>(`/form-responses/${formId}/attempt`, { sessionToken }),
+
   submit: (formId: string, payload: SubmitFormResponsePayload) =>
     api.post<{ data: SubmitFormResult }>(`/form-responses/${formId}`, payload),
 

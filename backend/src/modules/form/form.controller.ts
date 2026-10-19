@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import * as FormService from "./form.service.js";
 import * as FormResultsService from "./form-results.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
-import { createFormSchema, updateFormSchema, publishFormSchema, reopenFormSchema } from "./form.validation.js";
+import { startLiveQuizSchema, extendLiveQuizSchema, createFormSchema, updateFormSchema, publishFormSchema, reopenFormSchema } from "./form.validation.js";
 import { uploadBufferToCloudinary } from "../../config/cloudinary.js";
 import { ApiError } from "../../utils/ApiError.js";
 
@@ -82,6 +82,26 @@ export async function getLeaderboard(req: Request, res: Response) {
   const user = (req as any).user;
   const board = await FormResultsService.getCreatorLeaderboard(user._id.toString(), req.params.formId as string);
   return res.status(200).json(new ApiResponse(200, board, "Leaderboard fetched successfully"));
+}
+
+export async function startLiveQuiz(req: Request, res: Response) {
+  const user = (req as any).user;
+  const { durationMinutes } = startLiveQuizSchema.parse(req.body ?? {});
+  const form = await FormService.startLiveQuiz(user._id.toString(), req.params.formId as string, durationMinutes);
+  return res.status(200).json(new ApiResponse(200, form, "Live quiz started"));
+}
+
+export async function extendLiveQuiz(req: Request, res: Response) {
+  const user = (req as any).user;
+  const { minutes } = extendLiveQuizSchema.parse(req.body);
+  const form = await FormService.extendLiveQuiz(user._id.toString(), req.params.formId as string, minutes);
+  return res.status(200).json(new ApiResponse(200, form, "Time added"));
+}
+
+export async function endLiveQuiz(req: Request, res: Response) {
+  const user = (req as any).user;
+  const form = await FormService.endLiveQuiz(user._id.toString(), req.params.formId as string);
+  return res.status(200).json(new ApiResponse(200, form, "Live quiz ended"));
 }
 
 export async function closeForm(req: Request, res: Response) {

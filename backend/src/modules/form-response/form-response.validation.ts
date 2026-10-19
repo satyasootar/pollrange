@@ -52,6 +52,8 @@ export const formResponseZodSchema = z.object({
   payment: paymentSnapshotSchema,
   score: z.number().optional(),
   totalPoints: z.number().optional(),
+  startedAt: z.date().optional(),
+  timeTakenMs: z.number().optional(),
   isComplete: z.boolean(),
   submittedAt: z.date(),
   receipt: receiptStatusZod,
@@ -83,6 +85,8 @@ export const submitFormResponseSchema = z.object({
   answers: z.array(submitAnswerSchema).min(1),
   isComplete: z.boolean().default(true),
 });
+
+export const startAttemptSchema = z.object({ sessionToken: z.string().min(1) });
 
 export type ISubmitFormResponse = z.infer<typeof submitFormResponseSchema>;
 export type ISubmitAnswer = z.infer<typeof submitAnswerSchema>;

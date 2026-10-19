@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import * as FormResponseService from "./form-response.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
-import { submitFormResponseSchema } from "./form-response.validation.js";
+import { startAttemptSchema, submitFormResponseSchema } from "./form-response.validation.js";
 import { uploadBufferToCloudinary } from "../../config/cloudinary.js";
 import crypto from "crypto";
 import mongoose from "mongoose";
@@ -26,6 +26,14 @@ export async function submitResponse(req: Request, res: Response) {
   });
 
   return res.status(201).json(new ApiResponse(201, response, "Response submitted successfully"));
+}
+
+/** Per-person quiz timer: start (or resume) this taker's attempt. */
+export async function startAttempt(req: Request, res: Response) {
+  const { sessionToken } = startAttemptSchema.parse(req.body);
+  const user = (req as any).user;
+  const attempt = await FormResponseService.startQuizAttempt(req.params.formId as string, sessionToken, user?._id?.toString());
+  return res.status(200).json(new ApiResponse(200, attempt, "Quiz attempt started"));
 }
 
 /** Respondent file-upload for a `file_upload` question — returns the CDN URL + metadata. */

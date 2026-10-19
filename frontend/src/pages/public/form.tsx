@@ -19,6 +19,8 @@ import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { BrandFooter, BrandHeader, BrandThankYou } from "@/components/brand/brand-chrome";
 import { QuizResultScreen } from "@/components/quiz-results/quiz-result-screen";
 import { useCountdown } from "@/hooks/use-countdown";
+import { useQuizLiveSocket } from "@/hooks/use-quiz-live";
+import { formPublicApi } from "@/api/form-public.api";
 import { QuizIntro } from "@/components/form-public/quiz-intro";
 import {
   QuizNavigatorSheet,
@@ -28,7 +30,7 @@ import {
   type QuizNavSection,
 } from "@/components/form-public/quiz-progress";
 import { GRADABLE_TYPES } from "@/components/form-builder/question-types";
-import type { FormQuestion, FormSection, FormAnswerPayload, PublicBrand, SubmitFormResult } from "@/types";
+import type { FormQuestion, FormSection, FormAnswerPayload, PublicBrand, QuizLiveState, SubmitFormResult } from "@/types";
 
 type AnswerMap = Record<string, AnswerDraft>;
 
@@ -110,6 +112,13 @@ export function PublicFormPage() {
   const afterAuthRef = useRef<"submit" | "start" | "none">("submit");
   // Quiz: instructions page first, then the questions.
   const [started, setStarted] = useState(false);
+  // Per-person timer started in this visit (a refresh resumes from form.attempt instead).
+  const [attempt, setAttempt] = useState<{ endsAt: string; serverTime: string } | null>(null);
+  const [startingAttempt, setStartingAttempt] = useState(false);
+  // Live quiz: the host's latest push (start / +time / end), newer than the loaded form.
+  const [livePush, setLivePush] = useState<QuizLiveState | null>(null);
+  // Live quiz: pressed "I'm ready" in the lobby, so they go straight in when the host starts.
+  const [queued, setQueued] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   // Question numbers still unanswered when the taker hits Submit (opens the confirm dialog).
   const [missing, setMissing] = useState<number[] | null>(null);
@@ -131,17 +140,6 @@ export function PublicFormPage() {
   useEffect(() => {
     if (currentSection) visitedRef.current.add(currentSection._id);
   }, [currentSection]);
-
-  // Quiz section change: bring the target question (from the navigator) or the section's first question into view.
-  useEffect(() => {
-    if (!form?.isQuiz || !started) return;
-    const id = pendingScrollRef.current ?? sections[sectionIndex]?.questions[0]?._id;
-    pendingScrollRef.current = null;
-    if (!id) return;
-    const t = setTimeout(() => scrollToQuestion(id), 50);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sectionIndex]);
 
   // Resume after Google auth redirect.
   useEffect(() => {
@@ -215,8 +213,35 @@ export function PublicFormPage() {
     if (canSubmit) doSubmit(answers, true);
   };
 
-  const timerRunning = !!form?.isQuiz && form.status === "active" && !form.alreadyResponded && !submitted;
-  const remaining = useCountdown(timerRunning ? form?.expiresAt : undefined, form?.serverTime, handleTimeUp);
+  // ── Quiz timing ── the server is the only clock; every deadline comes with its serverTime.
+  const timerMode = form?.isQuiz ? (form.quizTimer?.mode ?? "none") : "none";
+  const takingAllowed = !!form?.isQuiz && form.status === "active" && !form.alreadyResponded && !submitted;
+  useQuizLiveSocket(timerMode === "live" && takingAllowed ? form?.formId : undefined, setLivePush);
+  const liveStartedAt = livePush?.startedAt ?? form?.liveStartedAt;
+  const liveState = timerMode !== "live" ? null : livePush?.state === "ended" ? "ended" : liveStartedAt ? "running" : "waiting";
+  const myAttempt = attempt ?? (form?.attempt && form.serverTime ? { endsAt: form.attempt.endsAt, serverTime: form.serverTime } : null);
+  // In the questions: pressed Start, resumed a per-person attempt, or was waiting in the lobby when the host started.
+  const inQuiz = started || (timerMode === "per_person" && !!form?.attempt) || (queued && liveState === "running");
+  const deadline =
+    timerMode === "per_person"
+      ? inQuiz ? myAttempt?.endsAt : form?.expiresAt
+      : timerMode === "live"
+        ? liveStartedAt ? (livePush?.endsAt ?? form?.expiresAt) : undefined
+        : form?.expiresAt;
+  const clockServerTime =
+    timerMode === "per_person" && inQuiz ? myAttempt?.serverTime : timerMode === "live" && livePush ? livePush.serverTime : form?.serverTime;
+  const remaining = useCountdown(takingAllowed ? deadline ?? undefined : undefined, clockServerTime, handleTimeUp);
+
+  // Quiz section change: bring the target question (from the navigator) or the section's first question into view.
+  useEffect(() => {
+    if (!form?.isQuiz || !inQuiz) return;
+    const id = pendingScrollRef.current ?? sections[sectionIndex]?.questions[0]?._id;
+    pendingScrollRef.current = null;
+    if (!id) return;
+    const t = setTimeout(() => scrollToQuestion(id), 50);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionIndex]);
 
   if (isLoading) {
     return (
@@ -241,7 +266,10 @@ export function PublicFormPage() {
   // Quizzes keep the same link for results: score, then the leaderboard once it's published.
   if (form.isQuiz && timeoutPhase === "submitting" && !submitted)
     return <FormStateScreen icon="clock" title="Time's up!" message="Submitting your answers…" brand={form.brand} />;
-  if (form.isQuiz && (submitted || form.alreadyResponded || timeoutPhase === "ended" || form.status !== "active")) {
+  if (
+    form.isQuiz &&
+    (submitted || form.alreadyResponded || timeoutPhase === "ended" || form.status !== "active" || (liveState === "ended" && !inQuiz))
+  ) {
     return (
       <QuizResultScreen
         form={form}
@@ -426,13 +454,34 @@ export function PublicFormPage() {
     </motion.div>
   );
 
+  // Start pressed (details already validated by the intro).
+  const beginQuiz = async () => {
+    if (liveState === "waiting") {
+      setQueued(true); // the host's Start opens the quiz
+      return;
+    }
+    if (timerMode === "per_person") {
+      setStartingAttempt(true);
+      try {
+        const { endsAt, serverTime } = (await formPublicApi.startAttempt(form.formId, sessionToken)).data.data;
+        setAttempt({ endsAt, serverTime });
+      } catch (err) {
+        toastApiError(err);
+        return;
+      } finally {
+        setStartingAttempt(false);
+      }
+    }
+    setStarted(true);
+  };
+
   const authGate = (
     <AuthGateDialog
       open={authOpen}
       onOpenChange={setAuthOpen}
       onAuthenticated={() => {
         if (afterAuthRef.current === "submit") doSubmit();
-        else if (afterAuthRef.current === "start") setStarted(true);
+        else if (afterAuthRef.current === "start") void beginQuiz();
       }}
       googleRedirect={`/f/${shareToken}`}
       onBeforeGoogle={savePending}
@@ -441,7 +490,7 @@ export function PublicFormPage() {
 
   if (form.isQuiz) {
     const signInRequired = form.responseMode === "authenticated" && !user;
-    if (!started) {
+    if (!inQuiz) {
       return (
         <>
           <QuizIntro
@@ -450,6 +499,11 @@ export function PublicFormPage() {
             totalPoints={allQuestions.reduce((sum, q) => sum + (GRADABLE_TYPES.includes(q.type) ? q.points ?? 0 : 0), 0)}
             hasMultiSelect={allQuestions.some((q) => q.type === "checkboxes" || q.type === "checkbox_grid")}
             remaining={remaining}
+            timerMode={timerMode}
+            durationMinutes={form.quizTimer?.durationMinutes}
+            liveState={liveState === "ended" ? null : liveState}
+            queued={queued}
+            starting={startingAttempt}
             askName={askName}
             name={respondentName}
             onNameChange={setRespondentName}
@@ -464,7 +518,7 @@ export function PublicFormPage() {
                 setAuthOpen(true);
                 return;
               }
-              setStarted(true);
+              void beginQuiz();
             }}
           />
           {authGate}

@@ -157,3 +157,26 @@ export function useUnpublishResults(formId: string) {
     onError: (err) => toastApiError(err),
   });
 }
+
+/** Live quiz host controls. Each refreshes the form so the control card shows the new state. */
+function useLiveQuizMutation<T>(formId: string, fn: (arg: T) => Promise<unknown>, success: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: formKeys.detail(formId) });
+      qc.invalidateQueries({ queryKey: formKeys.leaderboard(formId) });
+      toast.success(success);
+    },
+    onError: (err) => toastApiError(err),
+  });
+}
+
+export const useStartLiveQuiz = (formId: string) =>
+  useLiveQuizMutation(formId, (minutes: number | undefined) => formsApi.liveStart(formId, minutes), "Quiz started for everyone.");
+
+export const useExtendLiveQuiz = (formId: string) =>
+  useLiveQuizMutation(formId, (minutes: number) => formsApi.liveExtend(formId, minutes), "Time added for everyone.");
+
+export const useEndLiveQuiz = (formId: string) =>
+  useLiveQuizMutation(formId, () => formsApi.liveEnd(formId), "Quiz ended. Answers so far are being submitted.");

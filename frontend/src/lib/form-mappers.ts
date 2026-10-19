@@ -55,7 +55,9 @@ export function formEntityToBuilder(form: Form): FormBuilderForm {
     coverImageUrl: form.coverImageUrl,
     branding: { ...form.branding, useKit: form.branding?.useKit ?? true },
     isQuiz: form.isQuiz,
-    expiresAt: form.expiresAt ? toLocalDatetimeInput(new Date(form.expiresAt)) : "",
+    // A live quiz's end time belongs to the host's Start, not the editor.
+    expiresAt: form.expiresAt && form.quizTimer?.mode !== "live" ? toLocalDatetimeInput(new Date(form.expiresAt)) : "",
+    quizTimer: form.quizTimer ?? { mode: "none" },
     responseMode: form.responseMode,
     settings: {
       collectEmail: form.settings.collectEmail,

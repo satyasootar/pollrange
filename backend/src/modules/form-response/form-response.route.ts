@@ -14,6 +14,7 @@ const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
 
 router.get("/history", verifyJWT, FormResponseController.getUserHistory);
 router.post("/:formId", responseRateLimiter, optionalAuth, FormResponseController.submitResponse);
+router.post("/:formId/attempt", responseRateLimiter, optionalAuth, FormResponseController.startAttempt);
 router.post("/:formId/upload", responseRateLimiter, optionalAuth, requireCloudinary, uploadFile, FormResponseController.uploadResponseFile);
 
 export default router;

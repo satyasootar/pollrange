@@ -506,6 +506,25 @@ export interface FormSettings {
   autoPublishResults: boolean;
 }
 
+/**
+ * Quiz timing. none: optional fixed close time (expiresAt). per_person: each taker gets
+ * durationMinutes from pressing Start. live: the host starts one shared timer for everyone.
+ */
+export type QuizTimerMode = "none" | "per_person" | "live";
+export interface QuizTimer {
+  mode: QuizTimerMode;
+  durationMinutes?: number;
+}
+
+/** Pushed over the quiz socket room when the host starts, adds time or ends a live quiz. */
+export interface QuizLiveState {
+  formId: string;
+  state: "waiting" | "running" | "ended";
+  startedAt?: string | null;
+  endsAt?: string | null;
+  serverTime: string;
+}
+
 export interface Form {
   _id: string;
   creatorId: string;
@@ -518,6 +537,9 @@ export interface Form {
   status: PollStatus;
   responseMode: ResponseMode;
   expiresAt?: string;
+  quizTimer?: QuizTimer;
+  /** Live quiz: when the host pressed Start (expiresAt is then the shared end). */
+  liveStartedAt?: string;
   totalResponses: number;
   isDeleted: boolean;
   isResultsPublic: boolean;
@@ -545,6 +567,10 @@ export interface PublicForm {
   brand?: PublicBrand | null;
   /** Server clock at fetch time — countdowns use it to correct device clock skew. */
   serverTime?: string;
+  quizTimer?: QuizTimer;
+  liveStartedAt?: string;
+  /** Per-person timer already running for this taker (resume it on refresh). */
+  attempt?: { startedAt: string; endsAt: string };
   settings: FormSettings;
   sections: FormSection[];
 }
@@ -608,6 +634,8 @@ export interface LeaderboardEntry {
   score: number;
   totalPoints: number;
   submittedAt: string;
+  /** Timed quizzes: how long they took (ms). */
+  timeTakenMs?: number;
   /** Public board: marks the viewer's own row. */
   isMe?: boolean;
   /** Creator board only. */
@@ -637,7 +665,7 @@ export interface QuizResults {
   resultsPublishedAt?: string;
   maxPoints: number;
   /** Null when this viewer never submitted. Score is absent until it's released. */
-  me: { name: string; submittedAt: string; score?: number; totalPoints?: number; rank?: number } | null;
+  me: { name: string; submittedAt: string; timeTakenMs?: number; score?: number; totalPoints?: number; rank?: number } | null;
   leaderboard: {
     participants: number;
     maxPoints: number;
@@ -776,6 +804,7 @@ export interface FormBuilderForm {
   branding: FormBrandingOverride;
   isQuiz: boolean;
   expiresAt: string;
+  quizTimer: QuizTimer;
   responseMode: ResponseMode;
   settings: Omit<FormSettings, "confirmationMessage"> & { confirmationMessage: string };
   sections: BuilderFormSection[];

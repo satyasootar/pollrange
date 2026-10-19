@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse, delay } from "msw";
 import { PublicFormPage } from "./form";
@@ -16,6 +16,30 @@ import {
   makeQuizResults,
   defaultFormSettings,
 } from "@/test/msw/factories";
+
+// A fake socket: tests push server events (e.g. the host's live Start) through `sock.emitFromServer`.
+const sock = vi.hoisted(() => {
+  const handlers = new Map<string, Set<(data: unknown) => void>>();
+  return {
+    handlers,
+    emitFromServer: (event: string, data: unknown) => handlers.get(event)?.forEach((h) => h(data)),
+  };
+});
+vi.mock("@/lib/socket", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/socket")>();
+  return {
+    ...actual,
+    getSocket: () => ({
+      connected: true,
+      emit: () => {},
+      on: (event: string, h: (data: unknown) => void) => {
+        if (!sock.handlers.has(event)) sock.handlers.set(event, new Set());
+        sock.handlers.get(event)!.add(h);
+      },
+      off: (event: string, h: (data: unknown) => void) => sock.handlers.get(event)?.delete(h),
+    }),
+  };
+});
 
 const API = "http://localhost:3030/api";
 const renderPage = () => renderAtRoute(<PublicFormPage />, { path: "/f/:shareToken", route: "/f/tok123" });
@@ -311,6 +335,89 @@ describe("PublicFormPage", () => {
       await waitFor(() => expect(testState.submittedForm).not.toBeNull(), { timeout: 4000 });
       expect(testState.submittedForm!.timedOut).toBe(true);
       expect(await screen.findByText(/time ran out/i)).toBeInTheDocument();
+    });
+  });
+
+  describe("timed quizzes", () => {
+    const fillIntro = async () => {
+      await userEvent.type(await screen.findByLabelText(/your name/i), "Ada");
+      await userEvent.click(screen.getByLabelText(/ready to start/i));
+    };
+
+    it("per-person: Start creates the attempt on the server and opens the questions", async () => {
+      testState.publicForm = makePublicForm({
+        isQuiz: true,
+        quizTimer: { mode: "per_person", durationMinutes: 10 },
+        sections: [makeSection([makeChoiceQuestion({ points: 1 })])],
+      });
+      renderPage();
+      expect(await screen.findByText(/your own 10-minute timer/i)).toBeInTheDocument();
+      await fillIntro();
+      await userEvent.click(screen.getByRole("button", { name: /start quiz · 10 min/i }));
+
+      expect(await screen.findByText("Alpha")).toBeInTheDocument();
+      expect(testState.attemptStarts).toBe(1);
+      expect((await screen.findAllByRole("timer")).length).toBeGreaterThan(0);
+    });
+
+    it("per-person: a refresh resumes the running attempt instead of restarting", async () => {
+      const now = Date.now();
+      testState.publicForm = makePublicForm({
+        isQuiz: true,
+        quizTimer: { mode: "per_person", durationMinutes: 10 },
+        serverTime: new Date(now).toISOString(),
+        attempt: { startedAt: new Date(now - 60_000).toISOString(), endsAt: new Date(now + 9 * 60_000).toISOString() },
+        sections: [makeSection([makeChoiceQuestion({ points: 1 })])],
+      });
+      renderPage();
+      expect(await screen.findByText("Alpha")).toBeInTheDocument();
+      expect(screen.queryByText(/how this quiz works/i)).not.toBeInTheDocument();
+      expect(testState.attemptStarts).toBe(0);
+    });
+
+    it("live: waits in the lobby, then opens for everyone when the host starts", async () => {
+      testState.publicForm = makePublicForm({
+        formId: "live1",
+        isQuiz: true,
+        quizTimer: { mode: "live", durationMinutes: 5 },
+        sections: [makeSection([makeChoiceQuestion({ points: 1 })])],
+      });
+      renderPage();
+      expect(await screen.findByText(/the host starts everyone together/i)).toBeInTheDocument();
+      await fillIntro();
+      await userEvent.click(screen.getByRole("button", { name: /i'm ready/i }));
+      expect(await screen.findByText(/you're in/i)).toBeInTheDocument();
+      expect(screen.queryByText("Alpha")).not.toBeInTheDocument();
+
+      const now = Date.now();
+      act(() =>
+        sock.emitFromServer("quiz-live-state", {
+          formId: "live1",
+          state: "running",
+          startedAt: new Date(now).toISOString(),
+          endsAt: new Date(now + 5 * 60_000).toISOString(),
+          serverTime: new Date(now).toISOString(),
+        })
+      );
+      expect(await screen.findByText("Alpha")).toBeInTheDocument();
+      expect((await screen.findAllByRole("timer")).length).toBeGreaterThan(0);
+    });
+
+    it("live: a late joiner gets the time that's left", async () => {
+      const now = Date.now();
+      testState.publicForm = makePublicForm({
+        isQuiz: true,
+        quizTimer: { mode: "live", durationMinutes: 5 },
+        liveStartedAt: new Date(now - 4 * 60_000).toISOString(),
+        expiresAt: new Date(now + 60_000).toISOString(),
+        serverTime: new Date(now).toISOString(),
+        sections: [makeSection([makeChoiceQuestion({ points: 1 })])],
+      });
+      renderPage();
+      expect(await screen.findByText(/started · 1:00 left|started · 0:5\d left/i)).toBeInTheDocument();
+      await fillIntro();
+      await userEvent.click(screen.getByRole("button", { name: /start quiz/i }));
+      expect(await screen.findByText("Alpha")).toBeInTheDocument();
     });
   });
 });

@@ -84,6 +84,8 @@ export function initializeSocket(server: HttpServer) {
 
         if (isOwner || isPublic) {
           socket.join(`form_${formId}`);
+          // The owner's live-quiz control shows how many people are waiting.
+          if (isOwner) socket.emit("quiz-lobby-count", { formId, count: lobbySize(formId) });
         } else {
           socket.emit("socket-error", { message: "Not authorized to join this form room" });
         }
@@ -95,16 +97,58 @@ export function initializeSocket(server: HttpServer) {
     socket.on("leave-form-room", ({ formId }: { formId: string }) => {
       socket.leave(`form_${formId}`);
     });
+
+    // Live quiz lobby: anyone may join (it only carries public start/end times), but only for a live quiz.
+    socket.on("join-quiz-room", async ({ formId }: { formId: string }) => {
+      try {
+        const form = await Form.findOne({ _id: formId, isDeleted: false, isQuiz: true }).select("quizTimer");
+        if (form?.quizTimer?.mode !== "live") return;
+        await socket.join(quizRoom(formId));
+        emitLobbyCount(formId);
+      } catch {
+        // Ignore malformed formId / lookup errors.
+      }
+    });
+
+    socket.on("leave-quiz-room", async ({ formId }: { formId: string }) => {
+      await socket.leave(quizRoom(formId));
+      emitLobbyCount(formId);
+    });
+
+    // Still in its rooms while disconnecting, so report each lobby one smaller.
+    socket.on("disconnecting", () => {
+      for (const room of socket.rooms) {
+        if (room.startsWith("quiz_")) emitLobbyCount(room.slice("quiz_".length), -1);
+      }
+    });
   });
 
   return io;
+}
+
+const quizRoom = (formId: string) => `quiz_${formId}`;
+const lobbySize = (formId: string) => io?.sockets.adapter.rooms.get(quizRoom(formId))?.size ?? 0;
+
+function emitLobbyCount(formId: string, adjust = 0) {
+  io.to(`form_${formId}`).emit("quiz-lobby-count", { formId, count: Math.max(0, lobbySize(formId) + adjust) });
+}
+
+/** Pushes a live quiz's shared timer (start / +time / end) to every taker and the host. */
+export function emitQuizLiveState(
+  formId: string,
+  data: { state: "waiting" | "running" | "ended"; startedAt?: Date | null | undefined; endsAt?: Date | null | undefined }
+) {
+  if (!io) return;
+  const payload = { formId, ...data, serverTime: new Date() };
+  io.to(quizRoom(formId)).emit("quiz-live-state", payload);
+  io.to(`form_${formId}`).emit("quiz-live-state", payload);
 }
 
 /** Live connection + room counts for the admin system page. */
 export function getSocketStats() {
   if (!io) return { connected: 0, rooms: 0 };
   // Every socket has a private room named after its id; only count real poll/form rooms.
-  const rooms = [...io.sockets.adapter.rooms.keys()].filter((r) => r.startsWith("poll_") || r.startsWith("form_")).length;
+  const rooms = [...io.sockets.adapter.rooms.keys()].filter((r) => r.startsWith("poll_") || r.startsWith("form_") || r.startsWith("quiz_")).length;
   return { connected: io.engine.clientsCount, rooms };
 }
 

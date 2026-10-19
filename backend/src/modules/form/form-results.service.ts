@@ -2,7 +2,7 @@ import type { Types } from "mongoose";
 import { Form } from "./form.model.js";
 import { FormResponse } from "../form-response/form-response.model.js";
 import { ApiError } from "../../utils/ApiError.js";
-import { emitFormStatusChange } from "../../socket/index.js";
+import { emitFormStatusChange, emitQuizLiveState } from "../../socket/index.js";
 import { GRADABLE_TYPES } from "./form.validation.js";
 
 /** A submit that was in flight when the timer hit zero still counts for this long after the deadline. */
@@ -50,6 +50,9 @@ export async function settleExpiredForm<T extends Record<string, any>>(form: T, 
       closedAt: now,
       reason: autoPublish ? "published" : "expired",
     });
+    if (form.quizTimer?.mode === "live") {
+      emitQuizLiveState(String(form._id), { state: "ended", startedAt: form.liveStartedAt, endsAt: form.expiresAt });
+    }
   }
   return form;
 }
@@ -61,6 +64,8 @@ export interface LeaderboardRow {
   score: number;
   totalPoints: number;
   submittedAt: Date;
+  /** Timed quizzes only: submit time minus the taker's start. */
+  timeTakenMs?: number;
 }
 
 /**
@@ -77,7 +82,7 @@ export function assignRanks<T extends { score: number }>(rows: T[]): (T & { rank
 
 const displayName = (r: any): string => r.respondentId?.name || r.respondentName || "Anonymous";
 
-const ROW_FIELDS = "score totalPoints submittedAt respondentName respondentEmail respondentId";
+const ROW_FIELDS = "score totalPoints submittedAt timeTakenMs respondentName respondentEmail respondentId";
 
 function toRow(r: any, withEmail: boolean): LeaderboardRow {
   return {
@@ -87,12 +92,17 @@ function toRow(r: any, withEmail: boolean): LeaderboardRow {
     score: r.score ?? 0,
     totalPoints: r.totalPoints ?? 0,
     submittedAt: r.submittedAt,
+    ...(r.timeTakenMs != null ? { timeTakenMs: r.timeTakenMs } : {}),
   };
 }
 
-/** Board order: best score first; within a tie, earliest submission first. Served by the (formId, score, submittedAt) index. */
+/**
+ * Board order: best score first; within a tie the fastest time, then the earliest submission
+ * (untimed responses have no timeTakenMs and fall back to submission order).
+ * Served by the (formId, score, timeTakenMs, submittedAt) index.
+ */
 const boardQuery = (formId: Types.ObjectId) =>
-  FormResponse.find({ formId, score: { $exists: true } }).sort({ score: -1, submittedAt: 1 });
+  FormResponse.find({ formId, score: { $exists: true } }).sort({ score: -1, timeTakenMs: 1, submittedAt: 1 });
 
 async function topRows(formId: Types.ObjectId, limit: number, withEmail: boolean): Promise<(LeaderboardRow & { rank: number })[]> {
   const rows = await boardQuery(formId)
@@ -155,8 +165,14 @@ async function pageRows(formId: Types.ObjectId, scoresDesc: number[], offset: nu
 /** 0-based position of a response on the board (its index in board order). */
 async function positionOf(formId: Types.ObjectId, scoresDesc: number[], mine: any) {
   const myScore = mine.score ?? 0;
-  const sameScoreEarlier = await FormResponse.countDocuments({ formId, score: myScore, submittedAt: { $lt: mine.submittedAt } });
-  return rankIn(scoresDesc, myScore) - 1 + sameScoreEarlier;
+  const earlier = { submittedAt: { $lt: mine.submittedAt } };
+  // Mirrors boardQuery's tie order; a missing timeTakenMs sorts before any value (MongoDB null order).
+  const tieAhead =
+    mine.timeTakenMs == null
+      ? { timeTakenMs: null, ...earlier }
+      : { $or: [{ timeTakenMs: null }, { timeTakenMs: { $lt: mine.timeTakenMs } }, { timeTakenMs: mine.timeTakenMs, ...earlier }] };
+  const sameScoreAhead = await FormResponse.countDocuments({ formId, score: myScore, ...tieAhead });
+  return rankIn(scoresDesc, myScore) - 1 + sameScoreAhead;
 }
 
 /** The viewer's own response (signed-in account or this browser's session token). */
@@ -256,6 +272,7 @@ export async function getPublicResults(shareToken: string, viewer: Viewer) {
       ? {
           name: displayName(mine),
           submittedAt: mine.submittedAt,
+          ...(mine.timeTakenMs != null ? { timeTakenMs: mine.timeTakenMs } : {}),
           ...(showScore ? { score: myScore, totalPoints: mine.totalPoints ?? maxPoints } : {}),
           ...(myRank !== undefined ? { rank: myRank } : {}),
         }

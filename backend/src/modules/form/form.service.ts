@@ -4,11 +4,12 @@ import { ApiError } from "../../utils/ApiError.js";
 import crypto from "crypto";
 import type { ICreateForm, IUpdateForm, ICreateSection } from "./form.validation.js";
 import { GRADABLE_TYPES } from "./form.validation.js";
-import { emitFormStatusChange } from "../../socket/index.js";
+import { emitFormStatusChange, emitQuizLiveState } from "../../socket/index.js";
 import { assertFeature, assertLiveCapacity, hasFeature } from "../billing/billing.service.js";
 import { resolveBrand } from "../branding/branding.service.js";
 import type { FormBranding } from "../branding/branding.validation.js";
-import { settleExpiredForm } from "./form-results.service.js";
+import { settleExpiredForm, SUBMIT_GRACE_MS } from "./form-results.service.js";
+import { QuizAttempt } from "../form-response/quiz-attempt.model.js";
 
 /**
  * Validates branching + quiz integrity before persisting. Throws ApiError(400) on
@@ -90,6 +91,8 @@ const hasFileUpload = (sections: ICreateSection[]) => sections.some((s) => s.que
 export async function createForm(userId: string, formData: ICreateForm) {
   validateFormStructure(formData.sections, formData.isQuiz ?? false);
   if (hasFileUpload(formData.sections)) formData = { ...formData, responseMode: "authenticated" };
+  // A live quiz's end time is set when the host presses Start, never up front.
+  if (formData.quizTimer?.mode === "live") formData = { ...formData, expiresAt: null };
   const { slug, ...persistedFormData } = formData;
   if (slug) await assertFeature(userId, "customSlug");
   if (brandingChanged(undefined, formData.branding)) await assertFeature(userId, "branding");
@@ -153,9 +156,11 @@ const LOCKED_MESSAGE = "This form already has responses or published results, so
  */
 export async function updateForm(userId: string, formId: string, updateData: IUpdateForm) {
   const current = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false })
-    .select("branding shareToken status totalResponses")
+    .select("branding shareToken status totalResponses quizTimer liveStartedAt")
     .lean();
   if (!current) throw new ApiError(404, "Form not found or unauthorized");
+  if (current.liveStartedAt) throw new ApiError(409, "This live quiz has already started, so it can't be edited.");
+  const live = (updateData.quizTimer?.mode ?? current.quizTimer?.mode) === "live";
   // The responses check also covers a submit that's saved but hasn't bumped totalResponses yet.
   if (current.status === "published" || (current.totalResponses ?? 0) > 0 || (await FormResponse.exists({ formId }))) {
     throw new ApiError(409, LOCKED_MESSAGE);
@@ -165,7 +170,8 @@ export async function updateForm(userId: string, formId: string, updateData: IUp
     validateFormStructure(updateData.sections, updateData.isQuiz ?? false);
     if (hasFileUpload(updateData.sections)) updateData = { ...updateData, responseMode: "authenticated" };
   }
-  const { slug, ...persistedUpdateData } = updateData;
+  const { slug, expiresAt, ...rest } = updateData;
+  const persistedUpdateData = live || expiresAt === undefined ? rest : { ...rest, expiresAt };
   if (updateData.branding && brandingChanged(current.branding as FormBranding | undefined, updateData.branding)) {
     await assertFeature(userId, "branding");
   }
@@ -178,7 +184,10 @@ export async function updateForm(userId: string, formId: string, updateData: IUp
   // Re-check the lock atomically: a response may have landed since the read above.
   const form = await Form.findOneAndUpdate(
     { _id: formId, creatorId: userId, isDeleted: false, totalResponses: 0, status: { $ne: "published" } },
-    { $set: { ...persistedUpdateData, ...(slug !== undefined ? { shareToken: slug } : {}) } },
+    {
+      $set: { ...persistedUpdateData, ...(slug !== undefined ? { shareToken: slug } : {}) },
+      ...(live ? { $unset: { expiresAt: 1 } } : {}),
+    },
     { returnDocument: "after" }
   );
   if (!form) throw new ApiError(409, LOCKED_MESSAGE);
@@ -221,6 +230,8 @@ export async function duplicateForm(userId: string, formId: string) {
   copy.publishedAt = undefined;
   copy.closedAt = undefined;
   copy.resultsPublishedAt = undefined;
+  copy.liveStartedAt = undefined;
+  if (copy.quizTimer?.mode === "live") copy.expiresAt = undefined;
   // reset denormalized option counts
   for (const section of copy.sections ?? []) {
     for (const q of section.questions ?? []) {
@@ -267,6 +278,14 @@ export async function getPublicForm(
 
   const sanitized = sanitizeForTaking(form);
   sanitized.alreadyResponded = alreadyResponded;
+  // A per-person timer already running for this taker: the client resumes it instead of restarting.
+  if (form.isQuiz && form.quizTimer?.mode === "per_person" && (context.sessionToken || context.userId)) {
+    const identity: Record<string, unknown>[] = [];
+    if (context.userId) identity.push({ formId: form._id, respondentId: context.userId });
+    if (context.sessionToken) identity.push({ formId: form._id, sessionToken: context.sessionToken });
+    const attempt = await QuizAttempt.findOne({ $or: identity }).select("startedAt endsAt").lean();
+    if (attempt) sanitized.attempt = { startedAt: attempt.startedAt, endsAt: attempt.endsAt };
+  }
   // Past the deadline but still inside the submit grace window: new visitors see it as ended.
   if (sanitized.status === "active" && form.expiresAt && form.expiresAt < new Date()) sanitized.status = "closed";
   // Lets the client run its countdown on server time rather than a possibly-skewed device clock.
@@ -300,6 +319,7 @@ export async function publishFormResults(
     closedAt: form.closedAt,
     reason: mode === "permanent" ? "published" : "results-live",
   });
+  if (mode === "permanent") endLiveBroadcast(form);
 
   return form;
 }
@@ -317,6 +337,82 @@ export async function unpublishFormResults(userId: string, formId: string) {
   return form;
 }
 
+/** Tells a live quiz's takers it's over (they auto-submit). No-op for other forms. */
+function endLiveBroadcast(form: { _id: unknown; quizTimer?: { mode?: string } | null | undefined; liveStartedAt?: Date | null | undefined; expiresAt?: Date | null | undefined }) {
+  if (form.quizTimer?.mode === "live") {
+    emitQuizLiveState(String(form._id), { state: "ended", startedAt: form.liveStartedAt, endsAt: form.expiresAt });
+  }
+}
+
+/** A creator's live quiz, settled first so a timer that already ran out reads as ended. */
+async function ownedLiveQuiz(userId: string, formId: string) {
+  const form = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false });
+  if (!form) throw new ApiError(404, "Form not found or unauthorized");
+  if (!form.isQuiz || form.quizTimer?.mode !== "live") throw new ApiError(400, "This quiz isn't set up as a live quiz.");
+  await settleExpiredForm(form);
+  return form;
+}
+
+/** Live quiz: start one shared timer for everyone (late joiners get the time left). */
+export async function startLiveQuiz(userId: string, formId: string, durationMinutes?: number) {
+  const form = await ownedLiveQuiz(userId, formId);
+  if (form.liveStartedAt) throw new ApiError(409, "This quiz has already started.");
+  if (form.status !== "active") throw new ApiError(400, "This quiz is closed.");
+  const minutes = durationMinutes ?? form.quizTimer?.durationMinutes;
+  if (!minutes) throw new ApiError(400, "Set how many minutes the quiz lasts.");
+
+  const startedAt = new Date();
+  const endsAt = new Date(startedAt.getTime() + minutes * 60_000);
+  // Conditional so a double click (or two hosts) starts it exactly once.
+  const updated = await Form.findOneAndUpdate(
+    { _id: form._id, status: "active", liveStartedAt: null },
+    { $set: { liveStartedAt: startedAt, expiresAt: endsAt, "quizTimer.durationMinutes": minutes } },
+    { returnDocument: "after" }
+  );
+  if (!updated) throw new ApiError(409, "This quiz has already started.");
+  emitQuizLiveState(String(form._id), { state: "running", startedAt, endsAt });
+  return updated;
+}
+
+/** Live quiz: give everyone more time while it's running. */
+export async function extendLiveQuiz(userId: string, formId: string, minutes: number) {
+  const form = await ownedLiveQuiz(userId, formId);
+  const now = new Date();
+  const updated = await Form.findOneAndUpdate(
+    { _id: form._id, status: "active", liveStartedAt: { $ne: null }, expiresAt: { $gt: now } },
+    [{ $set: { expiresAt: { $add: ["$expiresAt", minutes * 60_000] } } }],
+    { returnDocument: "after" }
+  );
+  if (!updated) throw new ApiError(400, "The quiz isn't running.");
+  emitQuizLiveState(String(form._id), { state: "running", startedAt: updated.liveStartedAt, endsAt: updated.expiresAt });
+  return updated;
+}
+
+/**
+ * Live quiz: end it now. The end time becomes "now", so takers' clients auto-submit what they
+ * have and the usual submit grace still accepts those in-flight answers; the quiz is settled
+ * (closed, auto-published if set) once the grace has passed.
+ */
+export async function endLiveQuiz(userId: string, formId: string) {
+  const form = await ownedLiveQuiz(userId, formId);
+  if (!form.liveStartedAt || form.status !== "active") throw new ApiError(400, "The quiz isn't running.");
+  const endsAt = new Date();
+  const updated = await Form.findOneAndUpdate(
+    { _id: form._id, status: "active" },
+    { $set: { expiresAt: endsAt } },
+    { returnDocument: "after" }
+  );
+  if (!updated) throw new ApiError(400, "The quiz isn't running.");
+  emitQuizLiveState(String(form._id), { state: "ended", startedAt: updated.liveStartedAt, endsAt });
+  // ponytail: in-process timer (single-instance, like the expiry job); the job settles it anyway within a minute.
+  setTimeout(() => {
+    void Form.findById(form._id)
+      .then((f) => f && settleExpiredForm(f))
+      .catch(() => {});
+  }, SUBMIT_GRACE_MS + 1_000).unref();
+  return updated;
+}
+
 export async function closeForm(userId: string, formId: string) {
   const form = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false });
   if (!form) throw new ApiError(404, "Form not found or unauthorized");
@@ -332,6 +428,7 @@ export async function closeForm(userId: string, formId: string) {
     closedAt: form.closedAt,
     reason: "closed-by-creator",
   });
+  endLiveBroadcast(form);
   return form;
 }
 

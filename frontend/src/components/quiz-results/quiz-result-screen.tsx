@@ -97,7 +97,13 @@ function MyResultCard({ results, timedOut }: { results: QuizResults; timedOut: b
       <div className="grid grid-cols-3 gap-px border border-border bg-border">
         {rank !== undefined ? <Stat label="Score" value={me.score} of={total} /> : <Stat label="Percent" value={`${pct}%`} />}
         {correct !== undefined ? <Stat label="Correct" value={correct} of={results.review!.length} /> : <Stat label="Percent" value={`${pct}%`} />}
-        {board ? <Stat label="Average" value={board.stats.average} /> : <Stat label="Name" value={me.name} />}
+        {me.timeTakenMs != null ? (
+          <Stat label="Time" value={formatCountdown(me.timeTakenMs)} />
+        ) : board ? (
+          <Stat label="Average" value={board.stats.average} />
+        ) : (
+          <Stat label="Name" value={me.name} />
+        )}
       </div>
 
       {line && <p className="text-sm leading-relaxed text-muted-foreground">{line}</p>}

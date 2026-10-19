@@ -50,7 +50,8 @@ export function toFormPayload(form: FormBuilderForm) {
     isQuiz: form.isQuiz,
     responseMode: form.responseMode,
     // datetime-local is wall-clock time in the creator's zone; send an absolute instant.
-    expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
+    expiresAt: form.expiresAt && !(form.isQuiz && form.quizTimer.mode === "live") ? new Date(form.expiresAt).toISOString() : null,
+    ...(form.isQuiz ? { quizTimer: form.quizTimer } : {}),
     settings: form.settings,
     sections: form.sections.map((s, si) => ({
       _id: s.id,
@@ -84,6 +85,13 @@ export const formsApi = {
   unpublish: (formId: string) => api.post<{ data: Form }>(`/forms/${formId}/unpublish`),
 
   leaderboard: (formId: string) => api.get<{ data: CreatorLeaderboard }>(`/forms/${formId}/leaderboard`),
+
+  liveStart: (formId: string, durationMinutes?: number) =>
+    api.post<{ data: Form }>(`/forms/${formId}/live/start`, durationMinutes ? { durationMinutes } : {}),
+
+  liveExtend: (formId: string, minutes: number) => api.post<{ data: Form }>(`/forms/${formId}/live/extend`, { minutes }),
+
+  liveEnd: (formId: string) => api.post<{ data: Form }>(`/forms/${formId}/live/end`),
 
   close: (formId: string) => api.patch<{ data: Form }>(`/forms/${formId}/close`),
 

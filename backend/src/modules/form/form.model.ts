@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import type { IForm } from "./form.validation.js";
-import { QUESTION_TYPES, FORM_STATUSES, RESPONSE_MODES } from "./form.validation.js";
+import { QUESTION_TYPES, FORM_STATUSES, RESPONSE_MODES, QUIZ_TIMER_MODES } from "./form.validation.js";
 
 const optionSchema = new Schema({
   text: { type: String, required: true },
@@ -89,6 +89,11 @@ const formSchema = new Schema<IForm>(
     publishedAt: Date,
     closedAt: Date,
     resultsPublishedAt: Date,
+    quizTimer: {
+      mode: { type: String, enum: QUIZ_TIMER_MODES, default: "none" },
+      durationMinutes: { type: Number, min: 1, max: 600 },
+    },
+    liveStartedAt: Date,
     settings: {
       collectEmail: { type: Boolean, default: false },
       limitOneResponse: { type: Boolean, default: false },

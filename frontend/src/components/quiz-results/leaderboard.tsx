@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Crown, Trophy } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCountdown } from "@/lib/utils";
 import { ConfettiBurst } from "./confetti-burst";
 import type { LeaderboardEntry } from "@/types";
 
@@ -86,7 +86,13 @@ function Row({ entry, maxPoints, showEmail }: { entry: LeaderboardEntry; maxPoin
           <span className="truncate">{entry.name}</span>
           {entry.isMe && <YouBadge />}
         </p>
-        {showEmail && entry.email && <p className="truncate text-xs text-muted-foreground">{entry.email}</p>}
+        {(showEmail && entry.email) || entry.timeTakenMs != null ? (
+          <p className="truncate text-xs text-muted-foreground">
+            {[showEmail ? entry.email : null, entry.timeTakenMs != null ? `${formatCountdown(entry.timeTakenMs)} taken` : null]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        ) : null}
         <div className="mt-1.5 h-1 w-full bg-border" aria-hidden>
           <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
         </div>

@@ -18,6 +18,9 @@ router.patch("/:formId/close", FormController.closeForm);
 router.patch("/:formId/reopen", FormController.reopenForm);
 router.post("/:formId/publish", FormController.publishForm);
 router.post("/:formId/unpublish", FormController.unpublishForm);
+router.post("/:formId/live/start", FormController.startLiveQuiz);
+router.post("/:formId/live/extend", FormController.extendLiveQuiz);
+router.post("/:formId/live/end", FormController.endLiveQuiz);
 router.get("/:formId/leaderboard", FormController.getLeaderboard);
 router.post("/:formId/regenerate-token", FormController.regenerateToken);
 // Image upload returns a Cloudinary URL only (never touches a form doc), so it

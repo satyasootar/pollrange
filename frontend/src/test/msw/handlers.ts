@@ -36,6 +36,10 @@ export const testState = {
   submittedForm: null as SubmitFormResponsePayload | null,
   submittedPoll: null as SubmitResponsePayload | null,
   uploadCount: 0,
+  /** Per-person quiz Start presses that reached the server. */
+  attemptStarts: 0,
+  /** Live quiz host actions, in order ("start:10", "extend:5", "end"). */
+  liveActions: [] as string[],
   failUpload: false,
   ai: {
     reply: "Sure!",
@@ -59,6 +63,8 @@ export function resetTestState() {
   testState.submittedForm = null;
   testState.submittedPoll = null;
   testState.uploadCount = 0;
+  testState.attemptStarts = 0;
+  testState.liveActions = [];
   testState.failUpload = false;
   testState.ai = { reply: "Sure!", actions: [], conversationId: "conv1", messages: [] };
   testState.aiLastBody = null;
@@ -106,6 +112,19 @@ export const handlers = [
   http.post(`${API}/form-responses/:formId`, async ({ request }) => {
     testState.submittedForm = (await request.json()) as SubmitFormResponsePayload;
     return ok({ _id: oid("resp"), isComplete: true, score: 3, totalPoints: 5 });
+  }),
+
+  http.post(`${API}/form-responses/:formId/attempt`, () => {
+    testState.attemptStarts++;
+    const now = Date.now();
+    return ok({ startedAt: new Date(now).toISOString(), endsAt: new Date(now + 10 * 60_000).toISOString(), serverTime: new Date(now).toISOString() });
+  }),
+
+  http.post(`${API}/forms/:formId/live/:action`, async ({ params, request }) => {
+    const body = (await request.json().catch(() => ({}))) as { durationMinutes?: number; minutes?: number };
+    const arg = body.durationMinutes ?? body.minutes;
+    testState.liveActions.push(arg ? `${params.action}:${arg}` : String(params.action));
+    return ok({});
   }),
 
   http.post(`${API}/form-responses/:formId/upload`, async () => {

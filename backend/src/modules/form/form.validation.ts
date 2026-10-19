@@ -21,6 +21,20 @@ export const QUESTION_TYPES = [
 ] as const;
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 
+/**
+ * Quiz timing: none (optionally a fixed close time via expiresAt), per_person (each taker gets
+ * durationMinutes from pressing Start), live (the host starts one shared timer for everyone).
+ */
+export const QUIZ_TIMER_MODES = ["none", "per_person", "live"] as const;
+export type QuizTimerMode = (typeof QUIZ_TIMER_MODES)[number];
+export const quizTimerSchema = z.object({
+  mode: z.enum(QUIZ_TIMER_MODES).default("none"),
+  durationMinutes: z.number().int().min(1).max(600).optional(),
+}).refine((t) => t.mode === "none" || t.durationMinutes !== undefined, {
+  message: "Set how many minutes the quiz lasts",
+  path: ["durationMinutes"],
+});
+
 export const FORM_STATUSES = ["draft", "active", "closed", "published"] as const;
 export const RESPONSE_MODES = ["anonymous", "authenticated"] as const;
 
@@ -147,6 +161,9 @@ export const formZodSchema = z.object({
   publishedAt: z.date().optional(),
   closedAt: z.date().optional(),
   resultsPublishedAt: z.date().optional(),
+  quizTimer: quizTimerSchema.optional(),
+  // Live quiz: when the host pressed Start (server-controlled; expiresAt is then the shared end).
+  liveStartedAt: z.date().optional(),
   settings: formSettingsZodSchema.optional(),
   sections: z.array(sectionZodSchema),
 });
@@ -245,6 +262,7 @@ export const createFormSchema = z.object({
   isQuiz: z.boolean().optional(),
   responseMode: z.enum(RESPONSE_MODES),
   expiresAt: optionalExpiresAtSchema,
+  quizTimer: quizTimerSchema.optional(),
   settings: formSettingsZodSchema.partial().optional(),
   sections: z.array(createSectionSchema).min(1),
 });
@@ -255,6 +273,13 @@ export type ICreateForm = z.infer<typeof createFormSchema>;
 export type IUpdateForm = z.infer<typeof updateFormSchema>;
 export type ICreateQuestion = z.infer<typeof createQuestionSchema>;
 export type ICreateSection = z.infer<typeof createSectionSchema>;
+
+export const startLiveQuizSchema = z.object({
+  durationMinutes: z.number().int().min(1).max(600).optional(),
+});
+export const extendLiveQuizSchema = z.object({
+  minutes: z.number().int().min(1).max(60),
+});
 
 export const publishFormSchema = z.object({
   mode: z.enum(["live", "permanent"]).default("permanent"),

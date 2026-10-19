@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Crosshair, Loader2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuizLeaderboardPage } from "@/hooks/use-public-form";
-import { cn } from "@/lib/utils";
+import { cn, formatCountdown } from "@/lib/utils";
 import { Avatar, YouBadge } from "./leaderboard";
 import { ConfettiBurst } from "./confetti-burst";
 import type { LeaderboardEntry, QuizResults } from "@/types";
@@ -39,7 +39,9 @@ function Podium({ top, maxPoints, celebrate }: { top: LeaderboardEntry[]; maxPoi
             {e.isMe && <YouBadge />}
             <div className={cn("flex w-full flex-col items-center justify-center border-t-[3px] bg-muted/50", medal.border, medal.height)}>
               <span className={cn("text-lg font-bold tabular-nums sm:text-2xl", medal.text)}>{e.rank}</span>
-              <span className="text-[11px] tabular-nums text-muted-foreground">{e.score} pts</span>
+              <span className="text-[11px] tabular-nums text-muted-foreground">
+                {e.score} pts{e.timeTakenMs != null ? ` · ${formatCountdown(e.timeTakenMs)}` : ""}
+              </span>
             </div>
           </motion.li>
         );
@@ -66,10 +68,15 @@ function Row({ entry, maxPoints }: { entry: LeaderboardEntry; maxPoints: number 
         #{entry.rank}
       </span>
       <Avatar name={entry.name} className={cn("h-8 w-8 text-xs", entry.isMe && "bg-primary text-primary-foreground")} />
-      <p className="flex min-w-0 flex-1 items-center text-sm font-medium">
-        <span className="truncate">{entry.name}</span>
-        {entry.isMe && <YouBadge />}
-      </p>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center text-sm font-medium">
+          <span className="truncate">{entry.name}</span>
+          {entry.isMe && <YouBadge />}
+        </p>
+        {entry.timeTakenMs != null && (
+          <p className="text-xs tabular-nums text-muted-foreground">{formatCountdown(entry.timeTakenMs)} taken</p>
+        )}
+      </div>
       <span className="shrink-0 text-sm font-semibold tabular-nums">
         {entry.score}
         <span className="font-normal text-muted-foreground">/{maxPoints}</span>

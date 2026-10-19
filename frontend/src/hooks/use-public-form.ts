@@ -11,8 +11,15 @@ export function usePublicForm(shareToken: string, sessionToken?: string) {
     retry: false,
     // Never swap the form out mid-attempt (e.g. a quiz past its deadline before the timer flushes answers).
     refetchOnWindowFocus: false,
+    // Live-quiz lobby only: a fallback to the socket push, so a dropped connection still sees the host's Start.
+    refetchInterval: (query) => {
+      const f = query.state.data?.data.data;
+      return f?.isQuiz && f.quizTimer?.mode === "live" && !f.liveStartedAt && f.status === "active" ? LOBBY_POLL_MS : false;
+    },
   });
 }
+
+const LOBBY_POLL_MS = 10_000;
 
 export function useSubmitFormResponse(formId: string) {
   return useMutation({

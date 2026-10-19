@@ -56,5 +56,9 @@ export const SOCKET_EVENTS = {
   LEAVE_FORM_ROOM: "leave-form-room",
   FORM_ANALYTICS_UPDATE: "form-analytics-update",
   FORM_STATUS_CHANGE: "form-status-change",
+  JOIN_QUIZ_ROOM: "join-quiz-room",
+  LEAVE_QUIZ_ROOM: "leave-quiz-room",
+  QUIZ_LIVE_STATE: "quiz-live-state",
+  QUIZ_LOBBY_COUNT: "quiz-lobby-count",
   ERROR: "socket-error",
 } as const;

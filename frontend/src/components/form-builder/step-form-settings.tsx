@@ -8,21 +8,26 @@ import { hasFileUpload, useFormBuilderStore } from "@/store/use-form-builder-sto
 import { formsApi } from "@/api/forms.api";
 import { formatDatetime, toLocalDatetimeInput, toastApiError } from "@/lib/utils";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, X, Lock, Timer, Trophy } from "lucide-react";
+import { ImagePlus, Loader2, X, Lock, Timer, Trophy, Radio, User, Infinity as NoLimit } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCanUse } from "@/hooks/use-plan";
 import { FormBrandingCard } from "./form-branding-card";
-import type { FormSettings } from "@/types";
+import type { FormSettings, QuizTimerMode } from "@/types";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-const TIMER_PRESETS = [5, 10, 15, 30, 60];
-/** datetime-local value for `minutes` from now (called from click handlers, never during render). */
-const endIn = (minutes: number) => toLocalDatetimeInput(new Date(Date.now() + minutes * 60_000));
+const DURATION_PRESETS = [10, 15, 30, 60];
+const DEFAULT_MINUTES = 30;
+
+const TIMER_MODES: { mode: QuizTimerMode; label: string; hint: string; icon: React.ElementType }[] = [
+  { mode: "none", label: "No time limit", hint: "Answer at their own pace. Optionally close at a set time.", icon: NoLimit },
+  { mode: "per_person", label: "Per-person limit", hint: "Each person's timer starts when they press Start.", icon: User },
+  { mode: "live", label: "Live, you start it", hint: "You press Start and everyone's timer runs together.", icon: Radio },
+];
 
 const RESULT_RELEASE = [
   { auto: false, label: "I'll publish manually", hint: "Publish from the quiz's Leaderboard tab whenever you're ready." },
-  { auto: true, label: "When the timer ends", hint: "The leaderboard goes live the moment time runs out." },
+  { auto: true, label: "When the quiz ends", hint: "The leaderboard goes live the moment the quiz closes." },
 ];
 
 const SETTING_TOGGLES: { key: keyof FormSettings; label: string; hint: string }[] = [
@@ -66,10 +71,26 @@ export function StepFormSettings({ formId }: { formId?: string }) {
     }
   };
 
+  const timer = form.quizTimer;
+  const setTimer = (patch: Partial<typeof timer>) => {
+    const next = { ...timer, ...patch };
+    // A live quiz's end time comes from pressing Start, so a set close time no longer applies.
+    updateMeta(next.mode === "live" ? { quizTimer: next, expiresAt: "" } : { quizTimer: next });
+  };
+  // Auto-publish needs a moment the quiz ends: the live timer, or a close time.
+  const canAutoPublish = timer.mode === "live" || !!form.expiresAt;
+
   const handleNext = async () => {
     if (form.title.trim().length < 1) {
       toast.error("Give your form a title.");
       return;
+    }
+    if (form.isQuiz && timer.mode !== "none") {
+      const m = timer.durationMinutes ?? 0;
+      if (!Number.isInteger(m) || m < 1 || m > 600) {
+        toast.error("Set the quiz time to a whole number of minutes between 1 and 600.");
+        return;
+      }
     }
     const { accentColor, redirectUrl } = form.branding;
     if (accentColor && !/^#[0-9a-fA-F]{6}$/.test(accentColor)) {
@@ -249,59 +270,128 @@ export function StepFormSettings({ formId }: { formId?: string }) {
         )}
       </div>
 
-      {/* Expiry — for a quiz this is the quiz timer */}
-      <div className="space-y-4 border border-border bg-muted/30 p-4">
-        <div className="flex items-center justify-between gap-4">
+      {/* Quiz timer (quizzes) / expiry (other forms) */}
+      {form.isQuiz ? (
+        <div className="space-y-4 border border-border bg-muted/30 p-4">
           <div className="space-y-0.5">
-            <Label htmlFor="expiry-toggle" className="flex items-center gap-2">
-              {form.isQuiz && <Timer className="h-4 w-4 text-primary" />}
-              {form.isQuiz ? "Quiz timer" : "Set expiry date & time"}
-            </Label>
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Timer className="h-4 w-4 text-primary" /> Quiz timer
+            </p>
             <p className="text-xs text-muted-foreground">
-              {form.isQuiz
-                ? "Everyone sees a live countdown. At zero the quiz closes and unfinished attempts are submitted with the answers so far."
-                : "Automatically close the form at a specific time."}
+              Everyone sees a live countdown. At zero, the answers so far are submitted automatically.
             </p>
           </div>
-          <Switch
-            id="expiry-toggle"
-            checked={!!form.expiresAt}
-            onCheckedChange={(v) => updateMeta({ expiresAt: v ? (form.isQuiz ? endIn(30) : minDatetime) : "" })}
-          />
-        </div>
-        {!!form.expiresAt && (
-          <div className="space-y-3">
-            {form.isQuiz && (
+
+          <div role="radiogroup" aria-label="Quiz timer" className="grid gap-2 sm:grid-cols-3">
+            {TIMER_MODES.map(({ mode, label, hint, icon: Icon }) => {
+              const selected = timer.mode === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setTimer({ mode, durationMinutes: timer.durationMinutes ?? DEFAULT_MINUTES })}
+                  className={`flex flex-col gap-1 border p-3 text-left transition-colors ${
+                    selected ? "border-primary bg-primary/10" : "border-border bg-background hover:border-foreground/30"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <Icon className={`h-4 w-4 ${selected ? "text-primary" : "text-muted-foreground"}`} aria-hidden />
+                    {label}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{hint}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {timer.mode !== "none" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="quiz-minutes">{timer.mode === "live" ? "Quiz length" : "Time per person"}</Label>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted-foreground">Ends in</span>
-                {TIMER_PRESETS.map((min) => (
+                <Input
+                  id="quiz-minutes"
+                  type="number"
+                  min={1}
+                  max={600}
+                  value={timer.durationMinutes ?? ""}
+                  onChange={(e) => setTimer({ durationMinutes: e.target.value === "" ? undefined : Math.floor(Number(e.target.value)) })}
+                  className="h-9 w-24"
+                />
+                <span className="text-sm text-muted-foreground">minutes</span>
+                {DURATION_PRESETS.map((m) => (
                   <button
-                    key={min}
+                    key={m}
                     type="button"
-                    onClick={() => updateMeta({ expiresAt: endIn(min) })}
-                    className="border border-border bg-background px-2.5 py-1 text-xs transition-colors hover:border-primary hover:text-primary"
+                    onClick={() => setTimer({ durationMinutes: m })}
+                    className={`border px-2.5 py-1 text-xs transition-colors hover:border-primary hover:text-primary ${
+                      timer.durationMinutes === m ? "border-primary text-primary" : "border-border bg-background"
+                    }`}
                   >
-                    {min < 60 ? `${min} min` : `${min / 60} hour`}
+                    {m < 60 ? `${m} min` : "1 hour"}
                   </button>
                 ))}
               </div>
-            )}
+            </div>
+          )}
+
+          {timer.mode === "live" ? (
+            <p className="border-l-2 border-primary pl-3 text-xs leading-relaxed text-muted-foreground">
+              After you create the quiz, open it from your dashboard and press <strong className="text-foreground">Start quiz for everyone</strong>.
+              People who open the link before that wait in a lobby. Anyone who joins late gets the time that's left, and nobody can take it
+              once it ends.
+            </p>
+          ) : (
+            <div className="space-y-3 border-t border-border pt-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="expiry-toggle">Close the quiz at a set time</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {timer.mode === "per_person"
+                      ? "Nobody can start after this, and anyone still answering is stopped then."
+                      : "After this, nobody can take the quiz."}
+                  </p>
+                </div>
+                <Switch id="expiry-toggle" checked={!!form.expiresAt} onCheckedChange={(v) => updateMeta({ expiresAt: v ? minDatetime : "" })} />
+              </div>
+              {!!form.expiresAt && (
+                <>
+                  <Input
+                    type="datetime-local"
+                    min={minDatetime}
+                    value={form.expiresAt}
+                    aria-label="Quiz close time"
+                    onChange={(e) => updateMeta({ expiresAt: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Closes <span className="font-medium text-foreground">{formatDatetime(form.expiresAt)}</span>.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4 border border-border bg-muted/30 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="expiry-toggle">Set expiry date & time</Label>
+              <p className="text-xs text-muted-foreground">Automatically close the form at a specific time.</p>
+            </div>
+            <Switch id="expiry-toggle" checked={!!form.expiresAt} onCheckedChange={(v) => updateMeta({ expiresAt: v ? minDatetime : "" })} />
+          </div>
+          {!!form.expiresAt && (
             <Input
               type="datetime-local"
               min={minDatetime}
               value={form.expiresAt}
-              aria-label={form.isQuiz ? "Quiz end time" : "Expiry date and time"}
+              aria-label="Expiry date and time"
               onChange={(e) => updateMeta({ expiresAt: e.target.value })}
             />
-            {form.isQuiz && (
-              <p className="text-xs text-muted-foreground">
-                Quiz ends <span className="font-medium text-foreground">{formatDatetime(form.expiresAt)}</span>. The timer runs from when the
-                form is live, so set this just before you share the link.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Quiz results release */}
       {form.isQuiz && (
@@ -316,14 +406,14 @@ export function StepFormSettings({ formId }: { formId?: string }) {
           </div>
           <div role="radiogroup" aria-label="Publish results" className="grid gap-3 sm:grid-cols-2">
             {RESULT_RELEASE.map((opt) => {
-              const selected = opt.auto === (form.settings.autoPublishResults && !!form.expiresAt);
+              const selected = opt.auto === (form.settings.autoPublishResults && canAutoPublish);
               return (
                 <button
                   key={opt.label}
                   type="button"
                   role="radio"
                   aria-checked={selected}
-                  disabled={opt.auto && !form.expiresAt}
+                  disabled={opt.auto && !canAutoPublish}
                   onClick={() => updateSettings({ autoPublishResults: opt.auto })}
                   className={`border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                     selected ? "border-primary bg-primary/10" : "border-border hover:border-foreground/30"
@@ -335,8 +425,8 @@ export function StepFormSettings({ formId }: { formId?: string }) {
               );
             })}
           </div>
-          {!form.expiresAt && (
-            <p className="text-xs text-muted-foreground">Turn on the quiz timer to publish automatically.</p>
+          {!canAutoPublish && (
+            <p className="text-xs text-muted-foreground">Use a live timer or set a close time to publish automatically.</p>
           )}
           <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
             <div className="space-y-0.5">

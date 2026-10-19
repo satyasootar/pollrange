@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Clock, LogIn } from "lucide-react";
+import { ArrowRight, Check, Clock, Loader2, LogIn, Radio } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,14 +8,23 @@ import { Label } from "@/components/ui/label";
 import { BrandHeader } from "@/components/brand/brand-chrome";
 import { fadeUp, stagger } from "@/lib/animations";
 import { cn, formatCountdown } from "@/lib/utils";
-import type { PublicForm } from "@/types";
+import type { PublicForm, QuizTimerMode } from "@/types";
 
 interface QuizIntroProps {
   form: PublicForm;
   questionCount: number;
   totalPoints: number;
   hasMultiSelect: boolean;
+  /** Countdown shown on this page: the close time (none / per-person) or the shared live timer. */
   remaining: number | null;
+  timerMode: QuizTimerMode;
+  durationMinutes?: number | undefined;
+  /** Live quiz only: has the host started it yet? */
+  liveState: "waiting" | "running" | null;
+  /** Live quiz: the taker pressed "I'm ready" and goes straight in when the host starts. */
+  queued: boolean;
+  /** Per-person Start is creating the attempt. */
+  starting: boolean;
   /** Signed-out taker of an open quiz: ask for a leaderboard name. */
   askName: boolean;
   name: string;
@@ -104,6 +113,8 @@ function SampleTile({ n, state }: { n: number; state: "answered" | "current" | "
  */
 export function QuizIntro(props: QuizIntroProps) {
   const { form, questionCount, totalPoints, hasMultiSelect, remaining, askName, needsEmail, signInRequired } = props;
+  const { timerMode, durationMinutes: minutes, liveState, queued, starting } = props;
+  const lobby = liveState === "waiting";
   const [ready, setReady] = useState(false);
   const sections = form.sections.length;
   let step = 0;
@@ -120,10 +131,17 @@ export function QuizIntro(props: QuizIntroProps) {
       <motion.div variants={stagger} initial="hidden" animate="visible" className="mx-auto flex max-w-xl flex-col gap-4 sm:gap-5">
         <div className="flex items-center justify-between gap-3">
           <BrandHeader brand={form.brand} className="mb-0" />
-          {remaining !== null && (
-            <span className="ml-auto flex h-8 items-center gap-1.5 border border-border px-2.5 font-mono text-[13px] font-semibold tabular-nums">
-              <Clock className="h-3.5 w-3.5 text-primary" aria-hidden /> Ends in {formatCountdown(remaining)}
+          {lobby ? (
+            <span className="ml-auto flex h-8 items-center gap-1.5 border border-border px-2.5 text-[13px] font-semibold">
+              <Radio className="h-3.5 w-3.5 text-primary" aria-hidden /> Live quiz
             </span>
+          ) : (
+            remaining !== null && (
+              <span className="ml-auto flex h-8 items-center gap-1.5 border border-border px-2.5 font-mono text-[13px] font-semibold tabular-nums">
+                <Clock className="h-3.5 w-3.5 text-primary" aria-hidden />
+                {liveState === "running" ? `Started · ${formatCountdown(remaining)} left` : `${timerMode === "per_person" ? "Closes" : "Ends"} in ${formatCountdown(remaining)}`}
+              </span>
+            )
           )}
         </div>
 
@@ -139,7 +157,7 @@ export function QuizIntro(props: QuizIntroProps) {
           {[
             ["Questions", questionCount],
             ["Total points", totalPoints],
-            ["Sections", sections],
+            ["Time limit", timerMode === "none" ? (remaining !== null ? "Until close" : "None") : `${minutes} min`],
             ["Attempts", 1],
           ].map(([label, value]) => (
             <div key={label} className="flex flex-col gap-1 bg-card p-3">
@@ -194,7 +212,23 @@ export function QuizIntro(props: QuizIntroProps) {
                   : "All questions are on one page. You can change any answer until you press Submit."}
               </Note>
             </Step>
-            {remaining !== null && (
+            {timerMode === "per_person" && (
+              <Step n={++step} title={`Your own ${minutes}-minute timer`} tone="warn">
+                <Note>
+                  It starts when you press Start and keeps running even if you leave or refresh the page. At 0:00 whatever you've answered is
+                  submitted for you.
+                </Note>
+              </Step>
+            )}
+            {timerMode === "live" && (
+              <Step n={++step} title="The host starts everyone together" tone="warn">
+                <Note>
+                  Everyone's {minutes}-minute timer begins at the same moment, when the host presses Start. Join late and you get the time
+                  that's left. At 0:00 whatever you've answered is submitted for you.
+                </Note>
+              </Step>
+            )}
+            {timerMode === "none" && remaining !== null && (
               <Step n={++step} title="The timer doesn't stop" tone="warn">
                 <Note>It's already running for everyone. At 0:00 the quiz closes and whatever you've answered is submitted for you.</Note>
               </Step>
@@ -261,18 +295,43 @@ export function QuizIntro(props: QuizIntroProps) {
         </motion.section>
 
         <div className="sticky bottom-0 -mx-4 mt-auto flex flex-col gap-2 border-t border-border bg-background/95 px-4 pt-3 pb-5 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-10">
-          <Button size="lg" onClick={start} className="h-13 w-full gap-2 text-base font-bold">
-            {signInRequired ? (
-              <>
-                <LogIn className="h-4 w-4" aria-hidden /> Sign in to start
-              </>
-            ) : (
-              <>
-                Start quiz <ArrowRight className="h-4 w-4" aria-hidden />
-              </>
-            )}
-          </Button>
-          {remaining !== null && <span className="text-center text-xs text-muted-foreground">The timer is already running for everyone.</span>}
+          {lobby && queued ? (
+            <div role="status" className="flex items-center gap-3 border border-primary/50 bg-primary/10 px-4 py-3.5">
+              <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+              </span>
+              <div className="text-sm">
+                <p className="font-semibold">You're in. Waiting for the host to start…</p>
+                <p className="text-muted-foreground">Keep this page open. The quiz opens automatically.</p>
+              </div>
+            </div>
+          ) : (
+            <Button size="lg" onClick={start} disabled={starting} className="h-13 w-full gap-2 text-base font-bold">
+              {starting ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : signInRequired ? (
+                <>
+                  <LogIn className="h-4 w-4" aria-hidden /> Sign in to start
+                </>
+              ) : lobby ? (
+                <>I'm ready</>
+              ) : (
+                <>
+                  Start quiz{timerMode === "per_person" ? ` · ${minutes} min` : ""} <ArrowRight className="h-4 w-4" aria-hidden />
+                </>
+              )}
+            </Button>
+          )}
+          <span className="text-center text-xs text-muted-foreground">
+            {lobby
+              ? "The host hasn't started yet. Everyone's timer begins together."
+              : timerMode === "per_person"
+                ? `Your ${minutes}-minute timer starts when you press Start.`
+                : remaining !== null
+                  ? "The timer is already running for everyone."
+                  : ""}
+          </span>
         </div>
       </motion.div>
     </div>

@@ -72,6 +72,10 @@ export const formImportSchema = z
     description: z.string().max(1000).optional(),
     isQuiz: z.boolean().optional(),
     requireSignIn: z.boolean().optional(),
+    quizTimer: z
+      .object({ mode: z.enum(["none", "per_person", "live"]), durationMinutes: z.number().int().min(1).max(600).optional() })
+      .refine((t) => t.mode === "none" || t.durationMinutes !== undefined, { message: "quizTimer needs durationMinutes" })
+      .optional(),
     settings: z
       .object({
         collectEmail: z.boolean(),
@@ -230,6 +234,7 @@ export function parseFormImport(text: string, base: FormBuilderForm): FormBuilde
     description: f.description ?? "",
     isQuiz,
     responseMode: f.requireSignIn ? "authenticated" : "anonymous",
+    quizTimer: isQuiz && f.quizTimer ? f.quizTimer : { mode: "none" },
     settings: { ...base.settings, ...f.settings },
     sections,
   };
@@ -251,6 +256,10 @@ TOP LEVEL
   "description": string,           // optional, max 1000 chars
   "isQuiz": boolean,               // optional, default false. true = graded quiz (see QUIZ below)
   "requireSignIn": boolean,        // optional, default false. true = respondents must sign in (forced on if any file_upload question exists)
+  "quizTimer": {                   // optional, quizzes only. Omit for no time limit
+    "mode": "none" | "per_person" | "live", // per_person: each taker gets N minutes from pressing Start. live: the host starts one timer for everyone
+    "durationMinutes": number      // 1-600, required unless mode is "none"
+  },
   "settings": {                    // optional, every key optional
     "collectEmail": boolean,           // default false
     "limitOneResponse": boolean,       // default false

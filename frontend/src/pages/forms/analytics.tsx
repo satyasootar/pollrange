@@ -35,6 +35,7 @@ import { formKeys, useForm, useCloseForm, useReopenForm, useRegenerateFormToken,
 import { useAuthStore } from "@/store/use-auth-store";
 import { isFormLocked } from "@/lib/form-mappers";
 import { LeaderboardPanel } from "@/components/quiz-results/leaderboard-panel";
+import { LiveQuizControl } from "@/components/quiz-results/live-quiz-control";
 import { useFormSummary, useFormTimeline, useFormQuestionSummaries, useFormResponses, formAnalyticsKeys } from "@/hooks/use-form-analytics";
 import { useFormSocket } from "@/hooks/use-form-socket";
 import { useSendReceipt } from "@/hooks/use-send-receipt";
@@ -434,6 +435,9 @@ export function FormAnalyticsPage() {
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-6 md:px-8">
+        {form.isQuiz && form.quizTimer?.mode === "live" && (
+          <LiveQuizControl form={form} responses={summary?.totalResponses ?? form.totalResponses} />
+        )}
         <Tabs value={tab} onValueChange={setTab}>
           <div className="-mx-4 mb-6 overflow-x-auto px-4 md:mx-0 md:px-0">
             <TabsList>
