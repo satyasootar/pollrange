@@ -116,9 +116,12 @@ interface ResponsesViewProps {
   onReceiptFilter: (f: ReceiptFilter | undefined) => void;
 }
 
+const PAGE_SIZE = 20;
+
 function IndividualResponses({ formId, form, receiptFilter, onReceiptFilter }: ResponsesViewProps) {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useFormResponses(formId, page, 20, receiptFilter);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { data, isLoading } = useFormResponses(formId, page, PAGE_SIZE, receiptFilter);
   const sendReceipt = useSendReceipt("form", formId);
   const questionsById = useMemo(() => {
     const map = new Map<string, FormQuestion>();
@@ -130,6 +133,22 @@ function IndividualResponses({ formId, form, receiptFilter, onReceiptFilter }: R
   if (!data || (data.items.length === 0 && !receiptFilter))
     return <p className="py-12 text-center text-sm text-muted-foreground">No responses yet.</p>;
 
+  const items = data.items;
+  // One response at a time; falls back to the first on this page (new page, new filter).
+  const idx = Math.max(0, items.findIndex((it) => it.responseId === selectedId));
+  const r: IndividualFormResponse | undefined = items[idx];
+  const offset = (data.pagination.page - 1) * PAGE_SIZE;
+  const total = data.pagination.total;
+  const changePage = (delta: number) => {
+    setSelectedId(null);
+    setPage((p) => p + delta);
+  };
+  const go = (i: number) => {
+    if (i >= 0 && i < items.length) setSelectedId(items[i]!.responseId);
+    else if (i < 0 && data.pagination.hasPrev) changePage(-1);
+    else if (i >= items.length && data.pagination.hasNext) changePage(1);
+  };
+
   return (
     <div className="space-y-4">
       <ReceiptSummary
@@ -137,76 +156,143 @@ function IndividualResponses({ formId, form, receiptFilter, onReceiptFilter }: R
         filter={receiptFilter}
         onFilter={(f) => {
           setPage(1);
+          setSelectedId(null);
           onReceiptFilter(f);
         }}
       />
-      {data.items.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No responses match this filter.</p>}
-      {data.items.map((r: IndividualFormResponse) => (
-        <div key={r.responseId} className="border border-border bg-card p-5">
-          <div className="mb-3 flex items-center justify-between border-b border-border pb-3">
-            <div>
-              <p className="text-sm font-semibold">{r.name}</p>
-              {r.email && <p className="text-xs text-muted-foreground">{r.email}</p>}
-              <div className="mt-2">
-                <ReceiptStatus
-                  receipt={r.receipt}
-                  history={r.receiptHistory}
-                  email={r.email}
-                  sending={sendReceipt.isPending && sendReceipt.variables === r.responseId}
-                  onSend={() => sendReceipt.mutate(r.responseId)}
-                />
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">{formatDatetime(r.submittedAt)}</p>
-              {form.isQuiz && r.totalPoints != null && (
-                <p className="text-sm font-semibold text-primary">
-                  {r.score ?? 0} / {r.totalPoints}
-                </p>
-              )}
-              {r.payment && (
-                <p className="text-sm font-semibold tabular-nums text-primary" title="Amount due via UPI">
-                  {formatInr(r.payment.totalAmount)} due
-                </p>
-              )}
-            </div>
-          </div>
-          {r.payment && (
-            <p className="mb-3 border border-border bg-muted/30 px-3 py-2 font-mono text-xs text-muted-foreground" title="UPI note to match against your bank statement">
-              {r.payment.message}
-            </p>
-          )}
-          <div className="space-y-3">
-            {r.answers.map((a, i) => (
-              <div key={i}>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {a.questionTitleSnapshot ?? questionsById.get(a.questionId)?.title ?? "Question"}
-                </p>
-                <p className="text-sm">
-                  <AnswerValue answer={a} question={questionsById.get(a.questionId)} />
-                  {form.isQuiz && a.isCorrect != null && (
-                    <span className={cn("ml-2 text-xs", a.isCorrect ? "text-emerald-600" : "text-destructive")}>
-                      {a.isCorrect ? "✓" : "✗"}
-                    </span>
-                  )}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+      {items.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No responses match this filter.</p>}
 
-      {data.pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={!data.pagination.hasPrev} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {data.pagination.page} of {data.pagination.totalPages}
-          </span>
-          <Button variant="outline" size="sm" disabled={!data.pagination.hasNext} onClick={() => setPage((p) => p + 1)}>
-            Next
-          </Button>
+      {r && (
+        <div className="grid gap-4 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start">
+          {/* Who responded: a scrollable list beside the open response (laptops; phones use Previous/Next). */}
+          <nav aria-label="Responses" className="hidden border border-border bg-card lg:sticky lg:top-0 lg:block">
+            <p className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {offset + 1}–{offset + items.length} of {total}
+            </p>
+            <ul className="custom-scrollbar max-h-[calc(100vh-18rem)] overflow-y-auto">
+              {items.map((it, i) => (
+                <li key={it.responseId}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(it.responseId)}
+                    aria-current={i === idx ? "true" : undefined}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 border-l-2 px-4 py-2.5 text-left hover:bg-muted/50",
+                      i === idx ? "border-primary bg-muted/60" : "border-transparent"
+                    )}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium">{it.name}</span>
+                      <span className="block truncate text-[11px] text-muted-foreground">{formatDatetime(it.submittedAt)}</span>
+                    </span>
+                    {form.isQuiz && it.totalPoints != null && (
+                      <span className="shrink-0 text-xs font-semibold tabular-nums text-primary">
+                        {it.score ?? 0}/{it.totalPoints}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {data.pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+                <Button variant="ghost" size="sm" disabled={!data.pagination.hasPrev} onClick={() => changePage(-1)}>
+                  Prev page
+                </Button>
+                <span className="text-[11px] text-muted-foreground">
+                  {data.pagination.page}/{data.pagination.totalPages}
+                </span>
+                <Button variant="ghost" size="sm" disabled={!data.pagination.hasNext} onClick={() => changePage(1)}>
+                  Next page
+                </Button>
+              </div>
+            )}
+          </nav>
+
+          {/* The open response. */}
+          <article className="border border-border bg-card">
+            <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+              <Button variant="outline" size="sm" onClick={() => go(idx - 1)} disabled={idx === 0 && !data.pagination.hasPrev}>
+                ← Previous
+              </Button>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                Response {offset + idx + 1} of {total}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => go(idx + 1)}
+                disabled={idx === items.length - 1 && !data.pagination.hasNext}
+              >
+                Next →
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-5">
+              <div className="min-w-0">
+                <p className="text-base font-semibold">{r.name}</p>
+                {r.email && <p className="text-xs text-muted-foreground">{r.email}</p>}
+                <p className="mt-0.5 text-xs text-muted-foreground">{formatDatetime(r.submittedAt)}</p>
+                <div className="mt-2">
+                  <ReceiptStatus
+                    receipt={r.receipt}
+                    history={r.receiptHistory}
+                    email={r.email}
+                    sending={sendReceipt.isPending && sendReceipt.variables === r.responseId}
+                    onSend={() => sendReceipt.mutate(r.responseId)}
+                  />
+                </div>
+              </div>
+              <div className="text-right">
+                {form.isQuiz && r.totalPoints != null && (
+                  <p className="text-2xl font-bold tabular-nums text-primary">
+                    {r.score ?? 0}
+                    <span className="text-sm font-medium text-muted-foreground">/{r.totalPoints}</span>
+                  </p>
+                )}
+                {r.payment && (
+                  <p className="text-sm font-semibold tabular-nums text-primary" title="Amount due via UPI">
+                    {formatInr(r.payment.totalAmount)} due
+                  </p>
+                )}
+              </div>
+            </div>
+            {r.payment && (
+              <p
+                className="mx-5 mt-4 border border-border bg-muted/30 px-3 py-2 font-mono text-xs text-muted-foreground"
+                title="UPI note to match against your bank statement"
+              >
+                {r.payment.message}
+              </p>
+            )}
+
+            {/* Answers two per row on wider screens to keep long forms short. */}
+            <ol className="grid gap-3 p-5 md:grid-cols-2">
+              {r.answers.map((a, i) => (
+                <li
+                  key={i}
+                  className={cn(
+                    "border border-l-2 border-border px-3 py-2.5",
+                    form.isQuiz && a.isCorrect != null && (a.isCorrect ? "border-l-emerald-500" : "border-l-destructive")
+                  )}
+                >
+                  <p className="flex items-start justify-between gap-2 text-xs font-medium text-muted-foreground">
+                    <span>
+                      {i + 1}. {a.questionTitleSnapshot ?? questionsById.get(a.questionId)?.title ?? "Question"}
+                    </span>
+                    {form.isQuiz && a.isCorrect != null && (
+                      <span className={cn("shrink-0 font-semibold", a.isCorrect ? "text-emerald-600 dark:text-emerald-400" : "text-destructive")}>
+                        {a.isCorrect ? "✓ Correct" : "✗ Wrong"}
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-1 break-words text-sm">
+                    <AnswerValue answer={a} question={questionsById.get(a.questionId)} />
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </article>
         </div>
       )}
     </div>
@@ -302,6 +388,11 @@ export function FormAnalyticsPage() {
   const [timelineGroupBy, setTimelineGroupBy] = useState<TimelineGranularity>("day");
   const [receiptFilter, setReceiptFilter] = useState<ReceiptFilter | undefined>();
   const { data: timeline } = useFormTimeline(formId!, timelineGroupBy);
+  // Quiz answer keys by question, so the Summary can mark the correct options.
+  const answerKeys = useMemo(
+    () => new Map((form?.sections ?? []).flatMap((s) => s.questions).flatMap((q) => (q.answerKey ? [[q._id, q.answerKey] as const] : []))),
+    [form]
+  );
 
   useFormSocket({
     formId: formId!,
@@ -468,7 +559,7 @@ export function FormAnalyticsPage() {
 
             <div className="space-y-4">
               {questionSummaries?.map((q) => (
-                <QuestionSummaryCard key={q.questionId} q={q} />
+                <QuestionSummaryCard key={q.questionId} q={q} answerKey={form.isQuiz ? answerKeys.get(q.questionId) : undefined} />
               ))}
             </div>
           </TabsContent>

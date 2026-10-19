@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import * as FormService from "./form.service.js";
 import * as FormResultsService from "./form-results.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
-import { startLiveQuizSchema, extendLiveQuizSchema, createFormSchema, updateFormSchema, publishFormSchema, reopenFormSchema } from "./form.validation.js";
+import { updateCoverSchema, startLiveQuizSchema, extendLiveQuizSchema, createFormSchema, updateFormSchema, publishFormSchema, reopenFormSchema } from "./form.validation.js";
 import { uploadBufferToCloudinary } from "../../config/cloudinary.js";
 import { ApiError } from "../../utils/ApiError.js";
 
@@ -102,6 +102,13 @@ export async function endLiveQuiz(req: Request, res: Response) {
   const user = (req as any).user;
   const form = await FormService.endLiveQuiz(user._id.toString(), req.params.formId as string);
   return res.status(200).json(new ApiResponse(200, form, "Live quiz ended"));
+}
+
+export async function updateCover(req: Request, res: Response) {
+  const user = (req as any).user;
+  const { coverImageUrl } = updateCoverSchema.parse(req.body);
+  const form = await FormService.updateCover(user._id.toString(), req.params.formId as string, coverImageUrl);
+  return res.status(200).json(new ApiResponse(200, form, coverImageUrl ? "Cover updated" : "Cover removed"));
 }
 
 export async function closeForm(req: Request, res: Response) {

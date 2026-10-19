@@ -413,6 +413,17 @@ export async function endLiveQuiz(userId: string, formId: string) {
   return updated;
 }
 
+/** Sets or removes the cover image. Unlike updateForm this works after responses arrive: nothing graded depends on it. */
+export async function updateCover(userId: string, formId: string, coverImageUrl: string | null) {
+  const form = await Form.findOneAndUpdate(
+    { _id: formId, creatorId: userId, isDeleted: false },
+    coverImageUrl ? { $set: { coverImageUrl } } : { $unset: { coverImageUrl: 1 } },
+    { returnDocument: "after" }
+  );
+  if (!form) throw new ApiError(404, "Form not found or unauthorized");
+  return form;
+}
+
 export async function closeForm(userId: string, formId: string) {
   const form = await Form.findOne({ _id: formId, creatorId: userId, isDeleted: false });
   if (!form) throw new ApiError(404, "Form not found or unauthorized");

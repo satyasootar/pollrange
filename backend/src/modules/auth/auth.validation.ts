@@ -12,7 +12,8 @@ export const loginSchema = z.object({
 });
 
 export const changePasswordSchema = z.object({
-  oldPassword: z.string().min(1, "Old password is required"),
+  // Omitted only when adding a first password to a Google-only account; required otherwise (checked in the service).
+  oldPassword: z.string().min(1, "Old password is required").optional(),
   newPassword: z.string().min(8, "New password must be at least 8 characters"),
 });
 

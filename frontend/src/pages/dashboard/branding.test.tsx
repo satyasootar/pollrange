@@ -12,7 +12,7 @@ import { useAuthStore } from "@/store/use-auth-store";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
 import { StepFormSettings } from "@/components/form-builder/step-form-settings";
 import { toFormPayload } from "@/api/forms.api";
-import { brandVars, contrastRatio, contrastText } from "@/lib/brand";
+import { brandVars, contrastRatio, contrastText, isReddish } from "@/lib/brand";
 import type { PublicBrand, User } from "@/types";
 
 const API = "http://localhost:3030/api";
@@ -40,6 +40,12 @@ describe("brand colour helpers", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 0);
   });
 
+  it("spots red accents (they clash with a quiz's red wrong answers)", () => {
+    for (const red of ["#dc2626", "#ef4444", "#b91c1c", "#e11d48", "#ff0000"]) expect(isReddish(red), red).toBe(true);
+    for (const other of ["#4f46e5", "#059669", "#d97706", "#db2777", "#0f172a", "#fecaca", "#3b0a0a", "#808080", "nope"])
+      expect(isReddish(other), other).toBe(false);
+  });
+
   it("only overrides the accent when it's a valid hex and tints on request", () => {
     expect(brandVars({ accentColor: "nope", font: "default", radius: "sharp", background: "tint" })).toEqual({ "--brand-radius": "0px" });
     const v = brandVars({ accentColor: "#123456", font: "default", radius: "round", background: "tint" });
@@ -57,6 +63,17 @@ describe("BrandingPage", () => {
     await userEvent.type(screen.getByLabelText("Company name"), "Chai Co");
     // The live preview reflects edits even before saving.
     expect(screen.getAllByText("Chai Co").length).toBeGreaterThan(0);
+  });
+
+  it("warns about quizzes only when a red accent is picked", async () => {
+    renderAtRoute(<BrandingPage />, { path: "/b", route: "/b" });
+    const accent = await screen.findByLabelText(/accent/i, { selector: "input#accent" });
+    await userEvent.clear(accent);
+    await userEvent.type(accent, "#059669");
+    expect(screen.queryByText(/quizzes mark wrong answers in red/i)).not.toBeInTheDocument();
+    await userEvent.clear(accent);
+    await userEvent.type(accent, "#dc2626");
+    expect(screen.getByText(/quizzes mark wrong answers in red/i)).toBeInTheDocument();
   });
 
   it("saves the kit on Plus", async () => {

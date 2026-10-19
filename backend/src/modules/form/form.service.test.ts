@@ -8,7 +8,7 @@ vi.mock("../branding/branding.service.js", () => ({ resolveBrand: vi.fn() }));
 
 import { Form } from "./form.model.js";
 import { FormResponse } from "../form-response/form-response.model.js";
-import { updateForm } from "./form.service.js";
+import { updateCover, updateForm } from "./form.service.js";
 
 const m = (fn: unknown) => fn as ReturnType<typeof vi.fn>;
 /** Form.findOne(...).select(...).lean() resolving to `doc`. */
@@ -46,5 +46,23 @@ describe("updateForm lock", () => {
   it("returns 404 for someone else's form", async () => {
     current(null);
     await expect(updateForm("u", "f", { title: "x" })).rejects.toMatchObject({ statusCode: 404 });
+  });
+});
+
+describe("updateCover", () => {
+  it("sets or removes the cover even on a form that has responses (no lock check)", async () => {
+    const fau = Form.findOneAndUpdate as unknown as ReturnType<typeof vi.fn>;
+    fau.mockResolvedValue({ _id: "f" });
+    await updateCover("u", "f", "https://img.test/c.png");
+    expect(fau.mock.calls.at(-1)).toEqual([
+      { _id: "f", creatorId: "u", isDeleted: false },
+      { $set: { coverImageUrl: "https://img.test/c.png" } },
+      { returnDocument: "after" },
+    ]);
+    await updateCover("u", "f", null);
+    expect(fau.mock.calls.at(-1)![1]).toEqual({ $unset: { coverImageUrl: 1 } });
+
+    fau.mockResolvedValue(null);
+    await expect(updateCover("someone-else", "f", null)).rejects.toMatchObject({ statusCode: 404 });
   });
 });

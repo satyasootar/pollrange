@@ -12,13 +12,13 @@ function AnswerBox({ label, answer, tone }: { label: string; answer: string[]; t
     <div
       className={cn(
         "flex gap-3 border p-3.5 sm:p-4",
-        tone === "right" ? "border-emerald-500/50 bg-emerald-500/10" : "border-orange-500/50 bg-orange-500/10"
+        tone === "right" ? "border-emerald-500/50 bg-emerald-500/10" : "border-destructive/50 bg-destructive/10"
       )}
     >
       <span
         className={cn(
           "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center",
-          tone === "right" ? "bg-emerald-500 text-white" : "bg-orange-500 text-orange-950"
+          tone === "right" ? "bg-emerald-500 text-white" : "bg-destructive text-white"
         )}
         aria-hidden
       >
@@ -82,11 +82,11 @@ export function QuizReview({ items }: { items: QuizReviewItem[] }) {
           <p className="text-xs tabular-nums">
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">{correct} right</span>
             <span className="text-muted-foreground"> · </span>
-            <span className="font-semibold text-orange-500">{wrong} wrong</span>
+            <span className="font-semibold text-destructive">{wrong} wrong</span>
           </p>
         </div>
         {/* Share of right answers at a glance. */}
-        <div className="mt-2 flex h-1.5 overflow-hidden bg-orange-500/80" aria-hidden>
+        <div className="mt-2 flex h-1.5 overflow-hidden bg-destructive/60" aria-hidden>
           <div className="bg-emerald-500" style={{ width: `${(correct / items.length) * 100}%` }} />
         </div>
 
@@ -104,7 +104,7 @@ export function QuizReview({ items }: { items: QuizReviewItem[] }) {
                 className={cn(
                   // Fixed 36px squares in the phone strip; in the laptop grid each fills its column and stays square.
                   "flex h-9 w-9 shrink-0 items-center justify-center text-xs font-semibold tabular-nums transition lg:aspect-square lg:h-auto lg:w-full",
-                  it.isCorrect ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-orange-500/90 text-orange-950",
+                  it.isCorrect ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive",
                   i === current && "ring-2 ring-foreground ring-offset-2 ring-offset-card",
                   dimmed && "opacity-30"
                 )}
@@ -133,7 +133,7 @@ export function QuizReview({ items }: { items: QuizReviewItem[] }) {
           <span
             className={cn(
               "inline-flex items-center gap-1.5 px-2 py-1 text-xs font-semibold",
-              item.isCorrect ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-orange-500/15 text-orange-500"
+              item.isCorrect ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive"
             )}
           >
             {item.isCorrect ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}

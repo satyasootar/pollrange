@@ -20,7 +20,8 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isHydrated: false,
-      setUser: (user) => set({ user }),
+      // Same account: merge, so payloads without the /auth/me-only fields (isAdmin, hasPassword, hasGoogle) don't drop them.
+      setUser: (user) => set((s) => ({ user: s.user?._id === user._id ? { ...s.user, ...user } : user })),
       setAuth: (user, accessToken, refreshToken) => 
         set({ user, accessToken: accessToken ?? null, refreshToken: refreshToken ?? null }),
       clearAuth: () => set({ user: null, accessToken: null, refreshToken: null }),

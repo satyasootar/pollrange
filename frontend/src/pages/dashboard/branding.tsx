@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertTriangle, Loader2, Lock, Palette, Save } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -13,7 +13,18 @@ import { ImageField } from "@/components/brand/image-field";
 import { useUpdateProfile } from "@/hooks/use-profile";
 import { useCanUse } from "@/hooks/use-plan";
 import { useAuthStore } from "@/store/use-auth-store";
-import { ACCENT_SWATCHES, BRAND_FONTS, BRAND_RADII, HEX_RE, QR_CIRCLE_LOGO, contrastRatio, kitToPublic, withBrandDefaults } from "@/lib/brand";
+import {
+  ACCENT_SWATCHES,
+  BRAND_FONTS,
+  BRAND_RADII,
+  HEX_RE,
+  QR_CIRCLE_LOGO,
+  RED_ACCENT_QUIZ_WARNING,
+  contrastRatio,
+  isReddish,
+  kitToPublic,
+  withBrandDefaults,
+} from "@/lib/brand";
 import { cn } from "@/lib/utils";
 import type { BrandBackground, UserBranding } from "@/types";
 
@@ -129,6 +140,11 @@ export function BrandingPage() {
                   />
                 </div>
                 {!accentOk && <p className="text-xs text-destructive">Use a 6-digit hex colour like #4f46e5.</p>}
+                {isReddish(kit.accentColor) && (
+                  <p role="note" className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" /> {RED_ACCENT_QUIZ_WARNING}
+                  </p>
+                )}
                 {lowContrast && (
                   <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                     <AlertTriangle className="h-3.5 w-3.5" /> Light colours can be hard to read on white. Consider a darker shade.
@@ -263,29 +279,42 @@ function Preview({ kit }: { kit: UserBranding }) {
       </TabsList>
 
       <TabsContent value="form">
-        <BrandScope brand={brand} className="border border-border bg-background p-5">
-          <BrandHeader brand={brand} className="mb-4" />
-          <p className="text-lg font-bold leading-tight">Customer feedback</p>
-          <p className="mt-1 text-xs text-muted-foreground">Tell us how we did. It takes a minute.</p>
-          <div className="mt-3 h-1 w-full bg-border">
-            <div className="h-full w-1/3 bg-primary" />
-          </div>
-          <div className="mt-4 border border-border bg-card p-4">
-            <p className="mb-3 text-sm font-semibold">How was your visit?</p>
-            <div className="space-y-2">
-              {["Loved it", "It was okay"].map((t, i) => (
-                <div key={t} className={cn("flex items-center gap-3 border p-2.5 text-sm", i === 0 ? "border-primary bg-primary/10 text-primary" : "border-border")}>
-                  <span className={cn("h-3.5 w-3.5 rounded-full border-2", i === 0 ? "border-primary bg-primary" : "border-muted-foreground/40")} />
-                  {t}
-                </div>
-              ))}
+        {/* A picture of the form, not a form: the not-allowed cursor and tooltip say so on hover, and nothing inside reacts. */}
+        <div
+          title="Preview only. This is how your forms will look."
+          aria-label="Form preview (not interactive)"
+          className="relative cursor-not-allowed select-none"
+        >
+          <span className="absolute top-2 right-2 z-10 bg-foreground/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
+            Preview
+          </span>
+          <BrandScope brand={brand} className="pointer-events-none border border-border bg-background p-5">
+            <BrandHeader brand={brand} className="mb-4" />
+            <p className="text-lg font-bold leading-tight">Customer feedback</p>
+            <p className="mt-1 text-xs text-muted-foreground">Tell us how we did. It takes a minute.</p>
+            <div className="mt-3 h-1 w-full bg-border">
+              <div className="h-full w-1/3 bg-primary" />
             </div>
-          </div>
-          <div className="mt-4 flex justify-end">
-            <Button size="sm" tabIndex={-1}>Submit</Button>
-          </div>
-          <BrandFooter brand={brand} />
-        </BrandScope>
+            <div className="mt-4 border border-border bg-card p-4">
+              <p className="mb-3 text-sm font-semibold">How was your visit?</p>
+              <div className="space-y-2">
+                {["Loved it", "It was okay"].map((t, i) => (
+                  <div key={t} className={cn("flex items-center gap-3 border p-2.5 text-sm", i === 0 ? "border-primary bg-primary/10 text-primary" : "border-border")}>
+                    <span className={cn("h-3.5 w-3.5 rounded-full border-2", i === 0 ? "border-primary bg-primary" : "border-muted-foreground/40")} />
+                    {t}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              {/* Styled like the real button (to show the accent) but not a button, so it can't be clicked or focused. */}
+              <span aria-hidden className={buttonVariants({ size: "sm" })}>
+                Submit
+              </span>
+            </div>
+            <BrandFooter brand={brand} />
+          </BrandScope>
+        </div>
       </TabsContent>
 
       <TabsContent value="qr">

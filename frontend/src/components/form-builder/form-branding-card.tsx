@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Lock, Palette } from "lucide-react";
+import { AlertTriangle, Lock, Palette } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -8,7 +8,7 @@ import { ImageField } from "@/components/brand/image-field";
 import { useFormBuilderStore } from "@/store/use-form-builder-store";
 import { useAuthStore } from "@/store/use-auth-store";
 import { useCanUse } from "@/hooks/use-plan";
-import { HEX_RE, withBrandDefaults } from "@/lib/brand";
+import { HEX_RE, RED_ACCENT_QUIZ_WARNING, isReddish, withBrandDefaults } from "@/lib/brand";
 import type { FormBrandingOverride } from "@/types";
 
 const isHttpUrl = (v: string) => /^https?:\/\/\S+\.\S+/.test(v);
@@ -22,6 +22,9 @@ export function FormBrandingCard() {
   const set = (patch: Partial<FormBrandingOverride>) => updateMeta({ branding: { ...b, ...patch } });
   const hasKit = !!(kit.logoUrl || kit.companyName || kit.accentColor);
   const redirectBad = !!b.redirectUrl && !isHttpUrl(b.redirectUrl);
+  // The colour respondents will actually see: this form's override, else the kit's.
+  const accent = HEX_RE.test(b.accentColor ?? "") ? b.accentColor! : kit.accentColor;
+  const redOnQuiz = form.isQuiz && isReddish(accent);
 
   return (
     <div className="space-y-4 border border-border p-4">
@@ -84,6 +87,11 @@ export function FormBrandingCard() {
                   className="h-9"
                 />
               </div>
+              {redOnQuiz && (
+                <p role="note" className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" /> {RED_ACCENT_QUIZ_WARNING}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">

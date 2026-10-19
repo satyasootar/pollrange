@@ -95,6 +95,10 @@ export const formsApi = {
 
   close: (formId: string) => api.patch<{ data: Form }>(`/forms/${formId}/close`),
 
+  /** Cover only: works even once the form is locked by responses. Null removes it. */
+  setCover: (formId: string, coverImageUrl: string | null) =>
+    api.patch<{ data: Form }>(`/forms/${formId}/cover`, { coverImageUrl }),
+
   reopen: (formId: string, expiresAt?: string | null) =>
     api.patch<{ data: Form }>(`/forms/${formId}/reopen`, { expiresAt }),
 

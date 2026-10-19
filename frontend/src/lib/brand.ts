@@ -80,6 +80,27 @@ export function contrastText(hex: string) {
   return contrastRatio(hex, "#ffffff") >= contrastRatio(hex, "#000000") ? "#ffffff" : "#000000";
 }
 
+/**
+ * A red shade (hue within ~20° of red, clearly saturated, not near black/white). Quizzes mark
+ * wrong answers in red, so a red accent makes correct and wrong hard to tell apart.
+ */
+export function isReddish(hex: string) {
+  if (!HEX_RE.test(hex)) return false;
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (max !== r || d === 0) return false;
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const hue = (((g - b) / d) * 60 + 360) % 360;
+  return (hue <= 20 || hue >= 340) && s >= 0.35 && l >= 0.2 && l <= 0.8;
+}
+
+/** Shown next to an accent picker when the colour is red. */
+export const RED_ACCENT_QUIZ_WARNING =
+  "Quizzes mark wrong answers in red, so with a red accent your colour can look like a mistake and right and wrong answers get harder to tell apart. For quizzes, consider another colour.";
+
 export function fontFamily(id: string | undefined) {
   return BRAND_FONTS.find((f) => f.id === id)?.family ?? null;
 }

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -12,6 +13,9 @@ import {
   Files,
   Lock,
   Award,
+  ImagePlus,
+  ImageOff,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Form, PollStatus } from "@/types";
 import { buildFormShareUrl, copyToClipboard, formatDate } from "@/lib/utils";
-import { useDeleteForm, useDuplicateForm, useCloseForm, useReopenForm } from "@/hooks/use-forms";
+import { useDeleteForm, useDuplicateForm, useCloseForm, useReopenForm, useSetFormCover } from "@/hooks/use-forms";
 import { toast } from "sonner";
 import { isFormLocked } from "@/lib/form-mappers";
 import { cardHover } from "@/lib/animations";
@@ -41,6 +45,8 @@ export function FormCard({ form }: { form: Form }) {
   const duplicateForm = useDuplicateForm();
   const closeForm = useCloseForm(form._id);
   const reopenForm = useReopenForm(form._id);
+  const setCover = useSetFormCover(form._id);
+  const coverInput = useRef<HTMLInputElement>(null);
   const statusCfg = STATUS_CONFIG[form.status];
   const shareUrl = buildFormShareUrl(form.shareToken);
   const questionCount = form.sections.reduce((n, s) => n + s.questions.length, 0);
@@ -58,7 +64,25 @@ export function FormCard({ form }: { form: Form }) {
       variants={cardHover}
       onClick={() => navigate(`/forms/${form._id}/analytics`)}
     >
-      {form.coverImageUrl && (
+      {/* Opened from the menu; lives outside it so the menu can close first. */}
+      <input
+        ref={coverInput}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) setCover.mutate(file);
+          e.target.value = "";
+        }}
+      />
+      {setCover.isPending && (
+        <div className="flex aspect-3/1 items-center justify-center gap-2 border-b border-border bg-muted text-xs text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Updating cover…
+        </div>
+      )}
+      {form.coverImageUrl && !setCover.isPending && (
         <div className="aspect-3/1 overflow-hidden border-b border-border bg-muted">
           <img
             src={form.coverImageUrl}
@@ -111,6 +135,14 @@ export function FormCard({ form }: { form: Form }) {
                 {!isFormLocked(form) && (
                   <DropdownMenuItem onClick={() => navigate(`/forms/${form._id}/edit`)}>
                     <Pencil className="mr-2 h-4 w-4" /> Edit
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => coverInput.current?.click()} disabled={setCover.isPending}>
+                  <ImagePlus className="mr-2 h-4 w-4" /> {form.coverImageUrl ? "Change cover" : "Add cover"}
+                </DropdownMenuItem>
+                {form.coverImageUrl && (
+                  <DropdownMenuItem onClick={() => setCover.mutate(null)} disabled={setCover.isPending}>
+                    <ImageOff className="mr-2 h-4 w-4" /> Remove cover
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => duplicateForm.mutate(form._id)}>

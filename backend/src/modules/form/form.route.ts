@@ -14,6 +14,7 @@ router.get("/:formId", FormController.getFormDetail);
 router.patch("/:formId", FormController.updateForm);
 router.delete("/:formId", FormController.deleteForm);
 router.post("/:formId/duplicate", FormController.duplicateForm);
+router.patch("/:formId/cover", FormController.updateCover);
 router.patch("/:formId/close", FormController.closeForm);
 router.patch("/:formId/reopen", FormController.reopenForm);
 router.post("/:formId/publish", FormController.publishForm);

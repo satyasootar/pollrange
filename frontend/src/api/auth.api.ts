@@ -26,8 +26,9 @@ export const authApi = {
 
   refreshToken: () => api.post("/auth/refresh-token"),
 
-  changePassword: (oldPassword: string, newPassword: string) =>
-    api.post("/auth/change-password", { oldPassword, newPassword }),
+  /** Leave oldPassword out to add a first password to a Google-only account. */
+  changePassword: (oldPassword: string | undefined, newPassword: string) =>
+    api.post<{ data: { created: boolean } }>("/auth/change-password", { oldPassword, newPassword }),
 
   forgotPassword: (email: string) =>
     api.post("/auth/forgot-password", { email }),

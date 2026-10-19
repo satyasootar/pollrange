@@ -22,10 +22,15 @@ export function useUpdateProfile() {
 }
 
 export function useChangePassword() {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ oldPassword, newPassword }: { oldPassword: string; newPassword: string }) => authApi.changePassword(oldPassword, newPassword),
-    onSuccess: () => {
-      toast.success("Password changed successfully!");
+    mutationFn: ({ oldPassword, newPassword }: { oldPassword?: string | undefined; newPassword: string }) =>
+      authApi.changePassword(oldPassword, newPassword),
+    onSuccess: (res) => {
+      const created = res.data.data.created;
+      toast.success(created ? "Password added. You can now also sign in with your email and password." : "Password changed successfully!");
+      // Refresh /me so the form switches from "Add" to "Update".
+      if (created) qc.invalidateQueries({ queryKey: ["me"] });
     },
     onError: (err) => toastApiError(err),
   });

@@ -277,6 +277,11 @@ export type ICreateSection = z.infer<typeof createSectionSchema>;
 export const startLiveQuizSchema = z.object({
   durationMinutes: z.number().int().min(1).max(600).optional(),
 });
+/** Cover-only update: allowed even on a locked form, since responses never reference the cover. Null removes it. */
+export const updateCoverSchema = z.object({
+  coverImageUrl: z.union([z.url({ protocol: /^https?$/ }).max(1000), z.null()]),
+});
+
 export const extendLiveQuizSchema = z.object({
   minutes: z.number().int().min(1).max(60),
 });

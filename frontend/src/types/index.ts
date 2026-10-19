@@ -80,6 +80,10 @@ export interface User {
   updatedAt: string;
   /** Only present on /auth/me; computed server-side from the ADMIN_EMAILS allowlist. */
   isAdmin?: boolean;
+  /** /auth/me only: false for a Google-only account that hasn't added a password yet. */
+  hasPassword?: boolean;
+  /** /auth/me only: the account is linked to Google sign-in. */
+  hasGoogle?: boolean;
 }
 
 // ─── Onboarding ────────────────────────────────────────────────────────────────

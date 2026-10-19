@@ -23,6 +23,18 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { fadeUp, stagger } from "@/lib/animations"
 
+/** Google "G" logo, inline so it needs no asset. */
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0" aria-hidden>
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.1A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.44.34-2.1V7.06H2.18A11 11 0 0 0 1 12c0 1.77.42 3.45 1.18 4.94l3.66-2.84z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
+    </svg>
+  )
+}
+
 export function ProfilePage() {
   const { user } = useAuthStore()
   const updateProfile = useUpdateProfile()
@@ -40,15 +52,26 @@ export function ProfilePage() {
     updateProfile.mutate({ name })
   }
 
+  // Google-only accounts have no password yet: they add one (no current password to check), then update it like anyone.
+  const addingPassword = user?.hasPassword === false
+  const tooShort = newPassword.length > 0 && newPassword.length < 8
+
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault()
-    if (newPassword !== confirmPassword) {
+    if (newPassword !== confirmPassword || tooShort) {
       return
     }
-    changePassword.mutate({ oldPassword, newPassword })
-    setOldPassword("")
-    setNewPassword("")
-    setConfirmPassword("")
+    changePassword.mutate(
+      { oldPassword: addingPassword ? undefined : oldPassword, newPassword },
+      {
+        // Keep what was typed if it failed (e.g. wrong current password).
+        onSuccess: () => {
+          setOldPassword("")
+          setNewPassword("")
+          setConfirmPassword("")
+        },
+      }
+    )
   }
 
   return (
@@ -209,12 +232,35 @@ export function ProfilePage() {
               <div>
                 <h2 className="text-lg font-semibold">Security</h2>
                 <p className="text-xs text-muted-foreground">
-                  Update your password to keep your account secure.
+                  {addingPassword
+                    ? "Add a password to sign in with your email too."
+                    : "Update your password to keep your account secure."}
                 </p>
               </div>
             </div>
 
+            {user?.hasGoogle && (
+              <div className="mb-5 flex items-start gap-3 border border-border bg-muted/30 p-3 text-sm">
+                <GoogleMark />
+                <p className="text-muted-foreground">
+                  {addingPassword ? (
+                    <>
+                      You sign in with <span className="font-medium text-foreground">Google</span>, so there's no
+                      password to update yet. Add one below to also sign in with{" "}
+                      <span className="font-medium text-foreground">{user.email}</span> and a password.
+                    </>
+                  ) : (
+                    <>
+                      Linked to <span className="font-medium text-foreground">Google</span>. You can sign in with Google
+                      or with your email and password.
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleChangePassword} className="space-y-4">
+              {!addingPassword && (
               <div className="space-y-2">
                 <Label htmlFor="old-password">Current Password</Label>
                 <div className="relative">
@@ -230,10 +276,11 @@ export function ProfilePage() {
                   />
                 </div>
               </div>
+              )}
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
+                  <Label htmlFor="new-password">{addingPassword ? "Password" : "New Password"}</Label>
                   <Input
                     id="new-password"
                     type="password"
@@ -256,6 +303,11 @@ export function ProfilePage() {
                 </div>
               </div>
 
+              {tooShort && (
+                <p className="text-xs font-medium text-destructive">
+                  Use at least 8 characters.
+                </p>
+              )}
               {newPassword &&
                 confirmPassword &&
                 newPassword !== confirmPassword && (
@@ -269,14 +321,21 @@ export function ProfilePage() {
                 variant="secondary"
                 disabled={
                   changePassword.isPending ||
-                  !oldPassword ||
+                  (!addingPassword && !oldPassword) ||
                   !newPassword ||
+                  tooShort ||
                   newPassword !== confirmPassword
                 }
                 className="gap-2"
               >
                 <Lock className="h-4 w-4" />
-                {changePassword.isPending ? "Updating..." : "Update Password"}
+                {changePassword.isPending
+                  ? addingPassword
+                    ? "Adding..."
+                    : "Updating..."
+                  : addingPassword
+                    ? "Add Password"
+                    : "Update Password"}
               </Button>
             </form>
           </motion.div>

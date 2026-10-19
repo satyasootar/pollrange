@@ -81,6 +81,21 @@ export function useDuplicateForm() {
   });
 }
 
+/** Upload a new cover image (File) or remove it (null). */
+export function useSetFormCover(formId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File | null) =>
+      formsApi.setCover(formId, file ? (await formsApi.uploadImage(file)).data.data.url : null),
+    onSuccess: (_res, file) => {
+      qc.invalidateQueries({ queryKey: formKeys.detail(formId) });
+      qc.invalidateQueries({ queryKey: formKeys.all });
+      toast.success(file ? "Cover image updated." : "Cover image removed.");
+    },
+    onError: (err) => toastApiError(err),
+  });
+}
+
 export function useCloseForm(formId: string) {
   const qc = useQueryClient();
   return useMutation({

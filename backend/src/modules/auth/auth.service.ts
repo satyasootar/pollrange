@@ -174,20 +174,30 @@ export async function refreshAccessToken(incomingRefreshToken: string) {
     return { user, ...tokens };
 }
 
+/** Whether the account can sign in with a password (Google-only accounts have none yet). */
+export async function hasPassword(userId: unknown) {
+    return !!(await User.exists({ _id: userId, passwordHash: { $type: "string", $ne: "" } }));
+}
+
 /**
- * Changes the password for an authenticated user.
+ * Changes the password for an authenticated user, or adds a first one to a Google-only
+ * account (no old password exists to check; the signed-in session is the proof of identity).
  */
 export async function changePassword(userId: string, input: ChangePasswordInput) {
     const user = await User.findById(userId).select("+passwordHash");
-    if (!user || !user.passwordHash) throw new ApiError(404, "User not found");
+    if (!user) throw new ApiError(404, "User not found");
 
-    const isPasswordValid = await bcrypt.compare(input.oldPassword, user.passwordHash);
-    if (!isPasswordValid) throw new ApiError(400, "Invalid old password");
+    const created = !user.passwordHash;
+    if (!created) {
+        if (!input.oldPassword) throw new ApiError(400, "Enter your current password");
+        const isPasswordValid = await bcrypt.compare(input.oldPassword, user.passwordHash!);
+        if (!isPasswordValid) throw new ApiError(400, "Invalid old password");
+    }
 
     user.passwordHash = await bcrypt.hash(input.newPassword, 10);
     await user.save();
 
-    return { success: true };
+    return { success: true, created };
 }
 
 /**
