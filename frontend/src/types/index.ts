@@ -698,7 +698,8 @@ export interface FormQuestionSummary {
   title: string;
   type: FormQuestionType;
   responseCount: number;
-  options?: OptionStat[];
+  /** Form analytics sends the option label as `text` (polls' OptionStat uses `optionText`). */
+  options?: { optionId: string; text: string; count: number; percentage: number }[];
   scaleMin?: number;
   scaleMax?: number;
   distribution?: Record<string, number>;

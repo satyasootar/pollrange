@@ -64,7 +64,7 @@ function toSnapshot(form: Form, summary: FormSummary, questions: FormQuestionSum
     completionRate: Math.round(summary.completionRate),
     questions: questions.flatMap((q) => {
       const options =
-        q.options?.map((o) => ({ ...o, percentage: pct(o.count, q.responseCount) })) ??
+        q.options?.map((o) => ({ optionId: o.optionId, optionText: o.text, count: o.count, percentage: pct(o.count, q.responseCount) })) ??
         (q.distribution &&
           Object.entries(q.distribution)
             .sort((a, b) => Number(a[0]) - Number(b[0]))

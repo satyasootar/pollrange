@@ -203,28 +203,60 @@ describe("PublicFormPage", () => {
     const quiz = (o: Parameters<typeof makePublicForm>[0] = {}) =>
       makePublicForm({ isQuiz: true, sections: [makeSection([makeChoiceQuestion({ isRequired: true, points: 5 })])], ...o });
 
-    it("requires a leaderboard name from signed-out takers", async () => {
+    /** Fill the instructions page and press Start. */
+    const startQuiz = async (name = "Ada") => {
+      await userEvent.type(await screen.findByLabelText(/your name/i), name);
+      await userEvent.click(screen.getByLabelText(/ready to start/i));
+      await userEvent.click(screen.getByRole("button", { name: /start quiz/i }));
+    };
+
+    it("shows the instructions first and only starts once the name and confirmation are given", async () => {
       testState.publicForm = quiz();
       renderPage();
-      await userEvent.click(await screen.findByText("Alpha"));
-      await userEvent.click(screen.getByRole("button", { name: /submit/i }));
-      await waitFor(() => expect(testState.submittedForm).toBeNull());
+      expect(await screen.findByText(/how this quiz works/i)).toBeInTheDocument();
+      expect(screen.queryByText("Alpha")).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole("button", { name: /start quiz/i }));
+      expect(screen.queryByText("Alpha")).not.toBeInTheDocument(); // no name yet
+
+      await userEvent.type(screen.getByLabelText(/your name/i), "Ada");
+      await userEvent.click(screen.getByRole("button", { name: /start quiz/i }));
+      expect(screen.queryByText("Alpha")).not.toBeInTheDocument(); // not confirmed yet
+
+      await userEvent.click(screen.getByLabelText(/ready to start/i));
+      await userEvent.click(screen.getByRole("button", { name: /start quiz/i }));
+      expect(await screen.findByText("Alpha")).toBeInTheDocument();
+      expect(screen.getAllByText(/question 1 of 1/i).length).toBeGreaterThan(0);
     });
 
     it("does not ask for a name on a sign-in-required quiz (the account name is used)", async () => {
       testState.publicForm = quiz({ responseMode: "authenticated" });
       renderPage();
-      await screen.findByText("Alpha");
+      expect(await screen.findByRole("button", { name: /sign in to start/i })).toBeInTheDocument();
       expect(screen.queryByLabelText(/your name/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/leaderboard/i)).not.toBeInTheDocument();
+    });
+
+    it("asks before submitting with unanswered questions", async () => {
+      testState.publicForm = quiz({
+        sections: [makeSection([makeChoiceQuestion({ points: 1 }), makeChoiceQuestion({ title: "Second", points: 1 })])],
+      });
+      renderPage();
+      await startQuiz();
+      await userEvent.click((await screen.findAllByText("Alpha"))[0]!);
+      await userEvent.click(screen.getByRole("button", { name: /submit quiz/i }));
+
+      expect(await screen.findByText(/1 question not answered/i)).toBeInTheDocument();
+      expect(testState.submittedForm).toBeNull();
+      await userEvent.click(screen.getByRole("button", { name: /submit anyway/i }));
+      await waitFor(() => expect(testState.submittedForm).not.toBeNull());
     });
 
     it("submits the name and shows the score on the same link while results are pending", async () => {
       testState.publicForm = quiz();
       renderPage();
-      await userEvent.type(await screen.findByLabelText(/your name/i), "Ada");
-      await userEvent.click(screen.getByText("Alpha"));
-      await userEvent.click(screen.getByRole("button", { name: /submit/i }));
+      await startQuiz();
+      await userEvent.click(await screen.findByText("Alpha"));
+      await userEvent.click(screen.getByRole("button", { name: /submit quiz/i }));
 
       expect(await screen.findByText(/your score/i)).toBeInTheDocument();
       expect(testState.submittedForm!.respondentName).toBe("Ada");
@@ -267,13 +299,13 @@ describe("PublicFormPage", () => {
     it("auto-submits the answers so far when the timer runs out", async () => {
       const now = Date.now();
       testState.publicForm = quiz({
-        expiresAt: new Date(now + 1500).toISOString(),
+        expiresAt: new Date(now + 2500).toISOString(),
         serverTime: new Date(now).toISOString(),
         sections: [makeSection([makeChoiceQuestion({ isRequired: true, points: 5 }), makeFormQuestion({ isRequired: true })])],
       });
       renderPage();
-      expect(await screen.findByRole("timer")).toBeInTheDocument();
-      await userEvent.type(screen.getByLabelText(/your name/i), "Ada");
+      await startQuiz();
+      expect((await screen.findAllByRole("timer")).length).toBeGreaterThan(0);
       await userEvent.click(screen.getByText("Alpha"));
 
       await waitFor(() => expect(testState.submittedForm).not.toBeNull(), { timeout: 4000 });

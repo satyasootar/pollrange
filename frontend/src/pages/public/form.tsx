@@ -1,16 +1,16 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, AlertCircle, Loader2, Timer } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePublicForm, useSubmitFormResponse } from "@/hooks/use-public-form";
-import { QuestionRenderer, type AnswerDraft } from "@/components/form-public/question-renderer";
+import { QuestionRenderer, type AnswerChange, type AnswerDraft } from "@/components/form-public/question-renderer";
 import { PaymentDue } from "@/components/form-public/payment-due";
 import { selectionError } from "@/lib/upi-payment";
 import { fadeUp, stagger, pageTransition } from "@/lib/animations";
-import { cn, formatCountdown, getOrCreateSessionToken, shuffle, timeUntilExpiry, toastApiError } from "@/lib/utils";
+import { cn, getOrCreateSessionToken, shuffle, timeUntilExpiry, toastApiError } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/use-auth-store";
 import { AuthGateDialog } from "@/components/auth/auth-gate-dialog";
@@ -19,6 +19,15 @@ import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { BrandFooter, BrandHeader, BrandThankYou } from "@/components/brand/brand-chrome";
 import { QuizResultScreen } from "@/components/quiz-results/quiz-result-screen";
 import { useCountdown } from "@/hooks/use-countdown";
+import { QuizIntro } from "@/components/form-public/quiz-intro";
+import {
+  QuizNavigatorSheet,
+  QuizProgressPanel,
+  QuizTopBar,
+  type QuizJump,
+  type QuizNavSection,
+} from "@/components/form-public/quiz-progress";
+import { GRADABLE_TYPES } from "@/components/form-builder/question-types";
 import type { FormQuestion, FormSection, FormAnswerPayload, PublicBrand, SubmitFormResult } from "@/types";
 
 type AnswerMap = Record<string, AnswerDraft>;
@@ -51,6 +60,27 @@ function toAnswerPayload(q: FormQuestion, d: AnswerDraft | undefined): FormAnswe
   };
 }
 
+/** How to answer, shown on quiz question cards. */
+function answerHint(q: FormQuestion): string | null {
+  switch (q.type) {
+    case "multiple_choice":
+    case "dropdown":
+      return "Choose one";
+    case "checkboxes":
+      return "Choose all that apply";
+    case "multiple_choice_grid":
+      return "One per row";
+    case "checkbox_grid":
+      return "Any per row";
+    default:
+      return null;
+  }
+}
+
+/** jsdom has no scrollIntoView, hence the optional call. */
+const scrollToQuestion = (id: string) =>
+  document.getElementById(`q-${id}`)?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+
 /** Builds the submit payload from the sections the respondent actually visited. */
 function collectPayload(sections: FormSection[], visited: Set<string>, ans: AnswerMap): FormAnswerPayload[] {
   return sections
@@ -76,8 +106,14 @@ export function PublicFormPage() {
   const [timeoutPhase, setTimeoutPhase] = useState<"submitting" | "ended" | null>(null);
   const [result, setResult] = useState<SubmitFormResult | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
-  // The sign-in gate opens either at submit (then submits) or on a file pick (then lets them pick again).
-  const submitAfterAuth = useRef(true);
+  // What to do once the sign-in gate succeeds: submit, start the quiz, or nothing (a file pick just retries).
+  const afterAuthRef = useRef<"submit" | "start" | "none">("submit");
+  // Quiz: instructions page first, then the questions.
+  const [started, setStarted] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  // Question numbers still unanswered when the taker hits Submit (opens the confirm dialog).
+  const [missing, setMissing] = useState<number[] | null>(null);
+  const pendingScrollRef = useRef<string | null>(null);
   const visitedRef = useRef<Set<string>>(new Set());
   const pendingKey = `kollects_form_pending_${shareToken}`;
   const resumedRef = useRef(false);
@@ -95,6 +131,17 @@ export function PublicFormPage() {
   useEffect(() => {
     if (currentSection) visitedRef.current.add(currentSection._id);
   }, [currentSection]);
+
+  // Quiz section change: bring the target question (from the navigator) or the section's first question into view.
+  useEffect(() => {
+    if (!form?.isQuiz || !started) return;
+    const id = pendingScrollRef.current ?? sections[sectionIndex]?.questions[0]?._id;
+    pendingScrollRef.current = null;
+    if (!id) return;
+    const t = setTimeout(() => scrollToQuestion(id), 50);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionIndex]);
 
   // Resume after Google auth redirect.
   useEffect(() => {
@@ -273,24 +320,34 @@ export function PublicFormPage() {
   const savePending = () =>
     localStorage.setItem(pendingKey, JSON.stringify({ answers, visited: [...visitedRef.current] }));
 
+  const numberOf = new Map(allQuestions.map((q, i) => [q._id, i + 1]));
+
+  const finishSubmit = () => {
+    if (form.responseMode === "authenticated" && !user) {
+      afterAuthRef.current = "submit";
+      setAuthOpen(true);
+      return;
+    }
+    doSubmit();
+  };
+
   const handleNextOrSubmit = () => {
-    if (askName && history.length === 0 && !respondentName.trim()) {
-      toast.error("Please enter your name.");
-      return;
-    }
-    if (form.isQuiz && history.length === 0 && needsEmail && !email.trim()) {
-      toast.error("Please provide your email address.");
-      return;
-    }
     if (!sectionValid()) return;
     const next = computeNext();
     if (next === "submit") {
-      if (form.responseMode === "authenticated" && !user) {
-        submitAfterAuth.current = true;
-        setAuthOpen(true);
-        return;
+      if (form.isQuiz) {
+        // Only sections they actually saw: branching may have skipped the rest.
+        const unanswered = sections
+          .filter((s) => visitedRef.current.has(s._id))
+          .flatMap((s) => s.questions)
+          .filter((q) => !draftHasValue(answers[q._id]))
+          .map((q) => numberOf.get(q._id)!);
+        if (unanswered.length) {
+          setMissing(unanswered);
+          return;
+        }
       }
-      doSubmit();
+      finishSubmit();
     } else {
       setHistory((h) => [...h, sectionIndex]);
       setSectionIndex(next);
@@ -311,41 +368,244 @@ export function PublicFormPage() {
   // Files upload in the background — block Next/Submit until every upload settles.
   const anyUploading = Object.values(answers).some((d) => d.filePreviews?.some((f) => f.status === "uploading"));
   const busy = anyUploading || submit.isPending;
+  const actionLabel = anyUploading
+    ? "Uploading files…"
+    : submit.isPending
+      ? "Submitting…"
+      : isLastStep
+        ? form.isQuiz ? "Submit quiz" : "Submit"
+        : form.isQuiz ? "Next section" : "Next →";
+
+  const setAnswer = (q: FormQuestion): AnswerChange => (patch) =>
+    setAnswers((prev) => {
+      const cur = prev[q._id] ?? {};
+      return { ...prev, [q._id]: typeof patch === "function" ? patch(cur) : { ...cur, ...patch } };
+    });
+  const pickFileNeedsAuth = user
+    ? undefined
+    : () => {
+        afterAuthRef.current = "none";
+        setAuthOpen(true);
+      };
+
+  const questionCards = (
+    <motion.div key={sectionIndex} variants={stagger} initial="hidden" animate="visible" className={form.isQuiz ? "space-y-3 sm:space-y-4" : "space-y-6"}>
+      {currentSection?.questions.map((q) => (
+        <motion.div
+          key={q._id}
+          id={`q-${q._id}`}
+          variants={fadeUp}
+          className={cn("border border-border bg-card p-5", form.isQuiz && "scroll-mt-48 p-4 sm:scroll-mt-40 sm:p-5 lg:scroll-mt-6")}
+        >
+          {form.isQuiz ? (
+            <div className="mb-2 flex items-center justify-between gap-3 font-mono text-xs">
+              <span className={cn("font-semibold", draftHasValue(answers[q._id]) ? "text-primary" : "text-muted-foreground")}>
+                Question {numberOf.get(q._id)} of {allQuestions.length}
+              </span>
+              <span className="text-right text-muted-foreground">
+                {[answerHint(q), q.points ? `${q.points} pts` : null].filter(Boolean).join(" · ")}
+              </span>
+            </div>
+          ) : null}
+          <p className={form.isQuiz ? "text-base leading-snug font-semibold" : "mb-1 text-sm font-semibold"}>
+            {q.title}
+            {q.isRequired && <span className="ml-1 text-destructive">*</span>}
+          </p>
+          {q.description && <p className="mt-1 mb-3 text-xs text-muted-foreground">{q.description}</p>}
+          <div className="mt-3">
+            <QuestionRenderer
+              formId={form.formId}
+              question={q}
+              value={answers[q._id] ?? {}}
+              onUploadNeedsAuth={pickFileNeedsAuth}
+              onChange={setAnswer(q)}
+            />
+          </div>
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+
+  const authGate = (
+    <AuthGateDialog
+      open={authOpen}
+      onOpenChange={setAuthOpen}
+      onAuthenticated={() => {
+        if (afterAuthRef.current === "submit") doSubmit();
+        else if (afterAuthRef.current === "start") setStarted(true);
+      }}
+      googleRedirect={`/f/${shareToken}`}
+      onBeforeGoogle={savePending}
+    />
+  );
+
+  if (form.isQuiz) {
+    const signInRequired = form.responseMode === "authenticated" && !user;
+    if (!started) {
+      return (
+        <>
+          <QuizIntro
+            form={form}
+            questionCount={allQuestions.length}
+            totalPoints={allQuestions.reduce((sum, q) => sum + (GRADABLE_TYPES.includes(q.type) ? q.points ?? 0 : 0), 0)}
+            hasMultiSelect={allQuestions.some((q) => q.type === "checkboxes" || q.type === "checkbox_grid")}
+            remaining={remaining}
+            askName={askName}
+            name={respondentName}
+            onNameChange={setRespondentName}
+            needsEmail={needsEmail}
+            email={email}
+            onEmailChange={setEmail}
+            signInRequired={signInRequired}
+            signedInAs={user?.name}
+            onStart={() => {
+              if (signInRequired) {
+                afterAuthRef.current = "start";
+                setAuthOpen(true);
+                return;
+              }
+              setStarted(true);
+            }}
+          />
+          {authGate}
+        </>
+      );
+    }
+
+    const historySet = new Set(history);
+    const navSections: QuizNavSection[] = sections.map((sec, i) => ({
+      index: i,
+      title: sec.title || `Section ${i + 1}`,
+      state: i === sectionIndex ? "current" : historySet.has(i) ? "visited" : "locked",
+      items: sec.questions.map((q) => ({ id: q._id, n: numberOf.get(q._id)!, answered: draftHasValue(answers[q._id]) })),
+    }));
+    const jumpTo: QuizJump = (sec, item) => {
+      setNavOpen(false);
+      if (sec.index === sectionIndex) {
+        // Let the sheet close (and release its scroll lock) first.
+        setTimeout(() => scrollToQuestion(item.id), 200);
+        return;
+      }
+      const at = history.indexOf(sec.index);
+      if (at === -1) return;
+      pendingScrollRef.current = item.id;
+      setHistory(history.slice(0, at));
+      setSectionIndex(sec.index);
+    };
+    const first = currentSection?.questions[0];
+    const last = currentSection?.questions[currentSection.questions.length - 1];
+    const range = first && last ? `${numberOf.get(first._id)}–${numberOf.get(last._id)}` : "";
+    const sectionLabel = multiSection ? `Section ${sectionIndex + 1} of ${sections.length}` : "Quiz";
+
+    return (
+      <motion.div className="min-h-screen bg-background px-4 pt-6 sm:px-8 sm:pt-10" variants={pageTransition} initial="hidden" animate="visible">
+        <div className="mx-auto max-w-xl md:max-w-2xl lg:max-w-5xl">
+          <BrandHeader brand={form.brand} />
+          <header className="mb-4 lg:mb-6">
+            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-primary">{sectionLabel}</span>
+            <h1 className="mt-1 text-2xl leading-tight font-extrabold tracking-tight lg:text-[32px]">
+              {multiSection && currentSection?.title ? currentSection.title : form.title}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {multiSection && currentSection?.title ? `${form.title} · ` : ""}
+              {currentSection && currentSection.questions.length > 1 ? `Questions ${range}` : `Question ${range.split("–")[0]}`} of{" "}
+              {allQuestions.length}
+            </p>
+            {currentSection?.description && <p className="mt-2 text-sm text-muted-foreground">{currentSection.description}</p>}
+          </header>
+
+          <QuizTopBar
+            sectionLabel={sectionLabel}
+            sectionTitle={multiSection ? currentSection?.title || form.title : form.title}
+            answered={answeredCount}
+            total={allQuestions.length}
+            remaining={remaining}
+            onOpenNavigator={() => setNavOpen(true)}
+          />
+
+          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-8">
+            <main className="min-w-0">
+              {questionCards}
+              <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex gap-2 border-t border-border bg-background/95 px-4 pt-3 pb-5 backdrop-blur sm:-mx-8 sm:px-8 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:pb-10">
+                {history.length > 0 && (
+                  <Button variant="outline" size="lg" onClick={handleBack} className="h-12 flex-1 sm:flex-none sm:px-6">
+                    Back
+                  </Button>
+                )}
+                <Button onClick={handleNextOrSubmit} disabled={busy} size="lg" className="h-12 flex-2 gap-2 font-bold sm:ml-auto sm:flex-none sm:px-8">
+                  {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {actionLabel}
+                </Button>
+              </div>
+            </main>
+            <QuizProgressPanel remaining={remaining} answered={answeredCount} total={allQuestions.length} sections={navSections} onJump={jumpTo} />
+          </div>
+          <BrandFooter brand={form.brand} />
+          <PoweredBy show={form.showPoweredBy} />
+        </div>
+
+        <QuizNavigatorSheet
+          open={navOpen}
+          onOpenChange={setNavOpen}
+          answered={answeredCount}
+          total={allQuestions.length}
+          sections={navSections}
+          onJump={jumpTo}
+        />
+
+        <Dialog open={missing !== null} onOpenChange={(open) => !open && setMissing(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {missing?.length} question{missing?.length === 1 ? "" : "s"} not answered
+              </DialogTitle>
+              <DialogDescription>
+                You haven't answered question{missing?.length === 1 ? "" : "s"} {missing?.join(", ")}. Unanswered questions score 0, and
+                you can't change answers after submitting.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const firstMissing = allQuestions.find((q) => numberOf.get(q._id) === missing?.[0]);
+                  setMissing(null);
+                  const sec = navSections.find((ns) => ns.items.some((i) => i.id === firstMissing?._id));
+                  const item = sec?.items.find((i) => i.id === firstMissing?._id);
+                  if (sec && item) jumpTo(sec, item);
+                }}
+              >
+                Review
+              </Button>
+              <Button
+                onClick={() => {
+                  setMissing(null);
+                  finishSubmit();
+                }}
+              >
+                Submit anyway
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {authGate}
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div className="min-h-screen bg-background py-12 px-4" variants={pageTransition} initial="hidden" animate="visible">
       <div className="mx-auto max-w-xl">
-        {remaining !== null && (
-          <div
-            role="timer"
-            aria-label="Time left"
-            className={cn(
-              "sticky top-0 z-20 mb-6 flex items-center justify-between border px-4 py-2.5 backdrop-blur",
-              remaining < 60_000
-                ? "border-destructive/50 bg-destructive/10 text-destructive"
-                : "border-border bg-background/90"
-            )}
-          >
-            <span className="flex items-center gap-2 text-sm font-medium">
-              <Timer className={cn("h-4 w-4", remaining < 60_000 && "animate-pulse")} />
-              {remaining < 60_000 ? "Hurry, time is almost up" : "Time left"}
-            </span>
-            <span className="font-mono text-lg font-semibold tabular-nums">{formatCountdown(remaining)}</span>
-          </div>
-        )}
         <BrandHeader brand={form.brand} />
         {form.coverImageUrl && (
           <img src={form.coverImageUrl} alt="" className="mb-6 max-h-48 w-full border border-border object-cover" />
         )}
         <motion.div variants={fadeUp} className="mb-8">
-          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            {form.isQuiz && <span className="border border-primary/40 bg-primary/10 px-2 py-0.5 text-primary">Quiz</span>}
-            {form.expiresAt && !form.isQuiz && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" /> Closes {timeUntilExpiry(form.expiresAt)}
-              </span>
-            )}
-          </div>
+          {form.expiresAt && (
+            <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" /> Closes {timeUntilExpiry(form.expiresAt)}
+            </div>
+          )}
           <h1 className="text-2xl font-bold leading-tight">{form.title}</h1>
           {form.description && <p className="mt-2 text-sm text-muted-foreground">{form.description}</p>}
           {form.settings.showProgressBar && allQuestions.length > 0 && (
@@ -359,39 +619,6 @@ export function PublicFormPage() {
           )}
         </motion.div>
 
-        {form.isQuiz && isOpenForm && history.length === 0 && (
-          <motion.div variants={fadeUp} className="mb-6 space-y-4 border border-border bg-card p-5">
-            {user ? (
-              <p className="text-sm text-muted-foreground">
-                You'll appear on the leaderboard as <span className="font-medium text-foreground">{user.name}</span>.
-              </p>
-            ) : (
-              <div className="space-y-1.5">
-                <Label htmlFor="quiz-name" className="text-sm font-semibold">
-                  Your name <span className="text-destructive">*</span>
-                </Label>
-                <p className="text-xs text-muted-foreground">Shown on the leaderboard when results are published.</p>
-                <Input
-                  id="quiz-name"
-                  value={respondentName}
-                  maxLength={60}
-                  autoComplete="name"
-                  placeholder="e.g. Ada Lovelace"
-                  onChange={(e) => setRespondentName(e.target.value)}
-                />
-              </div>
-            )}
-            {needsEmail && (
-              <div className="space-y-1.5">
-                <Label htmlFor="quiz-email" className="text-sm font-semibold">
-                  Email address <span className="text-destructive">*</span>
-                </Label>
-                <Input id="quiz-email" type="email" value={email} placeholder="you@example.com" onChange={(e) => setEmail(e.target.value)} />
-              </div>
-            )}
-          </motion.div>
-        )}
-
         {multiSection && currentSection && (currentSection.title || currentSection.description) && (
           <div className="mb-4 border-l-2 border-primary pl-3">
             {currentSection.title && <h2 className="text-lg font-semibold">{currentSection.title}</h2>}
@@ -399,43 +626,9 @@ export function PublicFormPage() {
           </div>
         )}
 
-        <motion.div key={sectionIndex} variants={stagger} initial="hidden" animate="visible" className="space-y-6">
-          {currentSection?.questions.map((q) => (
-            <motion.div key={q._id} variants={fadeUp} className="border border-border bg-card p-5">
-              <p className="mb-1 text-sm font-semibold">
-                {q.title}
-                {q.isRequired && <span className="ml-1 text-destructive">*</span>}
-                {form.isQuiz && q.points ? (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">({q.points} pts)</span>
-                ) : null}
-              </p>
-              {q.description && <p className="mb-3 text-xs text-muted-foreground">{q.description}</p>}
-              <div className="mt-3">
-                <QuestionRenderer
-                  formId={form.formId}
-                  question={q}
-                  value={answers[q._id] ?? {}}
-                  onUploadNeedsAuth={
-                    user
-                      ? undefined
-                      : () => {
-                          submitAfterAuth.current = false;
-                          setAuthOpen(true);
-                        }
-                  }
-                  onChange={(patch) =>
-                    setAnswers((prev) => {
-                      const cur = prev[q._id] ?? {};
-                      return { ...prev, [q._id]: typeof patch === "function" ? patch(cur) : { ...cur, ...patch } };
-                    })
-                  }
-                />
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+        {questionCards}
 
-        {needsEmail && !form.isQuiz && isLastStep && (
+        {needsEmail && isLastStep && (
           <motion.div variants={fadeUp} className="mt-6 border border-border bg-card p-5">
             <p className="mb-2 text-sm font-semibold">
               Email address <span className="text-destructive">*</span>
@@ -454,20 +647,13 @@ export function PublicFormPage() {
           )}
           <Button onClick={handleNextOrSubmit} disabled={busy} size="lg" className="gap-2">
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-            {anyUploading ? "Uploading files…" : submit.isPending ? "Submitting…" : isLastStep ? "Submit" : "Next →"}
+            {actionLabel}
           </Button>
         </motion.div>
         <BrandFooter brand={form.brand} />
         <PoweredBy show={form.showPoweredBy} />
       </div>
-
-      <AuthGateDialog
-        open={authOpen}
-        onOpenChange={setAuthOpen}
-        onAuthenticated={() => submitAfterAuth.current && doSubmit()}
-        googleRedirect={`/f/${shareToken}`}
-        onBeforeGoogle={savePending}
-      />
+      {authGate}
     </motion.div>
   );
 }

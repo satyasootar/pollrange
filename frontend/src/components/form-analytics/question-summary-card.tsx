@@ -35,7 +35,7 @@ export function QuestionSummaryCard({ q }: { q: FormQuestionSummary }) {
       {q.options && (
         <div className="space-y-3">
           {q.options.map((opt) => (
-            <Bar key={opt.optionId} label={opt.optionText} count={opt.count} total={q.responseCount} />
+            <Bar key={opt.optionId} label={opt.text} count={opt.count} total={q.responseCount} />
           ))}
         </div>
       )}
