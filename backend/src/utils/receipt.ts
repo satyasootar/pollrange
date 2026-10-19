@@ -2,6 +2,7 @@ import { sendEmail } from "./mail.js";
 import { z } from "zod";
 import { Schema } from "mongoose";
 import { escapeHtml } from "./html.js";
+import { emailTheme, renderEmail, type EmailBrand } from "./email-layout.js";
 
 export interface ReceiptRow {
   question: string;
@@ -14,27 +15,72 @@ export interface Receipt {
   url: string;
   name?: string | undefined;
   rows: ReceiptRow[];
-  /** Extra summary lines (quiz score, amount due…), shown above the answers. */
+  /** Extra summary lines as "Label: value" (quiz score, amount due…), shown as highlighted stats. */
   notes?: string[];
+  /** The form's cover image, shown as a banner. */
+  bannerUrl?: string | undefined;
+  /** The creator's brand (colours, logo, font). Loaded only when an email is actually sent. */
+  loadBrand?: () => Promise<EmailBrand | null>;
 }
 
-export function receiptHtml({ kind, title, url, name, rows, notes = [] }: Receipt) {
-  const cell = "padding:10px 12px;border-bottom:1px solid #e5e5e5;vertical-align:top;text-align:left";
-  const body = rows
+const noteParts = (n: string) => {
+  const i = n.indexOf(": ");
+  return i === -1 ? { label: "", value: n } : { label: n.slice(0, i), value: n.slice(i + 2) };
+};
+
+export function receiptHtml({ kind, title, url, name, rows, notes = [], bannerUrl }: Receipt, brand?: EmailBrand | null) {
+  const t = emailTheme(brand);
+  const stats = notes.length
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 6px"><tr>${notes
+        .map(noteParts)
+        .map(
+          ({ label, value }) =>
+            `<td style="background:${t.soft};border-radius:${t.radius}px;padding:10px 16px">` +
+            (label ? `<div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#71717a">${escapeHtml(label)}</div>` : "") +
+            `<div style="font-size:20px;font-weight:700;color:${t.accent}">${escapeHtml(value)}</div></td><td style="width:8px"></td>`
+        )
+        .join("")}</tr></table>`
+    : "";
+  const answers = rows
     .map(
       (r) =>
-        `<tr><th style="${cell};font-weight:600;width:40%">${escapeHtml(r.question)}</th>` +
-        `<td style="${cell};white-space:pre-wrap">${r.answer ? escapeHtml(r.answer) : '<span style="color:#999">No answer</span>'}</td></tr>`
+        `<tr><td style="padding:14px 0;border-top:1px solid #f4f4f5">` +
+        `<div style="font-size:13px;font-weight:600;color:#71717a;margin-bottom:4px">${escapeHtml(r.question)}</div>` +
+        `<div style="font-size:15px;color:#18181b;white-space:pre-wrap;border-left:3px solid ${r.answer ? t.accent : "#e4e4e7"};padding-left:10px">` +
+        `${r.answer ? escapeHtml(r.answer) : '<span style="color:#a1a1aa;font-style:italic">No answer</span>'}</div></td></tr>`
     )
     .join("");
-  return `<div style="font-family:Arial,sans-serif;font-size:14px;color:#111;max-width:600px">
-<p>Hi ${escapeHtml(name || "there")},</p>
-<p>Thanks for responding to the ${kind} <strong>${escapeHtml(title)}</strong>. Here is a copy of what you submitted.</p>
-${notes.map((n) => `<p><strong>${escapeHtml(n)}</strong></p>`).join("")}
-<table style="border-collapse:collapse;width:100%;border-top:1px solid #e5e5e5">${body}</table>
-<p style="margin-top:20px"><a href="${escapeHtml(url)}">Open the ${kind}</a></p>
-<p style="color:#888;font-size:12px">You got this email because this address was used to submit the ${kind} on Kollects. If that wasn't you, you can ignore it.</p>
-</div>`;
+  return renderEmail(
+    {
+      brand,
+      bannerUrl,
+      preheader: `A copy of your answers to "${title}".`,
+      heading: "Thanks, your response is in",
+      bodyHtml:
+        `<p style="margin:0 0 4px">Hi ${escapeHtml(name || "there")}, here's a copy of what you submitted to the ${kind} <strong style="color:#18181b">${escapeHtml(title)}</strong>.</p>` +
+        stats +
+        (rows.length
+          ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px">${answers}</table>`
+          : ""),
+      cta: { label: `Open the ${kind}`, url },
+      footnote: `You got this email because this address was used to submit the ${kind}. If that wasn't you, you can ignore it.`,
+    },
+    t
+  );
+}
+
+/** Plain-text twin of the receipt, for clients that don't render HTML (and better deliverability). */
+export function receiptText({ kind, title, url, name, rows, notes = [] }: Receipt) {
+  return [
+    `Hi ${name || "there"},`,
+    "",
+    `Here's a copy of what you submitted to the ${kind} "${title}".`,
+    ...(notes.length ? ["", ...notes] : []),
+    "",
+    ...rows.flatMap((r) => [r.question, `  ${r.answer || "No answer"}`]),
+    "",
+    `Open the ${kind}: ${url}`,
+  ].join("\n");
 }
 
 /** One delivery attempt, stored on the response so the creator can see who got their copy. */
@@ -86,10 +132,13 @@ export async function sendSubmissionCopy(
   if (!to) return null;
   let error: string | undefined;
   try {
+    // A brand lookup failure must not cost the respondent their copy: fall back to the Kollects look.
+    const brand = receipt.loadBrand ? await receipt.loadBrand().catch(() => null) : null;
     const r = await sendEmail({
       to,
       subject: `Your response to "${receipt.title}"`,
-      html: receiptHtml(receipt),
+      html: receiptHtml(receipt, brand),
+      text: receiptText(receipt),
       // Auto sends dedupe retries of the same submit; manual resends must always go out.
       ...(trigger === "auto" ? { idempotencyKey: `receipt-${String(target.id)}` } : {}),
     });

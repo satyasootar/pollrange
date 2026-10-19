@@ -207,68 +207,76 @@ function Review({ items }: { items: QuizReviewItem[] }) {
   ];
 
   return (
-    <motion.section variants={fadeUp} aria-labelledby="review-heading" className="border border-border bg-card">
-      <div className="flex items-baseline justify-between gap-3 p-5 pb-3 sm:px-6">
-        <h2 id="review-heading" className="text-base font-bold">
-          Review your answers
-        </h2>
-        <span className="text-xs text-muted-foreground">
-          {correct} of {items.length} correct
-        </span>
+    <motion.section
+      variants={fadeUp}
+      aria-labelledby="review-heading"
+      className="border border-border bg-card lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start"
+    >
+      {/* Laptop: this navigator stays in view while the questions scroll beside it. */}
+      <div className="lg:sticky lg:top-4 lg:self-start lg:border-r lg:border-border">
+        <div className="flex items-baseline justify-between gap-3 p-5 pb-3 sm:px-6">
+          <h2 id="review-heading" className="text-base font-bold">
+            Review your answers
+          </h2>
+          <span className="text-xs text-muted-foreground">
+            {correct} of {items.length} correct
+          </span>
+        </div>
+
+        <div className="grid grid-cols-8 gap-1 px-5 pb-4 sm:grid-cols-10 sm:px-6 lg:grid-cols-6">
+          {items.map((item, i) => (
+            <a
+              key={item.questionId}
+              href={`#review-q-${i + 1}`}
+              onClick={() => setFilter("all")}
+              aria-label={`Question ${i + 1}: ${item.isCorrect ? "correct" : "incorrect"}`}
+              className={cn(
+                "flex h-8 items-center justify-center text-[11px] font-semibold tabular-nums",
+                item.isCorrect ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-orange-500 text-orange-950"
+              )}
+            >
+              {i + 1}
+            </a>
+          ))}
+        </div>
+
+        <div role="group" aria-label="Filter questions" className="flex flex-wrap gap-2 px-5 pb-4 sm:px-6">
+          {chips.map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={filter === key}
+              onClick={() => setFilter(key)}
+              className={cn(
+                "h-9 border px-3 text-xs font-semibold",
+                filter === key ? "border-foreground bg-foreground text-background" : "border-border hover:bg-muted"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-8 gap-1 px-5 pb-4 sm:px-6">
-        {items.map((item, i) => (
-          <a
-            key={item.questionId}
-            href={`#review-q-${i + 1}`}
-            onClick={() => setFilter("all")}
-            aria-label={`Question ${i + 1}: ${item.isCorrect ? "correct" : "incorrect"}`}
-            className={cn(
-              "flex h-8 items-center justify-center text-[11px] font-semibold tabular-nums",
-              item.isCorrect ? "bg-muted text-foreground" : "bg-orange-500 text-orange-950"
-            )}
-          >
-            {i + 1}
-          </a>
-        ))}
-      </div>
-
-      <div role="group" aria-label="Filter questions" className="flex flex-wrap gap-2 px-5 pb-4 sm:px-6">
-        {chips.map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={filter === key}
-            onClick={() => setFilter(key)}
-            className={cn(
-              "h-9 border px-3 text-xs font-semibold",
-              filter === key ? "border-foreground bg-foreground text-background" : "border-border hover:bg-muted"
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <ol className="divide-y divide-border border-t border-border">
+      {/* One column on phones, two side by side on wider screens; gap-px over bg-border draws the dividers. */}
+      <ol className="grid gap-px border-t border-border bg-border md:grid-cols-2 lg:border-t-0">
         {shown.map(({ item, n }) => (
-          <li key={item.questionId} id={`review-q-${n}`} className="scroll-mt-4 space-y-2.5 p-5 sm:px-6">
+          <li key={item.questionId} id={`review-q-${n}`} className="scroll-mt-4 space-y-2.5 bg-card p-5 sm:px-6">
             <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
               <span>
                 Question {n} · {item.pointsEarned}/{item.points} pts
               </span>
-              <span className={cn("font-semibold", item.isCorrect ? "text-primary" : "text-orange-500")}>
+              <span className={cn("font-semibold", item.isCorrect ? "text-emerald-600 dark:text-emerald-400" : "text-orange-500")}>
                 {item.isCorrect ? "Correct" : "Incorrect"}
               </span>
             </div>
             <p className="text-sm font-semibold leading-snug">{item.title}</p>
-            <p className={cn("border px-3 py-2 text-sm", item.isCorrect ? "border-primary/60" : "border-orange-500/70")}>
+            <p className={cn("border px-3 py-2 text-sm", item.isCorrect ? "border-emerald-500/60" : "border-orange-500/70")}>
               <span className="text-muted-foreground">Your answer: </span>
               {item.yourAnswer.length ? item.yourAnswer.join(", ") : <em>No answer</em>}
             </p>
             {!item.isCorrect && (
-              <p className="border border-primary/60 px-3 py-2 text-sm">
+              <p className="border border-emerald-500/60 px-3 py-2 text-sm">
                 <span className="text-muted-foreground">Correct: </span>
                 {item.correctAnswer.join(", ")}
               </p>
@@ -276,6 +284,8 @@ function Review({ items }: { items: QuizReviewItem[] }) {
             {item.feedback && <p className="text-xs text-muted-foreground">{item.feedback}</p>}
           </li>
         ))}
+        {/* Keep the two-column grid even when the filter leaves an odd count. */}
+        {shown.length % 2 === 1 && <li aria-hidden className="hidden bg-card md:block" />}
       </ol>
     </motion.section>
   );
@@ -332,14 +342,9 @@ export function QuizResultScreen({
         {isError && <p className="text-sm text-destructive">Couldn't load results. Refresh to try again.</p>}
 
         {results && (
-          // Phones stack result → board → review; desktop puts the board in a right column beside both.
-          <div
-            className={cn(
-              "flex flex-col gap-6",
-              board && "lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_1fr] lg:items-start"
-            )}
-          >
-            <div className="flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-start-1">
+          // Phones stack result → board → review. Laptops: result and board side by side, then the review full width.
+          <div className={cn("flex flex-col gap-6", board && "lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start")}>
+            <div className="flex min-w-0 flex-col gap-6">
               {results.me && <MyResultCard results={results} timedOut={timedOut} />}
               {!results.resultsPublished && <PendingBanner results={results} />}
               {board && board.participants >= 10 && board.maxPoints > 0 && (
@@ -347,12 +352,12 @@ export function QuizResultScreen({
               )}
             </div>
             {board && (
-              <motion.div variants={fadeUp} className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+              <motion.div variants={fadeUp} className="min-w-0">
                 <PublicLeaderboard board={board} shareToken={shareToken} sessionToken={sessionToken} celebrate />
               </motion.div>
             )}
             {review && (
-              <div className="min-w-0 lg:col-start-1 lg:row-start-2">
+              <div className="min-w-0 lg:col-span-2">
                 <Review items={review} />
               </div>
             )}

@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { consume, refund } from "../billing/billing.service.js";
 import { sendSubmissionCopy, type Receipt } from "../../utils/receipt.js";
 import config from "../../config/config.js";
+import { resolveBrand } from "../branding/branding.service.js";
 
 /** The emailed copy of one poll response, built the same way on submit and on a manual resend. */
 export function buildPollReceipt(poll: any, answers: any[], name?: string): Receipt {
@@ -15,6 +16,7 @@ export function buildPollReceipt(poll: any, answers: any[], name?: string): Rece
         title: poll.title,
         url: `${config.CLIENT_URL}/p/${poll.shareToken}`,
         name,
+        loadBrand: () => resolveBrand(poll.creatorId),
         rows: (poll.questions as any[]).map((q) => {
             const a = byId.get(String(q._id));
             if (!a || a.skipped) return { question: q.text, answer: "" };

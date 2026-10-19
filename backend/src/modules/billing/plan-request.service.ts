@@ -4,6 +4,7 @@ import { PlanRequest } from "./plan-request.model.js";
 import { User } from "../user/user.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { sendEmail } from "../../utils/mail.js";
+import { renderEmail, type EmailLayout } from "../../utils/email-layout.js";
 import config from "../../config/config.js";
 import { PLANS, effectivePlan, type PlanId } from "../../config/plans.js";
 import { AdminAudit } from "../admin/admin-audit.model.js";
@@ -36,9 +37,11 @@ const toDto = (r: any) => ({
 });
 
 /** Fire-and-forget email; a mail outage must never fail the request itself. */
-function notify(to: string | string[], subject: string, html: string) {
+function notify(to: string | string[], subject: string, email: Omit<EmailLayout, "preheader">) {
   if (!to || (Array.isArray(to) && !to.length)) return;
-  void sendEmail({ to, subject, html }).catch((e) => console.error("[plan-request] email failed", e));
+  void sendEmail({ to, subject, html: renderEmail({ preheader: subject, ...email }) }).catch((e) =>
+    console.error("[plan-request] email failed", e)
+  );
 }
 
 // ─── User side ──────────────────────────────────────────────────────────────────
@@ -61,9 +64,13 @@ export async function createRequest(userId: string, input: z.infer<typeof create
   notify(
     config.ADMIN_EMAILS,
     `Upgrade request: ${user.name} → ${PLANS[input.plan].label} (${input.period})`,
-    `<p><b>${user.name}</b> (${user.email}) asked for <b>${PLANS[input.plan].label}</b>, billed ${input.period}.</p>` +
-      (input.note ? `<p>Note: ${escapeHtml(input.note)}</p>` : "") +
-      `<p><a href="${config.CLIENT_URL}/admin?tab=upgrades">Review it in the admin dashboard</a></p>`
+    {
+      heading: "New upgrade request",
+      bodyHtml:
+        `<p style="margin:0 0 12px"><b>${escapeHtml(user.name ?? "")}</b> (${escapeHtml(user.email ?? "")}) asked for <b>${PLANS[input.plan].label}</b>, billed ${input.period}.</p>` +
+        (input.note ? `<p style="margin:0 0 12px">Note: ${escapeHtml(input.note)}</p>` : ""),
+      cta: { label: "Review in admin", url: `${config.CLIENT_URL}/admin?tab=upgrades` },
+    }
   );
   return toDto(doc);
 }
@@ -143,9 +150,14 @@ export async function approveRequest(requestId: string, input: z.infer<typeof ap
   notify(
     r.userId.email,
     `You're on Kollects ${PLANS[r.plan as PlanId].label}`,
-    `<p>Hi ${r.userId.name},</p><p>Your upgrade to <b>${PLANS[r.plan as PlanId].label}</b> is active` +
-      (expiresAt ? ` until ${expiresAt.toDateString()}` : "") +
-      `.</p><p><a href="${config.CLIENT_URL}/dashboard/billing">See your plan</a></p>`
+    {
+      heading: `Welcome to ${PLANS[r.plan as PlanId].label}`,
+      bodyHtml:
+        `<p style="margin:0 0 12px">Hi ${escapeHtml(r.userId.name ?? "there")},</p><p style="margin:0 0 12px">Your upgrade to <b>${PLANS[r.plan as PlanId].label}</b> is active` +
+        (expiresAt ? ` until ${expiresAt.toDateString()}` : "") +
+        ".</p>",
+      cta: { label: "See your plan", url: `${config.CLIENT_URL}/dashboard/billing` },
+    }
   );
   return { ...toDto(r), ...result };
 }
@@ -162,9 +174,14 @@ export async function rejectRequest(requestId: string, input: z.infer<typeof rej
   notify(
     r.userId.email,
     "About your Kollects upgrade request",
-    `<p>Hi ${r.userId.name},</p><p>We couldn't approve your request for ${PLANS[r.plan as PlanId].label} right now.</p>` +
-      (input.reason ? `<p>${escapeHtml(input.reason)}</p>` : "") +
-      `<p>You're still on your current plan, and you can request again anytime.</p>`
+    {
+      heading: "About your upgrade request",
+      bodyHtml:
+        `<p style="margin:0 0 12px">Hi ${escapeHtml(r.userId.name ?? "there")},</p><p style="margin:0 0 12px">We couldn't approve your request for ${PLANS[r.plan as PlanId].label} right now.</p>` +
+        (input.reason ? `<p style="margin:0 0 12px">${escapeHtml(input.reason)}</p>` : "") +
+        `<p style="margin:0">You're still on your current plan, and you can request again anytime.</p>`,
+      cta: { label: "See plans", url: `${config.CLIENT_URL}/dashboard/billing` },
+    }
   );
   return toDto(r);
 }

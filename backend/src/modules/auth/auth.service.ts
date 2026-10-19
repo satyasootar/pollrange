@@ -6,6 +6,8 @@ import { User } from "../user/user.model.js";
 import { Session } from "../session/session.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { sendEmail } from "../../utils/mail.js";
+import { renderEmail } from "../../utils/email-layout.js";
+import { escapeHtml } from "../../utils/html.js";
 import {
     userZodSchema,
     type UpdateProfileInput,
@@ -74,10 +76,15 @@ export async function sendVerificationEmail(userId: string) {
     
     const { success, error } = await sendEmail({
         to: user.email,
-        subject: "Verify your email - PollCraft",
-        html: `<h1>Welcome to PollCraft</h1>
-               <p>Please click the link below to verify your email address:</p>
-               <a href="${verificationUrl}">${verificationUrl}</a>`,
+        subject: "Verify your email for Kollects",
+        html: renderEmail({
+            preheader: "Confirm your email to finish setting up Kollects.",
+            heading: "Welcome to Kollects",
+            bodyHtml: `<p style="margin:0 0 12px">Hi ${escapeHtml(user.name || "there")}, confirm your email address to start creating polls and forms.</p>`,
+            cta: { label: "Verify email", url: verificationUrl },
+            footnote: `The link works for 24 hours. Button not working? Paste this into your browser:<br><a href="${escapeHtml(verificationUrl)}" style="color:#71717a;word-break:break-all">${escapeHtml(verificationUrl)}</a>`,
+        }),
+        text: `Welcome to Kollects! Verify your email (link valid for 24 hours): ${verificationUrl}`,
     });
 
     if (!success) {
@@ -220,9 +227,15 @@ export async function forgotPassword(input: ForgotPasswordInput) {
 
     const { success, error } = await sendEmail({
         to: user.email,
-        subject: "Reset your password - PollCraft",
-        html: `<p>Click the link below to reset your password:</p>
-               <a href="${resetUrl}">${resetUrl}</a>`,
+        subject: "Reset your Kollects password",
+        html: renderEmail({
+            preheader: "Use this link to choose a new password.",
+            heading: "Reset your password",
+            bodyHtml: `<p style="margin:0 0 12px">Hi ${escapeHtml(user.name || "there")}, we got a request to reset your password. Choose a new one below.</p>`,
+            cta: { label: "Reset password", url: resetUrl },
+            footnote: `The link works for 1 hour. If you didn't ask for this, ignore this email and your password stays the same.<br><a href="${escapeHtml(resetUrl)}" style="color:#71717a;word-break:break-all">${escapeHtml(resetUrl)}</a>`,
+        }),
+        text: `Reset your Kollects password (link valid for 1 hour): ${resetUrl}\nIf you didn't ask for this, ignore this email.`,
     });
 
     if (!success) {

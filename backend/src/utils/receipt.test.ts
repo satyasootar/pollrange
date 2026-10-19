@@ -26,8 +26,36 @@ describe("submission receipt", () => {
     expect(html).not.toContain("<script>");
     expect(html).toContain("Feedback &lt;b&gt;");
     expect(html).toContain("No answer");
-    expect(html).toContain("Score: 3/5");
+    expect(html).toMatch(/Score<\/div><div[^>]*>3\/5/);
     expect(html).toContain('href="https://kollects.app/f/abc"');
+    expect(html).toContain("#6366f1"); // Kollects' own accent without a brand
+  });
+
+  it("themes the email with the creator's brand and the form's cover image", () => {
+    const html = receiptHtml(
+      { kind: "form", title: "T", url: "u", rows: [{ question: "Q", answer: "A" }], bannerUrl: "https://img.test/cover.png" },
+      {
+        companyName: "Acme <Co>", logoUrl: "https://img.test/logo.png", accentColor: "#059669", font: "lora",
+        radius: "round", background: "tint", website: "https://acme.test", supportEmail: "help@acme.test",
+      }
+    );
+    expect(html).toContain("background:#059669"); // button + stripe in the brand accent
+    expect(html).toContain('src="https://img.test/logo.png"');
+    expect(html).toContain('src="https://img.test/cover.png"');
+    expect(html).toContain("Lora,Georgia,serif");
+    expect(html).toContain("border-radius:16px");
+    expect(html).toContain("Acme &lt;Co&gt;");
+    expect(html).toContain("mailto:help@acme.test");
+  });
+
+  it("sends the branded copy with a text version, and falls back to the default look if the brand can't load", async () => {
+    const model = { updateOne: vi.fn().mockResolvedValue({}) };
+    const receipt = { kind: "form" as const, title: "T", url: "u", rows: [{ question: "Q", answer: "A" }], loadBrand: () => Promise.reject(new Error("db down")) };
+    const sent = await sendSubmissionCopy("bob@test.local", receipt, { model, id: "r3" }, "auto");
+    expect(sent?.status).toBe("sent");
+    const mail = sendEmail.mock.calls[0]![0];
+    expect(mail.html).toContain("#6366f1");
+    expect(mail.text).toContain("Q\n  A");
   });
 
   it("only emails when there is an address, and records the outcome on the response", async () => {

@@ -5,6 +5,8 @@ import { Form } from "../form/form.model.js";
 import { Usage, currentPeriod } from "./usage.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { sendEmail } from "../../utils/mail.js";
+import { renderEmail } from "../../utils/email-layout.js";
+import { escapeHtml } from "../../utils/html.js";
 import config from "../../config/config.js";
 import { GRACE, PLANS, WARN_AT, effectivePlan, type Feature, type Metric, type PlanId } from "../../config/plans.js";
 
@@ -135,12 +137,17 @@ async function notifyThresholds(user: any, metric: Metric, used: number, limit: 
   const extra = Math.floor(limit * GRACE) - limit;
   const body =
     step.key.endsWith("_limit")
-      ? `<p>You've used all ${fmt(limit)} ${METRIC_LABEL[metric]} on your plan this month. Kollects will keep accepting up to ${fmt(extra)} more so nobody gets turned away, then pause until next month.</p>`
-      : `<p>You've used ${fmt(used)} of ${fmt(limit)} ${METRIC_LABEL[metric]} this month.</p>`;
+      ? `<p style="margin:0 0 12px">You've used all ${fmt(limit)} ${METRIC_LABEL[metric]} on your plan this month. Kollects will keep accepting up to ${fmt(extra)} more so nobody gets turned away, then pause until next month.</p>`
+      : `<p style="margin:0 0 12px">You've used ${fmt(used)} of ${fmt(limit)} ${METRIC_LABEL[metric]} this month.</p>`;
   await sendEmail({
     to: user.email,
     subject: step.subject,
-    html: `<p>Hi ${user.name ?? "there"},</p>${body}<p><a href="${config.CLIENT_URL}/dashboard/billing">See your plan and usage</a></p>`,
+    html: renderEmail({
+      preheader: step.subject,
+      heading: step.subject,
+      bodyHtml: `<p style="margin:0 0 12px">Hi ${escapeHtml(user.name ?? "there")},</p>${body}`,
+      cta: { label: "See your plan and usage", url: `${config.CLIENT_URL}/dashboard/billing` },
+    }),
     idempotencyKey: `usage-${String(usageId)}-${step.key}`,
   });
 }

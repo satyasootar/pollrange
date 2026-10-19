@@ -6,6 +6,7 @@ import { aggregateTimeline, fillSeries, type Granularity } from "../../utils/tim
 import mongoose from "mongoose";
 import config from "../../config/config.js";
 import { sendSubmissionCopy, type Receipt } from "../../utils/receipt.js";
+import { resolveBrand } from "../branding/branding.service.js";
 
 /** Response timeline bucketed by the requested granularity, zero-filled for a continuous chart. */
 export async function getFormTimeline(formId: string, groupBy: Granularity) {
@@ -222,6 +223,9 @@ export function buildFormReceipt(
     url: `${config.CLIENT_URL}/f/${form.shareToken}`,
     name,
     notes,
+    bannerUrl: form.coverImageUrl || undefined,
+    // The creator's kit + this form's accent override, the same look respondents saw on the form.
+    loadBrand: () => resolveBrand(form.creatorId, form.branding),
     rows: flattenQuestions(form)
       .filter((q) => byId.has(String(q._id)))
       .map((q) => ({ question: q.title, answer: formatFormAnswer(q, byId.get(String(q._id))) })),
