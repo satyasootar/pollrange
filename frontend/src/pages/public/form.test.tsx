@@ -321,7 +321,7 @@ describe("PublicFormPage", () => {
       expect(screen.getByText(/1 more point would have matched #1's score/i)).toBeInTheDocument();
       // Answer review lives in its own tab, one question at a time.
       await userEvent.click(screen.getByRole("tab", { name: /review answers/i }));
-      expect(await screen.findByText(/0\/1 correct/i)).toBeInTheDocument();
+      expect(await screen.findByText("1 wrong")).toBeInTheDocument();
       expect(screen.getByText("Correct answer")).toBeInTheDocument();
       expect(screen.getByText("Alpha")).toBeInTheDocument();
     });

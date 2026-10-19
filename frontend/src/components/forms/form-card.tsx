@@ -58,6 +58,18 @@ export function FormCard({ form }: { form: Form }) {
       variants={cardHover}
       onClick={() => navigate(`/forms/${form._id}/analytics`)}
     >
+      {form.coverImageUrl && (
+        <div className="aspect-3/1 overflow-hidden border-b border-border bg-muted">
+          <img
+            src={form.coverImageUrl}
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            // A dead link shouldn't leave a broken-image icon on the card.
+            onError={(e) => (e.currentTarget.parentElement!.style.display = "none")}
+          />
+        </div>
+      )}
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="min-w-0 flex-1 pr-2">
           {form.isQuiz && (

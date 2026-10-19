@@ -77,18 +77,21 @@ export function QuizReview({ items }: { items: QuizReviewItem[] }) {
     <section aria-label="Review your answers" className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start">
       {/* Navigator: a scrolling strip on phones, a sticky panel beside the question on laptops. */}
       <div className="border border-border bg-card p-4 lg:sticky lg:top-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-bold">
-            {correct}/{items.length} correct
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-sm font-bold">Your answers</p>
+          <p className="text-xs tabular-nums">
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{correct} right</span>
+            <span className="text-muted-foreground"> · </span>
+            <span className="font-semibold text-orange-500">{wrong} wrong</span>
           </p>
-          <div className="flex items-center gap-2">
-            <Switch id="mistakes-only" checked={mistakesOnly} onCheckedChange={toggleMistakes} disabled={wrong === 0} />
-            <Label htmlFor="mistakes-only" className="cursor-pointer text-xs">
-              Mistakes only ({wrong})
-            </Label>
-          </div>
         </div>
-        <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 lg:grid lg:grid-cols-6 lg:overflow-visible lg:pb-0">
+        {/* Share of right answers at a glance. */}
+        <div className="mt-2 flex h-1.5 overflow-hidden bg-orange-500/80" aria-hidden>
+          <div className="bg-emerald-500" style={{ width: `${(correct / items.length) * 100}%` }} />
+        </div>
+
+        {/* p-1 leaves room for the current question's ring inside the scrolling strip. */}
+        <div className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto p-1 lg:grid lg:grid-cols-6 lg:overflow-visible">
           {items.map((it, i) => {
             const dimmed = mistakesOnly && it.isCorrect;
             return (
@@ -99,7 +102,8 @@ export function QuizReview({ items }: { items: QuizReviewItem[] }) {
                 aria-label={`Question ${i + 1}: ${it.isCorrect ? "correct" : "incorrect"}`}
                 aria-current={i === current ? "step" : undefined}
                 className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center text-xs font-semibold tabular-nums transition lg:w-auto",
+                  // Fixed 36px squares in the phone strip; in the laptop grid each fills its column and stays square.
+                  "flex h-9 w-9 shrink-0 items-center justify-center text-xs font-semibold tabular-nums transition lg:aspect-square lg:h-auto lg:w-full",
                   it.isCorrect ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-orange-500/90 text-orange-950",
                   i === current && "ring-2 ring-foreground ring-offset-2 ring-offset-card",
                   dimmed && "opacity-30"
@@ -109,6 +113,12 @@ export function QuizReview({ items }: { items: QuizReviewItem[] }) {
               </button>
             );
           })}
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+          <Label htmlFor="mistakes-only" className="cursor-pointer text-xs font-medium">
+            Show mistakes only ({wrong})
+          </Label>
+          <Switch id="mistakes-only" checked={mistakesOnly} onCheckedChange={toggleMistakes} disabled={wrong === 0} />
         </div>
         <p className="mt-3 hidden text-[11px] text-muted-foreground lg:block">Tip: use ← → to move between questions.</p>
       </div>
