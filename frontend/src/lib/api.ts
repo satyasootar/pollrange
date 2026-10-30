@@ -29,7 +29,11 @@ api.interceptors.response.use(
       try {
         refreshPromise ??= axios
           .post(`${config.apiUrl}/auth/refresh-token`, {}, { withCredentials: true })
-          .then(() => undefined)
+          .then(async (res) => {
+            // Keep the stored token fresh so socket reconnects stay authorised.
+            const { useAuthStore } = await import("@/store/use-auth-store");
+            useAuthStore.setState({ accessToken: res.data?.data?.accessToken ?? null });
+          })
           .finally(() => {
             refreshPromise = null;
           });

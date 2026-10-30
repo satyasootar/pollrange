@@ -4,6 +4,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { parseGranularity } from "../../utils/timeline.js";
 import { Poll } from "../poll/poll.model.js";
+import { ResponseModel } from "../response/response.model.js";
 
 /**
  * Controller for handling analytics-related requests.
@@ -66,15 +67,18 @@ export async function getFullAnalytics(req: Request, res: Response) {
         };
     }));
 
+    // Signed-in respondents carry a respondentId; everyone else answered anonymously.
+    const authenticatedCount = await ResponseModel.countDocuments({ pollId: pollId as string, respondentId: { $ne: null } });
+
     const mappedData = {
         pollId: snapshot.pollId,
         pollTitle: snapshot.title,
         status: poll?.status || "active",
-        expiresAt: poll?.expiresAt || new Date().toISOString(),
+        expiresAt: poll?.expiresAt ?? null, // null = no expiry (the UI shows "No expiry")
         totalResponses: snapshot.totalResponses,
         completionRate: snapshot.completionRate,
-        anonymousCount: 0, 
-        authenticatedCount: snapshot.totalResponses,
+        anonymousCount: snapshot.totalResponses - authenticatedCount,
+        authenticatedCount,
         questions,
         timeline: snapshot.timeline.map((t: any) => ({
             date: t._id,

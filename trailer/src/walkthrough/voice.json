@@ -1,0 +1,293 @@
+[
+  {
+    "id": "l1",
+    "ch": "landing",
+    "text": "Welcome to Kollects. In the next few minutes, I'll show you everything, from your first poll to collecting payments.",
+    "dur": 6.715
+  },
+  {
+    "id": "l2",
+    "ch": "landing",
+    "text": "This is the Kollects home page. You can build polls, forms and quizzes, share them in seconds, and watch the answers arrive live.",
+    "dur": 8.299
+  },
+  {
+    "id": "l3",
+    "ch": "landing",
+    "text": "Scroll down for the features: instant results, forms and surveys, auto-graded quizzes, file uploads and anonymous responses.",
+    "dur": 8.944
+  },
+  {
+    "id": "l4",
+    "ch": "landing",
+    "text": "Pricing is simple. The free plan gives you a thousand responses a month, with no credit card.",
+    "dur": 6.322
+  },
+  {
+    "id": "l5",
+    "ch": "landing",
+    "text": "Let's sign in and take a look inside.",
+    "dur": 2.215
+  },
+  {
+    "id": "o1",
+    "ch": "overview",
+    "text": "This is your Overview, one place for everything you run on Kollects.",
+    "dur": 4.206
+  },
+  {
+    "id": "o2",
+    "ch": "overview",
+    "text": "At the top are your totals: every response, what's live right now, and how many polls and forms you've made.",
+    "dur": 7.003
+  },
+  {
+    "id": "o3",
+    "ch": "overview",
+    "text": "Responses over time shows when people answer. Switch between minutes, hours, days, weeks or months.",
+    "dur": 6.784
+  },
+  {
+    "id": "o4",
+    "ch": "overview",
+    "text": "Below, compare polls with forms, check the status of everything, and jump straight to your top performers.",
+    "dur": 6.757
+  },
+  {
+    "id": "p1",
+    "ch": "poll",
+    "text": "Now let's create a poll. Open Polls in the sidebar. Here's every poll, with its status and response count.",
+    "dur": 7.034
+  },
+  {
+    "id": "p2",
+    "ch": "poll",
+    "text": "Click Create Poll. First, the settings. Give it a title and a short description.",
+    "dur": 5.025
+  },
+  {
+    "id": "p3",
+    "ch": "poll",
+    "text": "Then choose who can answer. Anonymous means anyone with the link can respond, with no sign-up.",
+    "dur": 6.292
+  },
+  {
+    "id": "p4",
+    "ch": "poll",
+    "text": "Next, the questions. Type your question, and add the options.",
+    "dur": 3.652
+  },
+  {
+    "id": "p5",
+    "ch": "poll",
+    "text": "You can mix question types. Let's add an open-ended question, so people can answer in their own words.",
+    "dur": 6.558
+  },
+  {
+    "id": "p6",
+    "ch": "poll",
+    "text": "Review it once, and publish.",
+    "dur": 1.528
+  },
+  {
+    "id": "p7",
+    "ch": "poll",
+    "text": "That's it. Your poll is live, and the link is ready to share. Let's copy it.",
+    "dur": 4.468
+  },
+  {
+    "id": "v1",
+    "ch": "live",
+    "text": "Open the analytics. See the green Live badge? This page updates in real time.",
+    "dur": 5.419
+  },
+  {
+    "id": "v2",
+    "ch": "live",
+    "layout": "split",
+    "text": "Now, the respondent's side. They open the link on their phone. No app, and no account.",
+    "dur": 5.345
+  },
+  {
+    "id": "v3",
+    "ch": "live",
+    "layout": "split",
+    "text": "They pick an answer, add a comment, and submit.",
+    "dur": 2.753
+  },
+  {
+    "id": "v4",
+    "ch": "live",
+    "layout": "split",
+    "text": "And instantly, on your dashboard, the count goes up and the chart moves. No refresh needed.",
+    "dur": 5.831
+  },
+  {
+    "id": "v5",
+    "ch": "live",
+    "layout": "split",
+    "text": "As more people answer, everything stays in sync, even the word cloud built from their comments.",
+    "dur": 6.2
+  },
+  {
+    "id": "v6",
+    "ch": "live",
+    "text": "Presenting to a room? Open the QR code card, style it, and download it for your slides or posters.",
+    "dur": 6.878
+  },
+  {
+    "id": "v7",
+    "ch": "live",
+    "text": "When you're ready, publish the results, so everyone can see the outcome.",
+    "dur": 3.999
+  },
+  {
+    "id": "f1",
+    "ch": "forms",
+    "text": "Polls are perfect for quick questions. For anything longer, there's Forms.",
+    "dur": 4.563
+  },
+  {
+    "id": "f2",
+    "ch": "forms",
+    "text": "Each card shows a form's status and responses. Let's open the workshop feedback form.",
+    "dur": 5.678
+  },
+  {
+    "id": "f3",
+    "ch": "forms",
+    "text": "The Summary tab gives you the big picture: responses, completion, a timeline, and a chart for every question.",
+    "dur": 7.195
+  },
+  {
+    "id": "f4",
+    "ch": "forms",
+    "text": "Individual lets you read each response, one at a time.",
+    "dur": 3.709
+  },
+  {
+    "id": "f5",
+    "ch": "forms",
+    "text": "Table shows everything as a spreadsheet, and you can export it all to CSV in one click.",
+    "dur": 5.504
+  },
+  {
+    "id": "f6",
+    "ch": "forms",
+    "text": "Forms can also be quizzes. Kollects grades every answer automatically, and ranks everyone on a leaderboard.",
+    "dur": 7.331
+  },
+  {
+    "id": "c1",
+    "ch": "form",
+    "text": "Now let's build a form from scratch: a registration form for a college tech fest.",
+    "dur": 5.311
+  },
+  {
+    "id": "c2",
+    "ch": "form",
+    "text": "Add a title and a description. On Plus and Pro, you can even choose your own link, like kollects.tech/f/techfest.",
+    "dur": 8.825
+  },
+  {
+    "id": "c3",
+    "ch": "form",
+    "text": "Now the questions. First, a short answer for the attendee's name.",
+    "dur": 4.288
+  },
+  {
+    "id": "c4",
+    "ch": "form",
+    "text": "Then a multiple choice question, for the events they want to join.",
+    "dur": 4.011
+  },
+  {
+    "id": "c5",
+    "ch": "form",
+    "text": "Here's the best part. Switch on Collect payment via UPI, enter your UPI ID, and set a price for each event.",
+    "dur": 8.394
+  },
+  {
+    "id": "c6",
+    "ch": "form",
+    "text": "Forms can have several sections. Let's add one more, with a rating question for feedback.",
+    "dur": 5.656
+  },
+  {
+    "id": "c7",
+    "ch": "form",
+    "text": "Review, publish, and copy the link.",
+    "dur": 2.036
+  },
+  {
+    "id": "u1",
+    "ch": "upi",
+    "layout": "split",
+    "text": "Now, the attendee's side. They open the link, type their name, and choose two events. The total updates as they pick.",
+    "dur": 7.2
+  },
+  {
+    "id": "u2",
+    "ch": "upi",
+    "layout": "split",
+    "text": "On the next section, they leave a rating and submit.",
+    "dur": 2.859
+  },
+  {
+    "id": "u3",
+    "ch": "upi",
+    "layout": "phone",
+    "text": "Because this form collects a payment, they now see a UPI QR code, with the exact amount, your UPI ID, and a reference note.",
+    "dur": 8.981
+  },
+  {
+    "id": "u4",
+    "ch": "upi",
+    "layout": "phone",
+    "text": "Here's how it works. Kollects adds up the prices and creates a standard UPI payment request. Scan it with Google Pay, PhonePe, Paytm, or any UPI app, and everything is filled in for them.",
+    "dur": 13.945
+  },
+  {
+    "id": "u5",
+    "ch": "upi",
+    "layout": "phone",
+    "text": "The money goes straight to your own account. Kollects never holds your funds, and the note on each payment matches it to the right response.",
+    "dur": 8.244
+  },
+  {
+    "id": "u6",
+    "ch": "upi",
+    "text": "Back on your dashboard, the registration has already arrived, with the amount due and the payment note, so matching payments takes seconds.",
+    "dur": 8.605
+  },
+  {
+    "id": "b1",
+    "ch": "brand",
+    "text": "Finally, make Kollects look like your brand. Open the Brand kit from your account menu.",
+    "dur": 5.219
+  },
+  {
+    "id": "b2",
+    "ch": "brand",
+    "text": "Add your company name, pick an accent colour, then choose a font and a corner style.",
+    "dur": 4.998
+  },
+  {
+    "id": "b3",
+    "ch": "brand",
+    "text": "The preview updates as you go, for your forms, your QR codes, and the link preview people see when you share.",
+    "dur": 7.182
+  },
+  {
+    "id": "b4",
+    "ch": "brand",
+    "text": "Save it, and every form you share carries your brand. The brand kit comes with the Plus and Pro plans.",
+    "dur": 6.436
+  },
+  {
+    "id": "e1",
+    "ch": "outro",
+    "text": "That's Kollects. Build it, share it, and watch the answers come in live. Start free today at kollects.tech.",
+    "dur": 6.999
+  }
+]

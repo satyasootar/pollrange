@@ -31,14 +31,23 @@ export function initializeSocket(server: HttpServer) {
 
   // Optional auth: decode the token if present and attach the userId to the socket.
   // Anonymous connections are still allowed (public polls), but room joins are authorized below.
+  // The client-held token can be missing or stale (15-minute expiry), so also try the httpOnly
+  // accessToken cookie the API sets on login/refresh — it reaches us with `withCredentials`.
   io.use((socket, next) => {
-    const token = socket.handshake.auth?.token as string | undefined;
-    if (token) {
+    const cookieToken = socket.handshake.headers.cookie
+      ?.split(";")
+      .map((c) => c.trim())
+      .find((c) => c.startsWith("accessToken="))
+      ?.slice("accessToken=".length);
+    const candidates = [socket.handshake.auth?.token as string | undefined, cookieToken && decodeURIComponent(cookieToken)];
+    for (const token of candidates) {
+      if (!token) continue;
       try {
         const decoded = jwt.verify(token, config.JWT_SECRET as string) as { _id: string };
         (socket as any).userId = decoded._id;
+        break;
       } catch {
-        // Invalid token — treat as anonymous rather than rejecting the connection.
+        // Invalid/expired token — try the next one, else treat as anonymous rather than rejecting.
       }
     }
     next();

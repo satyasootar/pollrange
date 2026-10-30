@@ -1,0 +1,5 @@
+node_modules
+out
+.kokoro
+recording
+public/wt

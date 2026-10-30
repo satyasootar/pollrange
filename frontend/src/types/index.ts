@@ -312,7 +312,7 @@ export interface FullAnalytics {
   pollId: string;
   pollTitle: string;
   status: string;
-  expiresAt: string;
+  expiresAt: string | null; // null = no expiry
   totalResponses: number;
   completionRate: number;
   anonymousCount: number;

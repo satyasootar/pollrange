@@ -1,0 +1,69 @@
+{
+  "chapters": [
+    { "id": "landing", "title": "The landing page" },
+    { "id": "overview", "title": "Your overview" },
+    { "id": "poll", "title": "Create a poll" },
+    { "id": "live", "title": "Live results" },
+    { "id": "forms", "title": "Forms & quizzes" },
+    { "id": "form", "title": "Build a form" },
+    { "id": "upi", "title": "UPI payments" },
+    { "id": "brand", "title": "Brand kit" }
+  ],
+  "beats": [
+    { "id": "l1", "ch": "landing", "text": "Welcome to Kollects. In the next few minutes, I'll show you everything, from your first poll to collecting payments." },
+    { "id": "l2", "ch": "landing", "text": "This is the Kollects home page. You can build polls, forms and quizzes, share them in seconds, and watch the answers arrive live." },
+    { "id": "l3", "ch": "landing", "text": "Scroll down for the features: instant results, forms and surveys, auto-graded quizzes, file uploads and anonymous responses." },
+    { "id": "l4", "ch": "landing", "text": "Pricing is simple. The free plan gives you a thousand responses a month, with no credit card." },
+    { "id": "l5", "ch": "landing", "text": "Let's sign in and take a look inside." },
+
+    { "id": "o1", "ch": "overview", "text": "This is your Overview, one place for everything you run on Kollects." },
+    { "id": "o2", "ch": "overview", "text": "At the top are your totals: every response, what's live right now, and how many polls and forms you've made." },
+    { "id": "o3", "ch": "overview", "text": "Responses over time shows when people answer. Switch between minutes, hours, days, weeks or months." },
+    { "id": "o4", "ch": "overview", "text": "Below, compare polls with forms, check the status of everything, and jump straight to your top performers." },
+
+    { "id": "p1", "ch": "poll", "text": "Now let's create a poll. Open Polls in the sidebar. Here's every poll, with its status and response count." },
+    { "id": "p2", "ch": "poll", "text": "Click Create Poll. First, the settings. Give it a title and a short description." },
+    { "id": "p3", "ch": "poll", "text": "Then choose who can answer. Anonymous means anyone with the link can respond, with no sign-up." },
+    { "id": "p4", "ch": "poll", "text": "Next, the questions. Type your question, and add the options." },
+    { "id": "p5", "ch": "poll", "text": "You can mix question types. Let's add an open-ended question, so people can answer in their own words." },
+    { "id": "p6", "ch": "poll", "text": "Review it once, and publish." },
+    { "id": "p7", "ch": "poll", "text": "That's it. Your poll is live, and the link is ready to share. Let's copy it." },
+
+    { "id": "v1", "ch": "live", "text": "Open the analytics. See the green Live badge? This page updates in real time." },
+    { "id": "v2", "ch": "live", "layout": "split", "text": "Now, the respondent's side. They open the link on their phone. No app, and no account." },
+    { "id": "v3", "ch": "live", "layout": "split", "text": "They pick an answer, add a comment, and submit." },
+    { "id": "v4", "ch": "live", "layout": "split", "text": "And instantly, on your dashboard, the count goes up and the chart moves. No refresh needed." },
+    { "id": "v5", "ch": "live", "layout": "split", "text": "As more people answer, everything stays in sync, even the word cloud built from their comments." },
+    { "id": "v6", "ch": "live", "text": "Presenting to a room? Open the QR code card, style it, and download it for your slides or posters." },
+    { "id": "v7", "ch": "live", "text": "When you're ready, publish the results, so everyone can see the outcome." },
+
+    { "id": "f1", "ch": "forms", "text": "Polls are perfect for quick questions. For anything longer, there's Forms." },
+    { "id": "f2", "ch": "forms", "text": "Each card shows a form's status and responses. Let's open the workshop feedback form." },
+    { "id": "f3", "ch": "forms", "text": "The Summary tab gives you the big picture: responses, completion, a timeline, and a chart for every question." },
+    { "id": "f4", "ch": "forms", "text": "Individual lets you read each response, one at a time." },
+    { "id": "f5", "ch": "forms", "text": "Table shows everything as a spreadsheet, and you can export it all to CSV in one click." },
+    { "id": "f6", "ch": "forms", "text": "Forms can also be quizzes. Kollects grades every answer automatically, and ranks everyone on a leaderboard." },
+
+    { "id": "c1", "ch": "form", "text": "Now let's build a form from scratch: a registration form for a college tech fest." },
+    { "id": "c2", "ch": "form", "text": "Add a title and a description. On Plus and Pro, you can even choose your own link, like kollects.tech/f/techfest.", "say": "Add a title and a description. On Plus and Pro, you can even choose your own link, like collects dot tech, slash F, slash tech fest." },
+    { "id": "c3", "ch": "form", "text": "Now the questions. First, a short answer for the attendee's name." },
+    { "id": "c4", "ch": "form", "text": "Then a multiple choice question, for the events they want to join." },
+    { "id": "c5", "ch": "form", "text": "Here's the best part. Switch on Collect payment via UPI, enter your UPI ID, and set a price for each event." },
+    { "id": "c6", "ch": "form", "text": "Forms can have several sections. Let's add one more, with a rating question for feedback." },
+    { "id": "c7", "ch": "form", "text": "Review, publish, and copy the link." },
+
+    { "id": "u1", "ch": "upi", "layout": "split", "text": "Now, the attendee's side. They open the link, type their name, and choose two events. The total updates as they pick." },
+    { "id": "u2", "ch": "upi", "layout": "split", "text": "On the next section, they leave a rating and submit." },
+    { "id": "u3", "ch": "upi", "layout": "phone", "text": "Because this form collects a payment, they now see a UPI QR code, with the exact amount, your UPI ID, and a reference note." },
+    { "id": "u4", "ch": "upi", "layout": "phone", "text": "Here's how it works. Kollects adds up the prices and creates a standard UPI payment request. Scan it with Google Pay, PhonePe, Paytm, or any UPI app, and everything is filled in for them." },
+    { "id": "u5", "ch": "upi", "layout": "phone", "text": "The money goes straight to your own account. Kollects never holds your funds, and the note on each payment matches it to the right response." },
+    { "id": "u6", "ch": "upi", "text": "Back on your dashboard, the registration has already arrived, with the amount due and the payment note, so matching payments takes seconds." },
+
+    { "id": "b1", "ch": "brand", "text": "Finally, make Kollects look like your brand. Open the Brand kit from your account menu." },
+    { "id": "b2", "ch": "brand", "text": "Add your company name, pick an accent colour, then choose a font and a corner style." },
+    { "id": "b3", "ch": "brand", "text": "The preview updates as you go, for your forms, your QR codes, and the link preview people see when you share." },
+    { "id": "b4", "ch": "brand", "text": "Save it, and every form you share carries your brand. The brand kit comes with the Plus and Pro plans." },
+
+    { "id": "e1", "ch": "outro", "text": "That's Kollects. Build it, share it, and watch the answers come in live. Start free today at kollects.tech." }
+  ]
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "hook",
+    "at": 0.5,
+    "text": "Asking is easy. Getting real answers isn't.",
+    "dur": 3.007
+  },
+  {
+    "id": "problem",
+    "at": 4.3,
+    "text": "Replies scattered across chats. Votes counted by hand. Results that come too late.",
+    "dur": 5.47
+  },
+  {
+    "id": "logo",
+    "at": 10.4,
+    "text": "Meet Kollects. Capture the choice of your audience.",
+    "dur": 3.062
+  },
+  {
+    "id": "build1",
+    "at": 14.3,
+    "text": "Describe it, and AI builds the form for you.",
+    "dur": 2.862
+  },
+  {
+    "id": "build2",
+    "at": 17.8,
+    "text": "Pick from twelve question types.",
+    "dur": 1.796
+  },
+  {
+    "id": "build3",
+    "at": 20.4,
+    "text": "Then make it yours, with your logo, colours and fonts.",
+    "dur": 2.829
+  },
+  {
+    "id": "share",
+    "at": 23.4,
+    "text": "Share it with one link or a QR code. No sign-up needed to answer.",
+    "dur": 4.504
+  },
+  {
+    "id": "live",
+    "at": 29.4,
+    "text": "Then watch the answers roll in, live. Every chart and word cloud updates the moment someone responds.",
+    "dur": 7.111
+  },
+  {
+    "id": "quiz",
+    "at": 39.4,
+    "text": "Running a quiz? Every answer is graded instantly, and the leaderboard updates in real time.",
+    "dur": 6.151
+  },
+  {
+    "id": "features",
+    "at": 46.4,
+    "text": "File uploads. Anonymous responses. UPI payments. Everything you need to ask.",
+    "dur": 5.846
+  },
+  {
+    "id": "cta",
+    "at": 53.4,
+    "text": "Ready to hear your audience? Start free at kollects.tech.",
+    "dur": 3.855
+  }
+]

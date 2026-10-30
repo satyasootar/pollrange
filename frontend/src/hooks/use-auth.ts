@@ -7,14 +7,15 @@ import { toast } from "sonner";
 import { track } from "@/lib/tracker";
 
 export function useLogin() {
-  const { setUser } = useAuthStore();
+  const { setAuth } = useAuthStore();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (res) => {
-      setUser(res.data.data.user);
+      // Keep the token too: the socket needs it to join the creator's live analytics rooms.
+      setAuth(res.data.data.user, res.data.data.accessToken, res.data.data.refreshToken);
       track("login", { method: "password" });
       qc.invalidateQueries({ queryKey: ["me"] });
       const params = new URLSearchParams(window.location.search);
@@ -25,13 +26,13 @@ export function useLogin() {
 }
 
 export function useRegister() {
-  const { setUser } = useAuthStore();
+  const { setAuth } = useAuthStore();
   const navigate = useNavigate();
 
   return useMutation({
     mutationFn: authApi.register,
     onSuccess: (res) => {
-      setUser(res.data.data.user);
+      setAuth(res.data.data.user, res.data.data.accessToken, res.data.data.refreshToken);
       track("signup", { method: "password" });
       toast.success("Account created! A verification email has been sent to your inbox.");
       const params = new URLSearchParams(window.location.search);

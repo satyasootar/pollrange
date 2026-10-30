@@ -140,7 +140,7 @@ export function AnalyticsPage() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Expires {formatDatetime(analytics.expiresAt)}
+              {analytics.expiresAt ? `Expires ${formatDatetime(analytics.expiresAt)}` : "No expiry"}
             </p>
           </div>
         </div>

@@ -8,7 +8,7 @@ import { track } from "@/lib/tracker";
 export function AuthSuccessPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const setUser = useAuthStore((state) => state.setUser);
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   useEffect(() => {
     const handleAuth = async () => {
@@ -20,7 +20,7 @@ export function AuthSuccessPage() {
           // Since cookies are already set by the backend redirect,
           // we just need to fetch the user profile to populate the store.
           const response = await api.get<ApiResponse<User>>("/auth/me");
-          setUser(response.data.data);
+          setAuth(response.data.data, accessToken, refreshToken);
           // Google sign-in and sign-up share this page; the server flags a just-created account.
           track(searchParams.get("new") === "1" ? "signup" : "login", { method: "google" });
           
@@ -36,7 +36,7 @@ export function AuthSuccessPage() {
     };
 
     handleAuth();
-  }, [searchParams, setUser, navigate]);
+  }, [searchParams, setAuth, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
